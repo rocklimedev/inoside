@@ -1,0 +1,256 @@
+/* -------------------------------------------------
+   Global resets & variables
+   ------------------------------------------------- */
+*,
+*::before,
+*::after { box-sizing: border-box; margin:0; padding:0; }
+html { font-size: 100%; }
+body {
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  background: #f9fafb;               /* gray-50 */
+  color: #111827;                    /* gray-900 */
+  line-height: 1.5;
+}
+
+/* -------------------------------------------------
+   Layout containers
+   ------------------------------------------------- */
+.min-h-screen { min-height: 100vh; }
+.flex { display: flex; }
+.flex-1 { flex: 1; }
+.items-center { align-items: center; }
+.justify-between { justify-content: space-between; }
+.gap-2 { gap: .5rem; }
+.gap-3 { gap: .75rem; }
+.gap-8 { gap: 2rem; }
+.w-full { width: 100%; }
+.w-72 { width: 18rem; }
+.max-w-2xl { max-width: 42rem; }
+.min-h-screen { min-height: 100vh; }
+.overflow-auto { overflow: auto; }
+.overflow-x-auto { overflow-x: auto; }
+
+/* -------------------------------------------------
+   Header
+   ------------------------------------------------- */
+.header {
+  background: #fff;
+  border-bottom: 1px solid #d1d5db;   /* gray-300 */
+  position: sticky;
+  top: 0;
+  z-index: 50;
+  box-shadow: 0 1px 3px rgba(0,0,0,.05);
+}
+.header .inner { padding: 1rem 1.5rem; }
+.header input.project-name {
+  font-size: 1.5rem;
+  font-weight: 700;
+  background: transparent;
+  border: none;
+  outline: none;
+}
+.header input.project-name:focus {
+  background: #eff6ff;               /* blue-50 */
+  border-radius: .375rem;
+  box-shadow: 0 0 0 2px #3b82f6;      /* blue-500 */
+}
+
+/* Buttons */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: .5rem;
+  padding: .5rem 1rem;
+  font-size: .875rem;
+  font-weight: 500;
+  border-radius: .5rem;
+  cursor: pointer;
+  transition: background .2s, color .2s;
+}
+.btn-save {
+  background: #e5e7eb;               /* gray-200 */
+  color: #1f2937;                    /* gray-800 */
+}
+.btn-save:hover { background: #d1d5db; }
+.btn-export {
+  background: #2563eb;               /* blue-600 */
+  color: #fff;
+}
+.btn-export:hover { background: #1d4ed8; }   /* blue-700 */
+
+/* Client / Area inputs */
+.meta-input {
+  background: transparent;
+  border: none;
+  border-bottom: 1px solid #9ca3af;   /* gray-400 */
+  padding: .25rem .5rem;
+  font-size: .875rem;
+}
+.meta-input:focus {
+  border-bottom-color: #2563eb;
+  outline: none;
+}
+
+/* -------------------------------------------------
+   Sidebar
+   ------------------------------------------------- */
+.sidebar {
+  width: 18rem;
+  background: #fff;
+  border-right: 1px solid #d1d5db;
+  min-height: 100vh;
+}
+.sidebar .inner { padding: 1.25rem; }
+.sidebar h3 {
+  font-size: .75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .05em;
+  color: #6b7280;                    /* gray-500 */
+  margin-bottom: .75rem;
+}
+.sidebar .section-btn {
+  width: 100%;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: .625rem 1rem;
+  border-radius: .5rem;
+  font-size: .875rem;
+  font-weight: 500;
+  transition: background .2s, color .2s;
+}
+.sidebar .section-btn:hover { background: #f3f4f6; }   /* gray-100 */
+.sidebar .section-btn.active {
+  background: #2563eb;
+  color: #fff;
+}
+.sidebar .section-btn.active .amount { color: #dbeafe; }   /* blue-100 */
+.sidebar .section-btn .amount { font-size: .75rem; font-weight: 600; color: #6b7280; }
+
+/* Grand total box */
+.grand-total {
+  margin-top: 2rem;
+  padding: 1rem;
+  background: linear-gradient(to bottom right, #eff6ff, #e0e7ff);
+  border: 1px solid #93c5fd;         /* blue-300 */
+  border-radius: .75rem;
+}
+.grand-total .label { font-size: .875rem; font-weight: 700; color: #1f2937; }
+.grand-total .value { font-size: 1.5rem; font-weight: 700; color: #1d4ed8; }
+
+/* -------------------------------------------------
+   Main content – Section card
+   ------------------------------------------------- */
+.section-card {
+  border-radius: .75rem;
+  border: 2px solid;
+  overflow: hidden;
+  box-shadow: 0 1px 3px rgba(0,0,0,.05);
+}
+.section-card.civil      { border-color: #93c5fd; background: #eff6ff; }   /* blue-300 / blue-50 */
+.section-card.mechanical{ border-color: #86efac; background: #f0fdf4; }   /* green-300 / green-50 */
+.section-card.electrical{ border-color: #fde047; background: #fefce8; }   /* yellow-300 / yellow-50 */
+.section-card.plumbing  { border-color: #c4b5fd; background: #f5f3ff; }   /* purple-300 / purple-50 */
+.section-card.paint     { border-color: #f9a8d4; background: #fdf2f8; }   /* pink-300 / pink-50 */
+.section-card.finishing { border-color: #a5b4fc; background: #eef2ff; }   /* indigo-300 / indigo-50 */
+
+.section-card .head {
+  background: #fff;
+  padding: 1.25rem;
+  border-bottom: 1px solid #d1d5db;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.section-card h2 { font-size: 1.25rem; font-weight: 700; color: #1f2937; }
+
+.add-item-btn {
+  background: #2563eb;
+  color: #fff;
+  padding: .5rem 1rem;
+  border-radius: .5rem;
+  font-size: .875rem;
+  font-weight: 500;
+  display: inline-flex;
+  align-items: center;
+  gap: .5rem;
+  cursor: pointer;
+}
+.add-item-btn:hover { background: #1d4ed8; }
+
+/* -------------------------------------------------
+   Table
+   ------------------------------------------------- */
+.table { width: 100%; background: #fff; }
+.table thead th {
+  padding: .75rem 1rem;
+  text-align: left;
+  font-size: .75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .05em;
+  color: #4b5563;                    /* gray-600 */
+  background: #f9fafb;               /* gray-50 */
+}
+.table tbody td {
+  padding: .5rem 1rem;
+  border-bottom: 1px solid #e5e7eb;   /* gray-200 */
+}
+.table tbody tr:hover { background: #f9fafb; }
+
+.table input,
+.table select {
+  width: 100%;
+  padding: .375rem .75rem;
+  font-size: .875rem;
+  border: 1px solid #d1d5db;
+  border-radius: .375rem;
+  outline: none;
+  transition: border .2s, box-shadow .2s;
+}
+.table input:focus,
+.table select:focus {
+  border-color: #2563eb;
+  box-shadow: 0 0 0 2px #dbeafe;
+}
+.table .text-right { text-align: right; }
+.table .font-semibold { font-weight: 600; }
+
+.delete-btn {
+  background: transparent;
+  border: none;
+  color: #dc2626;                     /* red-600 */
+  cursor: pointer;
+  padding: .5rem;
+  border-radius: .375rem;
+}
+.delete-btn:hover {
+  background: #fee2e2;                /* red-50 */
+  color: #b91c1c;                     /* red-700 */
+}
+
+/* Footer subtotal */
+.table tfoot td {
+  padding: 1rem;
+  font-weight: 700;
+  color: #1f2937;
+  background: #f9fafb;
+}
+.table tfoot .subtotal-label { text-align: right; text-transform: uppercase; font-size: .875rem; }
+
+/* Empty state */
+.empty-row td {
+  padding: 3rem 1rem;
+  text-align: center;
+  color: #6b7280;
+  font-style: italic;
+}
+
+/* -------------------------------------------------
+   Misc utilities
+   ------------------------------------------------- */
+.shadow-sm { box-shadow: 0 1px 2px rgba(0,0,0,.05); }
+.rounded-lg { border-radius: .5rem; }
+.rounded-xl { border-radius: .75rem; }
+.transition-colors { transition: background .2s, color .2s; }

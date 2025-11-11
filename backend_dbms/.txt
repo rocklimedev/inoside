@@ -1,0 +1,23 @@
+id (PK)
+name
+email
+phone
+address
+city
+state
+country
+entity_type_id (FK → entity_types.id)
+created_at
+updated_at
+
+
+
+id (PK)
+name (Architect, Contractor, Vendor, Designer, etc.)
+slug (architect, contractor, etc.)
+
+
+id (PK)
+entity_id (FK → entities.id)
+meta_key
+meta_value
