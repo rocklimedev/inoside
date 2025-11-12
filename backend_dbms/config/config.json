@@ -1,0 +1,23 @@
+{
+  "development": {
+    "username": "spsyn8lm_root",
+    "password": "dv@09112002",
+    "database": "spsyn8lm_main",
+    "host": "119.18.54.11",
+    "dialect": "mysql"
+  },
+  "test": {
+    "username": "spsyn8lm_root",
+    "password": "dv@09112002",
+    "database": "spsyn8lm_main",
+    "host": "119.18.54.11",
+    "dialect": "mysql"
+  },
+  "production": {
+    "username": "spsyn8lm_root",
+    "password": "dv@09112002",
+    "database": "spsyn8lm_main",
+    "host": "119.18.54.11",
+    "dialect": "mysql"
+  }
+}

@@ -1,906 +1,592 @@
-import React from 'react'
+// src/components/ExcelWorksheet.jsx
+import React, { useMemo, useState, useEffect } from "react";
+import {
+  useReactTable,
+  getCoreRowModel,
+  getSortedRowModel,
+  getFilteredRowModel,
+  getPaginationRowModel,
+  flexRender,
+} from "@tanstack/react-table";
+import { saveAs } from "file-saver";
+import * as XLSX from "xlsx";
+import {
+  FiPlus,
+  FiDownload,
+  FiRefreshCw,
+  FiSearch,
+  FiChevronUp,
+  FiChevronDown,
+  FiMoreVertical,
+  FiEdit2,
+  FiTrash2,
+} from "react-icons/fi";
+import PageHeader from "../Common/PageHeader";
+import AddModal from "../Tabulars/AddModal";
+import {
+  useGetPersonsQuery,
+  useDeletePersonMutation,
+  useGetPersonTypesQuery,
+} from "../../api/personApi";
 
-const Dashboard = () => {
+/* ------------------------------------------------------------------ */
+/*  Excel-style Worksheet (pure JSX)                                 */
+/* ------------------------------------------------------------------ */
+const Table = () => {
+  /* -------------------------- RTK Query --------------------------- */
+  const {
+    data: persons = [],
+    isLoading,
+    isFetching,
+    refetch,
+  } = useGetPersonsQuery(undefined);
+  const { data: personTypes = [] } = useGetPersonTypesQuery(undefined);
+  const [deletePerson, { isLoading: isDeleting }] = useDeletePersonMutation();
+
+  /* --------------------------- UI State --------------------------- */
+  const [selectedTypeId, setSelectedTypeId] = useState(null);
+  const [showModal, setShowModal] = useState(false);
+  const [editingPerson, setEditingPerson] = useState(null);
+  const [sorting, setSorting] = useState([]);
+  const [globalFilter, setGlobalFilter] = useState("");
+
+  /* --------------------- Filter by Sheet (PersonType) ------------- */
+  const filteredData = useMemo(() => {
+    if (!selectedTypeId) return persons;
+    return persons.filter((p) => p.person_type_id === selectedTypeId);
+  }, [persons, selectedTypeId]);
+
+  /* --------------------------- Columns ---------------------------- */
+  const columns = useMemo(
+    () => [
+      {
+        id: "select",
+        header: () => null,
+        cell: ({ row }) => (
+          <input
+            type="checkbox"
+            checked={row.getIsSelected()}
+            onChange={row.getToggleSelectedHandler()}
+          />
+        ),
+        enableSorting: false,
+        enableColumnFilter: false,
+        size: 40,
+        minSize: 40,
+        maxSize: 40,
+      },
+      {
+        accessorKey: "id",
+        header: "ID",
+        cell: (info) => `PUR${String(info.getValue()).padStart(5, "0")}`,
+        size: 90,
+      },
+      {
+        accessorFn: (row) =>
+          row.created_at
+            ? new Date(row.created_at).toLocaleDateString("en-GB")
+            : "—",
+        id: "date",
+        header: "Date",
+        size: 110,
+      },
+      {
+        accessorKey: "name",
+        header: "Vendor",
+        cell: (info) => {
+          const name = info.getValue();
+          const email = info.row.original.email ?? "";
+          return (
+            <div className="d-flex align-items-center">
+              <img
+                src={`https://ui-avatars.com/api/?name=${encodeURIComponent(
+                  name
+                )}&background=random`}
+                alt=""
+                className="avatar avatar-xs rounded-circle me-2"
+              />
+              <div>
+                <div className="fw-medium">{name}</div>
+                <small className="text-muted">{email}</small>
+              </div>
+            </div>
+          );
+        },
+        size: 240,
+      },
+      {
+        accessorKey: "amount",
+        header: "Amount",
+        cell: () => "$10,000", // replace with real field
+        size: 110,
+      },
+      {
+        accessorKey: "payment_mode",
+        header: "Payment Mode",
+        cell: () => "Cash",
+        size: 130,
+      },
+      {
+        accessorKey: "status",
+        header: "Status",
+        cell: () => (
+          <span className="badge bg-success-subtle text-success badge-sm">
+            Paid
+          </span>
+        ),
+        size: 100,
+      },
+      {
+        id: "actions",
+        header: () => null,
+        cell: ({ row }) => {
+          const person = row.original;
+          return (
+            <div className="dropdown">
+              <button
+                className="btn btn-sm btn-link text-muted p-0"
+                data-bs-toggle="dropdown"
+              >
+                <FiMoreVertical />
+              </button>
+              <ul className="dropdown-menu dropdown-menu-end">
+                <li>
+                  <button
+                    className="dropdown-item d-flex align-items-center"
+                    onClick={() => {
+                      setEditingPerson(person);
+                      setShowModal(true);
+                    }}
+                  >
+                    <FiEdit2 className="me-2" /> Edit
+                  </button>
+                </li>
+                <li>
+                  <button
+                    className="dropdown-item d-flex align-items-center text-danger"
+                    onClick={() => handleDelete(person.id)}
+                    disabled={isDeleting}
+                  >
+                    <FiTrash2 className="me-2" />
+                    {isDeleting ? "Deleting…" : "Delete"}
+                  </button>
+                </li>
+              </ul>
+            </div>
+          );
+        },
+        enableSorting: false,
+        enableColumnFilter: false,
+        size: 60,
+      },
+    ],
+    [isDeleting]
+  );
+
+  /* -------------------------- Table Instance ---------------------- */
+  const table = useReactTable({
+    data: filteredData,
+    columns,
+    state: {
+      sorting,
+      globalFilter,
+    },
+    onSortingChange: setSorting,
+    onGlobalFilterChange: setGlobalFilter,
+    getCoreRowModel: getCoreRowModel(),
+    getSortedRowModel: getSortedRowModel(),
+    getFilteredRowModel: getFilteredRowModel(),
+    getPaginationRowModel: getPaginationRowModel(),
+    columnResizeMode: "onChange",
+    enableColumnResizing: true,
+    enableRowSelection: true,
+    enableMultiRowSelection: true,
+  });
+
+  /* ----------------------------- Helpers -------------------------- */
+  const handleDelete = async (id) => {
+    if (!window.confirm("Delete this row?")) return;
+    try {
+      await deletePerson(id).unwrap();
+    } catch {
+      alert("Delete failed");
+    }
+  };
+
+  const exportToExcel = () => {
+    const rows = table.getRowModel().rows.map((r) => r.original);
+    const ws = XLSX.utils.json_to_sheet(rows);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "Data");
+    const buffer = XLSX.write(wb, { bookType: "xlsx", type: "array" });
+    const blob = new Blob([buffer], { type: "application/octet-stream" });
+    saveAs(blob, `worksheet_${new Date().toISOString().slice(0, 10)}.xlsx`);
+  };
+
+  const openAddModal = () => {
+    setEditingPerson(null);
+    setShowModal(true);
+  };
+
+  /* --------------------------- Render ---------------------------- */
   return (
+    <div className="excel-worksheet">
+      {/* ---------- Toolbar (top) ---------- */}
+      <div className="excel-toolbar d-flex align-items-center justify-content-between flex-wrap gap-2 p-2 border-bottom bg-light">
+        <div className="d-flex align-items-center gap-2">
+          <button className="btn btn-sm btn-success" onClick={openAddModal}>
+            <FiPlus /> Add Row
+          </button>
+          <button
+            className="btn btn-sm btn-outline-secondary"
+            onClick={exportToExcel}
+          >
+            <FiDownload /> Export
+          </button>
+          <button
+            className="btn btn-sm btn-outline-secondary"
+            onClick={refetch}
+            disabled={isFetching}
+          >
+            <FiRefreshCw /> {isFetching ? "Refreshing…" : "Refresh"}
+          </button>
+        </div>
 
-			<div class="content">
+        <div className="d-flex align-items-center gap-2">
+          <div className="position-relative">
+            <FiSearch className="position-absolute top-50 start-2 translate-middle-y text-muted" />
+            <input
+              type="text"
+              className="form-control form-control-sm ps-5"
+              placeholder="Search…"
+              value={globalFilter ?? ""}
+              onChange={(e) => setGlobalFilter(e.target.value)}
+              style={{ width: "200px" }}
+            />
+          </div>
+        </div>
+      </div>
 
-				<!-- Start Breadcrumb -->
-				<div class="d-flex d-block align-items-center justify-content-between flex-wrap gap-3 mb-3">
-					<div>
-						<h6>Dashboard</h6>
-					</div>
-					<div class="d-flex my-xl-auto right-content align-items-center flex-wrap gap-2">
-						<div id="reportrange" class="reportrange-picker d-flex align-items-center">
-							<i class="isax isax-calendar text-gray-5 fs-14 me-1"></i><span class="reportrange-picker-field">16 Apr 25 - 16 Apr 25</span>
-						</div>
-						<div class="dropdown">
-							<a class="btn btn-primary d-flex align-items-center justify-content-center dropdown-toggle" data-bs-toggle="dropdown" href="javascript:void(0);" role="button">
-								Create New
-							</a>
-							<ul class="dropdown-menu dropdown-menu-start">
-								<li>
-									<a href="add-invoice.html" class="dropdown-item d-flex align-items-center">
-										<i class="isax isax-document-text-1 me-2"></i>Invoice
-									</a>
-								</li>
-								<li>
-									<a href="expenses.html" class="dropdown-item d-flex align-items-center">
-										<i class="isax isax-money-send me-2"></i>Expense
-									</a>
-								</li>
-								<li>
-									<a href="add-credit-notes.html" class="dropdown-item d-flex align-items-center">
-										<i class="isax isax-money-add me-2"></i>Credit Notes
-									</a>
-								</li>
-								<li>
-									<a href="add-debit-notes.html" class="dropdown-item d-flex align-items-center">
-										<i class="isax isax-money-recive me-2"></i>Debit Notes
-									</a>
-								</li>
-								<li>
-									<a href="add-purchases-orders.html" class="dropdown-item d-flex align-items-center">
-										<i class="isax isax-document me-2"></i>Purchase Order
-									</a>
-								</li>
-								<li>
-									<a href="add-quotation.html" class="dropdown-item d-flex align-items-center">
-										<i class="isax isax-document-download me-2"></i>Quotation
-									</a>
-								</li>
-								<li>
-									<a href="add-delivery-challan.html" class="dropdown-item d-flex align-items-center">
-										<i class="isax isax-document-forward me-2"></i>Delivery Challan
-									</a>
-								</li>
-							</ul>
-						</div>
-						<div class="dropdown">
-							<a href="javascript:void(0);" class="btn btn-outline-white d-inline-flex align-items-center"  data-bs-toggle="dropdown">
-								<i class="isax isax-export-1 me-1"></i>Export
-							</a>
-							<ul class="dropdown-menu">
-								<li>
-									<a class="dropdown-item" href="javascript:void(0);">Download as PDF</a>
-								</li>
-								<li>
-									<a class="dropdown-item" href="javascript:void(0);">Download as Excel</a>
-								</li>
-							</ul>
-						</div>
-					</div>
-				</div>
-				<!-- End Breadcrumb -->
+      {/* ---------- Main Grid ---------- */}
+      <div className="excel-grid-container position-relative">
+        {isLoading ? (
+          <div className="text-center py-5">
+            <div className="spinner-border text-primary" role="status">
+              <span className="visually-hidden">Loading…</span>
+            </div>
+          </div>
+        ) : filteredData.length === 0 ? (
+          <div className="text-center py-5 text-muted">No data</div>
+        ) : (
+          <div className="excel-grid">
+            {/* ---------- Pagination (just below tabs) ---------- */}
+            <div className="excel-pagination d-flex justify-content-between align-items-center mt-2 px-2 bg-white border-top">
+              <span className="text-muted small">
+                Rows {table.getState().pagination.pageIndex * 10 + 1} -{" "}
+                {Math.min(
+                  (table.getState().pagination.pageIndex + 1) * 10,
+                  filteredData.length
+                )}{" "}
+                of {filteredData.length}
+              </span>
+              <div className="pagination">
+                <button
+                  className="btn btn-sm btn-outline-secondary me-1"
+                  onClick={() => table.previousPage()}
+                  disabled={!table.getCanPreviousPage()}
+                >
+                  Prev
+                </button>
+                <button
+                  className="btn btn-sm btn-outline-secondary"
+                  onClick={() => table.nextPage()}
+                  disabled={!table.getCanNextPage()}
+                >
+                  Next
+                </button>
+              </div>
+            </div>
 
-				<div class="bg-primary rounded welcome-wrap position-relative mb-3">
+            {/* Row Numbers */}
+            <div className="excel-row-numbers">
+              {table.getRowModel().rows.map((row, idx) => (
+                <div key={row.id} className="excel-row-number">
+                  {idx + 1}
+                </div>
+              ))}
+            </div>
 
-					<!-- start row -->
-					<div class="row">
-						<div class="col-lg-8 col-md-9 col-sm-7">
-							<div>
-								<h5 class="text-white mb-1">Good Morning, Jafna Cremson</h5>
-								<p class="text-white mb-3">You have 15+ invoices saved to draft that has to send to customers</p>
-								<div class="d-flex align-items-center flex-wrap gap-3">
-									<p class="d-flex align-items-center fs-13 text-white mb-0"><i class="isax isax-calendar5 me-1"></i>Friday, 24 Mar 2025</p>
-									<p class="d-flex align-items-center fs-13 text-white mb-0"><i class="isax isax-clock5 me-1"></i>11:24 AM</p>
-								</div>
-							</div>
-						</div><!-- end col -->
-					</div>
-					<!-- end row -->
+            {/* Table */}
+            <div className="excel-table-wrapper">
+              <table className="excel-table">
+                <thead>
+                  {table.getHeaderGroups().map((headerGroup) => (
+                    <tr key={headerGroup.id}>
+                      {/* Corner cell (A1 style) */}
+                      <th className="excel-corner-cell"></th>
 
-					<div class="position-absolute end-0 top-50 translate-middle-y p-2 d-none d-sm-block">
-						<img src="assets/img/icons/dashboard.svg" alt="img">
-					</div>
-				</div>
+                      {headerGroup.headers.map((header, i) => (
+                        <th
+                          key={header.id}
+                          style={{ width: header.getSize() }}
+                          className="excel-header-cell"
+                        >
+                          <div
+                            className="d-flex align-items-center justify-content-center gap-1 cursor-pointer select-none"
+                            onClick={header.column.getToggleSortingHandler()}
+                          >
+                            {/* Column Letter (A, B, C…) */}
+                            <span className="excel-col-letter">
+                              {String.fromCharCode(65 + i)}
+                            </span>
 
-				<!-- start row -->
-				<div class="row">
-					<div class="col-md-4 d-flex">
-						<div class="card flex-fill">
-							<div class="card-body">
-								<div class="mb-3">
-									<h6 class="d-flex align-items-center mb-1"><i class="isax isax-category5 text-default me-2"></i>Overview</h6>
-								</div>
-								<div class="row g-4">
-									<div class="col-xl-6">
-										<div class="d-flex align-items-center">
-											<span class="avatar avatar-44 avatar-rounded bg-primary-subtle text-primary flex-shrink-0 me-2">
-												<i class="isax isax-document-text-1 fs-20"></i>
-											</span>
-											<div>
-												<p class="mb-1 text-truncate">Invoices</p>
-												<h6 class="fs-16 fw-semibold mb-0 text-truncate">1,041</h6>
-											</div>
-										</div>
-									</div>
-									<div class="col-xl-6">
-										<div class="d-flex align-items-center me-2">
-											<span class="avatar avatar-44 avatar-rounded bg-success-subtle text-success-emphasis flex-shrink-0 me-2">
-												<i class="isax isax-profile-2user fs-20"></i>
-											</span>
-											<div>
-												<p class="mb-1 text-truncate">Customers</p>
-												<h6 class="fs-16 fw-semibold mb-0 text-truncate">3,462</h6>
-											</div>
-										</div>
-									</div>
-									<div class="col-xl-6">
-										<div class="d-flex align-items-center">
-											<span class="avatar avatar-44 avatar-rounded bg-warning-subtle text-warning-emphasis flex-shrink-0 me-2">
-												<i class="isax isax-dcube fs-20"></i>
-											</span>
-											<div>
-												<p class="mb-1 text-truncate">Amount Due</p>
-												<h6 class="fs-16 fw-semibold mb-0 text-truncate">$1,642</h6>
-											</div>
-										</div>
-									</div>
-									<div class="col-xl-6">
-										<div class="d-flex align-items-center me-2">
-											<span class="avatar avatar-44 avatar-rounded bg-info-subtle text-info-emphasis flex-shrink-0 me-2">
-												<i class="isax isax-document-text fs-20"></i>
-											</span>
-											<div>
-												<p class="mb-1 text-truncate">Quotations</p>
-												<h6 class="fs-16 fw-semibold mb-0 text-truncate">2,150</h6>
-											</div>
-										</div>
-									</div>
-								</div>
-							</div> <!-- end card body -->
-						</div> <!-- end card -->
-					</div> <!-- end col -->
-					<div class="col-md-4 d-flex">
-						<div class="card flex-fill">
-							<div class="card-body">
-								<div class="mb-3">
-									<h6 class="d-flex align-items-center mb-1"><i class="isax isax-chart-215 text-default me-2"></i>Sales Analytics</h6>
-								</div>
-								<div class="row g-4">
-									<div class="col-xl-6">
-										<div class="d-flex align-items-center">
-											<span class="avatar avatar-44 avatar-rounded bg-primary-subtle text-primary flex-shrink-0 me-2">
-												<i class="isax isax-document-forward fs-20"></i>
-											</span>
-											<div>
-												<p class="mb-1 text-truncate">Total Sales</p>
-												<h6 class="fs-16 fw-semibold mb-0">$40,569</h6>
-											</div>
-										</div>
-									</div>
-									<div class="col-xl-6">
-										<div class="d-flex align-items-center me-2">
-											<span class="avatar avatar-44 avatar-rounded bg-success-subtle text-success-emphasis flex-shrink-0 me-2">
-												<i class="isax isax-programming-arrow fs-20"></i>
-											</span>
-											<div>
-												<p class="mb-1 text-truncate">Purchase</p>
-												<h6 class="fs-16 fw-semibold mb-0 text-truncate">$1,54,220</h6>
-											</div>
-										</div>
-									</div>
-									<div class="col-xl-6">
-										<div class="d-flex align-items-center">
-											<span class="avatar avatar-44 avatar-rounded bg-warning-subtle text-warning-emphasis flex-shrink-0 me-2">
-												<i class="isax isax-dollar-circle fs-20"></i>
-											</span>
-											<div>
-												<p class="mb-1 mb-0">Expenses</p>
-												<h6 class="fs-16 fw-semibold text-truncate">$10,041</h6>
-											</div>
-										</div>
-									</div>
-									<div class="col-xl-6">
-										<div class="d-flex align-items-center me-2">
-											<span class="avatar avatar-44 avatar-rounded bg-info-subtle text-info-emphasis flex-shrink-0 me-2">
-												<i class="isax isax-flag fs-20"></i>
-											</span>
-											<div>
-												<p class="mb-1 text-truncate">Credits</p>
-												<h6 class="fs-16 fw-semibold mb-0 text-truncate">$12,150</h6>
-											</div>
-										</div>
-									</div>
-								</div>
-							</div> <!-- end card body -->
-						</div> <!-- end card -->
-					</div> <!-- end col -->
-					<div class="col-md-4 d-flex">
-						<div class="card flex-fill">
-							<div class="card-body">
-								<div class="mb-3">
-									<h6 class="d-flex align-items-center mb-1"><i class="isax isax-chart-success5 text-default me-2"></i>Invoice Statistics</h6>
-								</div>
-								<div class="row g-4">
-									<div class="col-xl-6">
-										<div class="d-flex align-items-center">
-											<span class="avatar avatar-44 avatar-rounded bg-primary-subtle text-primary flex-shrink-0 me-2">
-												<i class="isax isax-document fs-20"></i>
-											</span>
-											<div>
-												<p class="mb-1 text-truncate">Invoiced</p>
-												<h6 class="fs-16 fw-semibold mb-0">$21,132</h6>
-											</div>
-										</div>
-									</div>
-									<div class="col-xl-6">
-										<div class="d-flex align-items-center me-2">
-											<span class="avatar avatar-44 avatar-rounded bg-success-subtle text-success-emphasis flex-shrink-0 me-2">
-												<i class="isax isax-document-forward fs-20"></i>
-											</span>
-											<div>
-												<p class="mb-1 text-truncate">Received</p>
-												<h6 class="fs-16 fw-semibold mb-0 text-truncate">$10,763</h6>
-											</div>
-										</div>
-									</div>
-									<div class="col-xl-6">
-										<div class="d-flex align-items-center">
-											<span class="avatar avatar-44 avatar-rounded bg-warning-subtle text-warning-emphasis flex-shrink-0 me-2">
-												<i class="isax isax-document-previous fs-20"></i>
-											</span>
-											<div>
-												<p class="mb-1 text-truncate">Outstanding</p>
-												<h6 class="fs-16 fw-semibold mb-0 text-truncate">$8041</h6>
-											</div>
-										</div>
-									</div>
-									<div class="col-xl-6">
-										<div class="d-flex align-items-center me-2">
-											<span class="avatar avatar-44 avatar-rounded bg-info-subtle text-info-emphasis flex-shrink-0 me-2">
-												<i class="isax isax-dislike fs-20"></i>
-											</span>
-											<div>
-												<p class="mb-1 text-truncate">Overdue</p>
-												<h6 class="fs-16 fw-semibold text-truncate mb-0">$41,811.2</h6>
-											</div>
-										</div>
-									</div>
-								</div>
-							</div> <!-- end card body -->
-						</div> <!-- end card -->
-					</div> <!-- end col -->
-				</div>
-				<!-- end row -->
+                            {/* Sort Icons */}
+                            {header.column.getIsSorted() === "asc" && (
+                              <FiChevronUp className="excel-sort-icon" />
+                            )}
+                            {header.column.getIsSorted() === "desc" && (
+                              <FiChevronDown className="excel-sort-icon" />
+                            )}
+                          </div>
 
-				<!-- start row -->
-				 <div class="row">
-					<div class="col-md-4 d-flex flex-column">
-						<div class="card overflow-hidden z-1 flex-fill">
-							<div class="card-body">
-								<div class="d-flex align-items-center justify-content-between border-bottom mb-2 pb-2">
-									<div>										
-										<p class="mb-1">Total Products</p>
-										<div class="d-flex align-items-center">
-											<h6 class="fs-16 fw-semibold me-2">897</h6>
-											<span class="badge badge-sm badge-soft-success">+45<i class="isax isax-arrow-up-15 ms-1"></i></span>
-										</div>
-									</div>
-									<span class="avatar avatar-lg bg-light text-dark avatar-rounded">
-										<i class="isax isax-document-text fs-16"></i>
-									</span>
-								</div>
-								<a href="inventory.html" class="fw-medium text-decoration-underline">View Inventory</a>
-							</div> <!-- end card body -->
-							<div class="position-absolute end-0 bottom-0 z-n1">
-								<img src="assets/img/bg/card-bg-01.svg" alt="img">
-							</div>
-						</div> <!-- end card -->
-					</div> <!-- end col -->
-					<div class="col-md-4 d-flex flex-column">
-						<div class="card overflow-hidden z-1 flex-fill">
-							<div class="card-body">
-								<div class="d-flex align-items-center justify-content-between border-bottom mb-2 pb-2">
-									<div>										
-										<p class="mb-1">Total Sales</p>
-										<div class="d-flex align-items-center">
-											<h6 class="fs-16 fw-semibold me-2">645</h6>
-											<span class="badge badge-sm badge-soft-success">+45<i class="isax isax-arrow-up-15 ms-1"></i></span>
-										</div>
-									</div>
-									<span class="avatar avatar-lg bg-light text-dark avatar-rounded">
-										<i class="isax isax-document-text fs-16"></i>
-									</span>
-								</div>
-								<a href="invoices.html" class="fw-medium text-decoration-underline">View Invoices</a>
-							</div> <!-- end card body -->
-							<div class="position-absolute end-0 bottom-0 z-n1">
-								<img src="assets/img/bg/card-bg-02.svg" alt="img">
-							</div>
-						</div> <!-- end card -->
-					</div> <!-- end col -->
-					<div class="col-md-4 d-flex flex-column">
-						<div class="card overflow-hidden z-1 flex-fill">
-							<div class="card-body">
-								<div class="d-flex align-items-center justify-content-between border-bottom mb-2 pb-2">
-									<div>										
-										<p class="mb-1">Total Quotations</p>
-										<div class="d-flex align-items-center">
-											<h6 class="fs-16 fw-semibold me-2">128</h6>
-											<span class="badge badge-sm badge-soft-success">+45<i class="isax isax-arrow-up-15 ms-1"></i></span>
-										</div>
-									</div>
-									<span class="avatar avatar-lg bg-light text-dark avatar-rounded">
-										<i class="isax isax-document-text fs-16"></i>
-									</span>
-								</div>
-								<a href="quotations.html" class="fw-medium text-decoration-underline">View All</a>
-							</div> <!-- end card body -->
-							<div class="position-absolute end-0 bottom-0 z-n1">
-								<img src="assets/img/bg/card-bg-03.svg" alt="img">
-							</div>
-						</div> <!-- end card -->
-					</div>
-				 </div>
-				<!-- end row -->
+                          {/* Resize Handle */}
+                          {header.column.getCanResize() && (
+                            <div
+                              onMouseDown={header.getResizeHandler()}
+                              onTouchStart={header.getResizeHandler()}
+                              className="excel-resize-handle"
+                            />
+                          )}
+                        </th>
+                      ))}
+                    </tr>
+                  ))}
+                </thead>
+                <tbody>
+                  {table.getRowModel().rows.map((row) => (
+                    <tr
+                      key={row.id}
+                      className={
+                        row.getIsSelected() ? "excel-selected-row" : ""
+                      }
+                    >
+                      <td className="excel-select-cell">
+                        <input
+                          type="checkbox"
+                          checked={row.getIsSelected()}
+                          onChange={row.getToggleSelectedHandler()}
+                        />
+                      </td>
+                      {row.getVisibleCells().map((cell) => (
+                        <td key={cell.id} className="excel-data-cell">
+                          {flexRender(
+                            cell.column.columnDef.cell,
+                            cell.getContext()
+                          )}
+                        </td>
+                      ))}
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
+      </div>
 
-				<!-- start row -->
-				<div class="row">
-					<div class="col-xl-6 d-flex">
-						<div class="card flex-fill">
-							<div class="card-body pb-0">
-								<div class="mb-3">
-									<h6 class="mb-1">Revenue</h6>
-								</div>
-								<div class="d-flex align-items-center justify-content-between flex-wrap gap-3">
-									<div>
-										<p class="mb-1">Total Revenue</p>
-										<div class="d-flex align-items-center">
-											<h6 class="fs-16 fw-semibold me-2">897</h6>
-											<span class="badge badge-sm badge-soft-success">+45<i class="isax isax-arrow-up-15 ms-1"></i></span>
-										</div>
-									</div>
-									<div class="d-flex align-items-center gap-2">
-										<p class="fs-13 text-dark d-flex align-items-center mb-0"><i class="fa-solid fa-circle text-primary-transparent fs-12 me-1"></i>Received </p>
-										<p class="fs-13 text-dark d-flex align-items-center mb-0"><i class="fa-solid fa-circle text-primary fs-12 me-1"></i>Outstanding</p>
-									</div>
-								</div>
-								<div id="revenue_chart"></div>
-							</div> <!-- end card body -->
-						</div> <!-- end card -->
-					</div> <!-- end col -->
-					<div class="col-xl-6 d-flex">
-						<div class="card flex-fill">
-							<div class="card-body">
-								<div class="mb-3">
-									<h6 class="mb-1">Customers</h6>
-								</div>
-								<div class="table-responsive">
-									<table class="table table-nowrap table-borderless custom-table">
-										<tbody>
-											<tr>
-												<td>
-													<div class="d-flex align-items-center">
-														<a href="customer-details.html" class="avatar avatar-lg rounded-circle me-2 flex-shrink-0">
-															<img src="assets/img/users/user-06.jpg" class="rounded-circle" alt="img">
-														</a>
-														<div>
-															<h6 class="fs-14 fw-medium mb-1"><a href="customer-details.html">Emily Clark</a></h6>
-															<p class="fs-13">No of Invoices : 45</p>
-														</div>
-													</div>
-												</td>
-												<td>
-													<p class="mb-1">Outstanding </p>
-													<h6 class="fs-14 fw-semibold">$3589</h6>
-												</td>
-												<td>
-													<div class="d-flex align-items-center justify-content-end gap-2">
-														<a href="add-invoice.html" class="btn btn-icon btn-sm btn-light" data-bs-toggle="tooltip" data-bs-title="New Invoice"><i class="isax isax-add-circle"></i></a>
-														<div data-bs-toggle="tooltip" data-bs-title="Add Ledger">
-															<a href="#" class="btn btn-icon btn-sm btn-light"  data-bs-toggle="modal" data-bs-target="#add_ledger"><i class="isax isax-document-text-1"></i></a>															
-														</div>
-													</div>
-												</td>
-											</tr>
-											<tr>
-												<td>
-													<div class="d-flex align-items-center">
-														<a href="customer-details.html" class="avatar avatar-lg rounded-circle me-2 flex-shrink-0">
-															<img src="assets/img/users/user-01.jpg" class="rounded-circle" alt="img">
-														</a>
-														<div>
-															<h6 class="fs-14 fw-medium mb-1"><a href="customer-details.html">John Smith</a></h6>
-															<p class="fs-13">No of Invoices : 16</p>
-														</div>
-													</div>
-												</td>
-												<td>
-													<p class="mb-1">Outstanding </p>
-													<h6 class="fs-14 fw-semibold">$5426</h6>
-												</td>
-												<td>
-													<div class="d-flex align-items-center justify-content-end gap-2">
-														<a href="add-invoice.html" class="btn btn-icon btn-sm btn-light" data-bs-toggle="tooltip" data-bs-title="New Invoice"><i class="isax isax-add-circle"></i></a>
-														<div data-bs-toggle="tooltip" data-bs-title="Add Ledger">
-															<a href="#" class="btn btn-icon btn-sm btn-light"  data-bs-toggle="modal" data-bs-target="#add_ledger"><i class="isax isax-document-text-1"></i></a>															
-														</div>
-													</div>
-												</td>
-											</tr>
-											<tr>
-												<td>
-													<div class="d-flex align-items-center">
-														<a href="customer-details.html" class="avatar avatar-lg rounded-circle me-2 flex-shrink-0">
-															<img src="assets/img/users/user-38.jpg" class="rounded-circle" alt="img">
-														</a>
-														<div>
-															<h6 class="fs-14 fw-medium mb-1"><a href="customer-details.html">Olivia Harris</a></h6>
-															<p class="fs-13">No of Invoices : 23</p>
-														</div>
-													</div>
-												</td>
-												<td>
-													<p class="mb-1">Outstanding </p>
-													<h6 class="fs-14 fw-semibold">$1493</h6>
-												</td>
-												<td>
-													<div class="d-flex align-items-center justify-content-end gap-2">
-														<a href="add-invoice.html" class="btn btn-icon btn-sm btn-light" data-bs-toggle="tooltip" data-bs-title="New Invoice"><i class="isax isax-add-circle"></i></a>
-														<div data-bs-toggle="tooltip" data-bs-title="Add Ledger">
-															<a href="#" class="btn btn-icon btn-sm btn-light"  data-bs-toggle="modal" data-bs-target="#add_ledger"><i class="isax isax-document-text-1"></i></a>															
-														</div>
-													</div>
-												</td>
-											</tr>
-											<tr>
-												<td>
-													<div class="d-flex align-items-center">
-														<a href="customer-details.html" class="avatar avatar-lg rounded-circle me-2 flex-shrink-0">
-															<img src="assets/img/users/user-12.jpg" class="rounded-circle" alt="img">
-														</a>
-														<div>
-															<h6 class="fs-14 fw-medium mb-1"><a href="customer-details.html">William Parker</a></h6>
-															<p class="fs-13">No of Invoices : 58</p>
-														</div>
-													</div>
-												</td>
-												<td>
-													<p class="mb-1">Outstanding </p>
-													<h6 class="fs-14 fw-semibold">$7854</h6>
-												</td>
-												<td>
-													<div class="d-flex align-items-center justify-content-end gap-2">
-														<a href="add-invoice.html" class="btn btn-icon btn-sm btn-light" data-bs-toggle="tooltip" data-bs-title="New Invoice"><i class="isax isax-add-circle"></i></a>
-														<div data-bs-toggle="tooltip" data-bs-title="Add Ledger">
-															<a href="#" class="btn btn-icon btn-sm btn-light"  data-bs-toggle="modal" data-bs-target="#add_ledger"><i class="isax isax-document-text-1"></i></a>															
-														</div>
-													</div>
-												</td>
-											</tr>
-											<tr>
-												<td>
-													<div class="d-flex align-items-center">
-														<a href="customer-details.html" class="avatar avatar-lg rounded-circle me-2 flex-shrink-0">
-															<img src="assets/img/users/user-02.jpg" class="rounded-circle" alt="img">
-														</a>
-														<div>
-															<h6 class="fs-14 fw-medium mb-1"><a href="customer-details.html">Charlotte Brown</a></h6>
-															<p class="fs-13">No of Invoices : 09</p>
-														</div>
-													</div>
-												</td>
-												<td>
-													<p class="mb-1">Outstanding </p>
-													<h6 class="fs-14 fw-semibold">$4989</h6>
-												</td>
-												<td>
-													<div class="d-flex align-items-center justify-content-end gap-2">
-														<a href="add-invoice.html" class="btn btn-icon btn-sm btn-light" data-bs-toggle="tooltip" data-bs-title="New Invoice"><i class="isax isax-add-circle"></i></a>
-														<div data-bs-toggle="tooltip" data-bs-title="Add Ledger">
-															<a href="#" class="btn btn-icon btn-sm btn-light"  data-bs-toggle="modal" data-bs-target="#add_ledger"><i class="isax isax-document-text-1"></i></a>															
-														</div>
-													</div>
-												</td>
-											</tr>
-										</tbody>
-									</table>
-								</div>
-								<a href="customers.html" class="btn btn-light btn-lg w-100 text-decoration-underline mt-3">All Customers</a>
-							</div> <!-- end card body -->
-						</div> <!-- end card -->
-					</div> <!-- end col -->
-				</div>
-				<!-- end row -->
+      {/* ---------- Sheet Tabs (bottom) ---------- */}
+      <div className="excel-sheet-tabs d-flex overflow-auto border-top bg-light">
+        <button
+          className={`excel-sheet-tab px-3 py-2 border-0 bg-transparent ${
+            selectedTypeId === null ? "excel-active-tab" : ""
+          }`}
+          onClick={() => setSelectedTypeId(null)}
+        >
+          All
+        </button>
+        {personTypes.map((pt) => (
+          <button
+            key={pt.id}
+            className={`excel-sheet-tab px-3 py-2 border-0 bg-transparent ${
+              selectedTypeId === pt.id ? "excel-active-tab" : ""
+            }`}
+            onClick={() => setSelectedTypeId(pt.id)}
+          >
+            {pt.name}
+          </button>
+        ))}
+        {/* Optional “+” to add a new sheet */}
+        <button className="excel-sheet-tab excel-add-tab px-3 py-2 border-0 bg-transparent text-success">
+          <FiPlus />
+        </button>
+      </div>
 
-				<!-- start row -->
-				<div class="row">
-					<div class="col-md-12">
-						<div class="card"> 
-							<div class="card-body">
-								<div class="d-flex align-items-center justify-content-between gap-2 flex-wrap mb-3">
-									<h6 class="mb-1">Invoices</h6>
-									<a href="invoices.html" class="btn btn-primary mb-1">View all Invoices</a>
-								</div>
-								<div class="table-responsive no-filter no-pagination">
-									<table class="table table-nowrap border mb-0">
-										<thead>
-											<tr>
-												<th>ID</th>
-												<th>Customer</th>
-												<th>Created On</th>
-												<th>Amount</th>
-												<th>Paid</th>
-												<th>Payment Mode</th>
-												<th>Due Date</th>
-											</tr>
-										</thead>
-										<tbody>
-											<tr>
-												<td>
-													<a href="invoice-details.html" class="link-default">INV00025</a>
-												</td>
-												<td>
-													<div class="d-flex align-items-center">
-														<a href="customer-details.html" class="avatar avatar-sm rounded-circle me-2 flex-shrink-0">
-															<img src="assets/img/users/user-22.jpg" class="rounded-circle" alt="img">
-														</a>
-														<div>
-															<h6 class="fs-14 fw-medium mb-0"><a href="customer-details.html">Emily Clark</a></h6>
-														</div>
-													</div>
-												</td>
-												<td>22 Feb 2025</td>
-												<td class="text-dark">$10,000</td>
-												<td>$5,000</td>
-												<td class="text-dark">Cash</td>	
-												<td>04 Mar 2025</td>
-											</tr>
-											<tr>
-												<td>
-													<a href="invoice-details.html" class="link-default">INV00024</a>
-												</td>
-												<td>
-													<div class="d-flex align-items-center">
-														<a href="customer-details.html" class="avatar avatar-sm rounded-circle me-2 flex-shrink-0">
-															<img src="assets/img/users/user-07.jpg" class="rounded-circle" alt="img">
-														</a>
-														<div>
-															<h6 class="fs-14 fw-medium mb-0"><a href="customer-details.html">John Carter</a></h6>
-														</div>
-													</div>
-												</td>
-												<td>07 Feb 2025</td>
-												<td class="text-dark">$25,750</td>
-												<td>$5,000</td>
-												<td class="text-dark">Check</td>
-												<td>20 Feb 2025</td>
-											</tr>
-											<tr>
-												<td>
-													<a href="invoice-details.html" class="link-default">INV00023</a>
-												</td>
-												<td>
-													<div class="d-flex align-items-center">
-														<a href="customer-details.html" class="avatar avatar-sm rounded-circle me-2 flex-shrink-0">
-															<img src="assets/img/users/user-16.jpg" class="rounded-circle" alt="img">
-														</a>
-														<div>
-															<h6 class="fs-14 fw-medium mb-0"><a href="customer-details.html">Sophia White</a></h6>
-														</div>
-													</div>
-												</td>
-												<td>09 Dec 2024</td>
-												<td class="text-dark">$1,20,500</td>
-												<td>$60,000</td>
-												<td class="text-dark">Check</td>
-												<td>12 Nov 2024</td>
-											</tr>
-											<tr>
-												<td>
-													<a href="invoice-details.html" class="link-default">INV00022</a>
-												</td>
-												<td>
-													<div class="d-flex align-items-center">
-														<a href="customer-details.html" class="avatar avatar-sm rounded-circle me-2 flex-shrink-0">
-															<img src="assets/img/users/user-08.jpg" class="rounded-circle" alt="img">
-														</a>
-														<div>
-															<h6 class="fs-14 fw-medium mb-0"><a href="customer-details.html">Michael Johnson</a></h6>
-														</div>
-													</div>
-												</td>
-												<td>30 Nov 2024</td>
-												<td class="text-dark">$7,50,300</td>
-												<td>$60,000</td>
-												<td class="text-dark">Check</td>
-												<td>25 Oct 2024</td>
-											</tr>
-											<tr>
-												<td>
-													<a href="invoice-details.html" class="link-default">INV00016</a>
-												</td>
-												<td>
-													<div class="d-flex align-items-center">
-														<a href="customer-details.html" class="avatar avatar-sm rounded-circle me-2 flex-shrink-0">
-															<img src="assets/img/users/user-15.jpg" class="rounded-circle" alt="img">
-														</a>
-														<div>
-															<h6 class="fs-14 fw-medium mb-0"><a href="customer-details.html">Daniel Martinez</a></h6>
-														</div>
-													</div>
-												</td>
-												<td>12 Oct 2024</td>
-												<td class="text-dark">$9,99,999</td>
-												<td>$4,00,000</td>
-												<td class="text-dark">Cash</td>
-												<td>18 Oct 2024</td>
-											</tr>
-											<tr>
-												<td>
-													<a href="invoice-details.html" class="link-default">INV00015</a>
-												</td>
-												<td>
-													<div class="d-flex align-items-center">
-														<a href="customer-details.html" class="avatar avatar-sm rounded-circle me-2 flex-shrink-0">
-															<img src="assets/img/users/user-27.jpg" class="rounded-circle" alt="img">
-														</a>
-														<div>
-															<h6 class="fs-14 fw-medium mb-0"><a href="customer-details.html">Charlotte Brown</a></h6>
-														</div>
-													</div>
-												</td>
-												<td>05 Oct 2024</td>
-												<td class="text-dark">$87,650</td>
-												<td>$40,000</td>
-												<td class="text-dark">Check</td>
-												<td>22 Sep 2024</td>
-											</tr>
-											<tr>
-												<td>
-													<a href="invoice-details.html" class="link-default">INV00014</a>
-												</td>
-												<td>
-													<div class="d-flex align-items-center">
-														<a href="customer-details.html" class="avatar avatar-sm rounded-circle me-2 flex-shrink-0">
-															<img src="assets/img/users/user-14.jpg" class="rounded-circle" alt="img">
-														</a>
-														<div>
-															<h6 class="fs-14 fw-medium mb-0"><a href="customer-details.html">William Parker</a></h6>
-														</div>
-													</div>
-												</td>
-												<td>09 Sep 2024</td>
-												<td class="text-dark">$69,420</td>
-												<td>$30,000</td>
-												<td class="text-dark">Cash</td>
-												<td>15 Sep 2024</td>
-											</tr>
-											<tr>
-												<td>
-													<a href="invoice-details.html" class="link-default">INV00013</a>
-												</td>
-												<td>
-													<div class="d-flex align-items-center">
-														<a href="customer-details.html" class="avatar avatar-sm rounded-circle me-2 flex-shrink-0">
-															<img src="assets/img/users/user-25.jpg" class="rounded-circle" alt="img">
-														</a>
-														<div>
-															<h6 class="fs-14 fw-medium mb-0"><a href="customer-details.html">Mia Thompson</a></h6>
-														</div>
-													</div>
-												</td>
-												<td>02 Sep 2024</td>
-												<td class="text-dark">$33,210</td>
-												<td>$15,000</td>
-												<td class="text-dark">Check</td>
-												<td>20 Aug 2024</td>
-											</tr>
-										</tbody>
-									</table>
-								</div>
-							</div> <!-- end card body -->
-						</div> <!-- end card -->
-					</div> <!-- end col -->
-				</div>
-				<!-- end row -->
+      {/* ---------- Add / Edit Modal ---------- */}
+      <AddModal
+        show={showModal}
+        onHide={() => {
+          setShowModal(false);
+          setEditingPerson(null);
+        }}
+        // editingPerson={editingPerson}
+        // onSuccess={refetch}
+      />
+    </div>
+  );
+};
 
-				<!-- start row -->
-				<div class="row">
-					<div class="col-lg-12 col-xl-4 d-flex">
-						<div class="card flex-fill">
-							<div class="card-body pb-1">
-								<div class="mb-3">
-									<h6 class="mb-1">Recent Transactions</h6>
-								</div>
-								<h6 class="fs-14 fw-semibold mb-3">Today</h6>
-								<div class="d-flex align-items-center justify-content-between mb-3">
-									<div class="d-flex align-items-center">
-										<a href="javascript:void(0);" class="avatar avatar-md flex-shrink-0 me-2">
-											<img src="assets/img/icons/transaction-01.svg" class="rounded-circle" alt="img">
-										</a>
-										<div>
-											<h6 class="fs-14 fw-semibold mb-1"><a href="javascript:void(0);">Andrew James</a></h6>
-											<p class="fs-13"><a href="invoice-details.html" class="link-default">#INV45478</a></p>
-										</div>
-									</div>
-									<div class="text-end">
-										<span class="badge badge-lg badge-soft-success">+ $989.15</span>
-									</div>
-								</div>
-								<div class="d-flex align-items-center justify-content-between mb-3">
-									<div class="d-flex align-items-center">
-										<a href="javascript:void(0);" class="avatar avatar-md flex-shrink-0 me-2">
-											<img src="assets/img/icons/transaction-02.svg" class="rounded-circle" alt="img">
-										</a>
-										<div>
-											<h6 class="fs-14 fw-semibold mb-1"><a href="javascript:void(0);">John Carter</a></h6>
-											<p class="fs-13"><a href="invoice-details.html" class="link-default">#INV45477</a></p>
-										</div>
-									</div>
-									<div class="text-end">
-										<span class="badge badge-lg badge-soft-danger">- $300.12</span>
-									</div>
-								</div>
-								<hr>
-								<h6 class="fs-14 fw-semibold mb-3">Yesterday</h6>
-								<div class="d-flex align-items-center justify-content-between mb-3">
-									<div class="d-flex align-items-center">
-										<a href="javascript:void(0);" class="avatar avatar-md flex-shrink-0 me-2">
-											<img src="assets/img/icons/transaction-02.svg" class="rounded-circle" alt="img">
-										</a>
-										<div>
-											<h6 class="fs-14 fw-semibold mb-1"><a href="javascript:void(0);">Sophia White</a></h6>
-											<p class="fs-13"><a href="invoice-details.html" class="link-default">#INV45476</a></p>
-										</div>
-									</div>
-									<div class="text-end">
-										<span class="badge badge-lg badge-soft-success"> + $669</span>
-									</div>
-								</div>
-								<div class="d-flex align-items-center justify-content-between mb-3">
-									<div class="d-flex align-items-center">
-										<a href="javascript:void(0);" class="avatar avatar-md flex-shrink-0 me-2">
-											<img src="assets/img/icons/transaction-02.svg" class="rounded-circle" alt="img">
-										</a>
-										<div>
-											<h6 class="fs-14 fw-semibold mb-1"><a href="javascript:void(0);">Daniel Martinez</a></h6>
-											<p class="fs-13"><a href="invoice-details.html" class="link-default">#INV45475</a></p>
-										</div>
-									</div>
-									<div class="text-end">
-										<span class="badge badge-lg badge-soft-success"> + $474.22</span>
-									</div>
-								</div>
-								<div class="d-flex align-items-center justify-content-between mb-3">
-									<div class="d-flex align-items-center">
-										<a href="javascript:void(0);" class="avatar avatar-md flex-shrink-0 me-2">
-											<img src="assets/img/icons/transaction-01.svg" class="rounded-circle" alt="img">
-										</a>
-										<div>
-											<h6 class="fs-14 fw-semibold mb-1"><a href="javascript:void(0);">Amelia Robinson</a></h6>
-											<p class="fs-13"><a href="invoice-details.html" class="link-default">#INV45474</a></p>
-										</div>
-									</div>
-									<div class="text-end">
-										<span class="badge badge-lg badge-soft-success"> + $339.79</span>
-									</div>
-								</div>
-							</div> <!-- end card body -->
-						</div> <!-- end card -->
-					</div> <!-- end col -->
-
-					<div class="col-md-6 col-xl-4 d-flex">
-						<div class="card flex-fill">
-							<div class="card-body">
-								<div class="mb-3">
-									<h6 class="mb-1">Quotations</h6>
-								</div>
-								<div class="d-flex align-items-center justify-content-between border-bottom pb-3 mb-3">
-									<div class="d-flex align-items-center">
-										<a href="customer-details.html" class="avatar avatar-lg flex-shrink-0 me-2">
-											<img src="assets/img/users/user-02.jpg" class="rounded-circle" alt="img">
-										</a>
-										<div>
-											<h6 class="fs-14 fw-semibold mb-1"><a href="customer-details.html">Emily Clark</a></h6>
-											<p class="fs-13">QU0014</p>
-										</div>
-									</div>
-									<div class="text-end">
-										<span class="badge badge-sm badge-soft-success d-inline-flex align-items-center mb-1">Accepted<i class="isax isax-tick-circle ms-1"></i></span>
-										<p class="fs-13">25 Mar 2025</p>
-									</div>
-								</div>
-								<div class="d-flex align-items-center justify-content-between border-bottom pb-3 mb-3">
-									<div class="d-flex align-items-center">
-										<a href="customer-details.html" class="avatar avatar-lg flex-shrink-0 me-2">
-											<img src="assets/img/users/user-07.jpg" class="rounded-circle" alt="img">
-										</a>
-										<div>
-											<h6 class="fs-14 fw-semibold mb-1"><a href="customer-details.html">David Anderson</a></h6>
-											<p class="fs-13">QU0147</p>
-										</div>
-									</div>
-									<div class="text-end">
-										<span class="badge badge-sm badge-soft-info d-inline-flex align-items-center mb-1">Sent<i class="isax isax-arrow-right-24 ms-1"></i></span>
-										<p class="fs-13">12 Feb 2025</p>
-									</div>
-								</div>
-								<div class="d-flex align-items-center justify-content-between border-bottom pb-3 mb-3">
-									<div class="d-flex align-items-center">
-										<a href="customer-details.html" class="avatar avatar-lg flex-shrink-0 me-2">
-											<img src="assets/img/users/user-16.jpg" class="rounded-circle" alt="img">
-										</a>
-										<div>
-											<h6 class="fs-14 fw-semibold mb-1"><a href="customer-details.html">Sophia White</a></h6>
-											<p class="fs-13">QU1947</p>
-										</div>
-									</div>
-									<div class="text-end">
-										<span class="badge badge-sm badge-soft-light d-inline-flex align-items-center text-dark mb-1">Expired<i class="isax isax-timer-pause ms-1"></i></span>
-										<p class="fs-13">08 Mar 2025</p>
-									</div>
-								</div>
-								<div class="d-flex align-items-center justify-content-between border-bottom pb-3 mb-3">
-									<div class="d-flex align-items-center">
-										<a href="customer-details.html" class="avatar avatar-lg flex-shrink-0 me-2">
-											<img src="assets/img/users/user-08.jpg" class="rounded-circle" alt="img">
-										</a>
-										<div>
-											<h6 class="fs-14 fw-semibold mb-1"><a href="customer-details.html">Michael Johnson</a></h6>
-											<p class="fs-13">QU2842</p>
-										</div>
-									</div>
-									<div class="text-end">
-										<span class="badge badge-sm badge-soft-danger d-inline-flex align-items-center mb-1">Declined<i class="isax isax-close-circle ms-1"></i></span>
-										<p class="fs-13">31 Jan 2025</p>
-									</div>
-								</div>
-								<div class="d-flex align-items-center justify-content-between">
-									<div class="d-flex align-items-center">
-										<a href="customer-details.html" class="avatar avatar-lg flex-shrink-0 me-2">
-											<img src="assets/img/users/user-22.jpg" class="rounded-circle" alt="img">
-										</a>
-										<div>
-											<h6 class="fs-14 fw-semibold mb-1"><a href="customer-details.html">Emily Clark</a></h6>
-											<p class="fs-13">QU7868</p>
-										</div>
-									</div>
-									<div class="text-end">
-										<span class="badge badge-sm badge-soft-success d-inline-flex align-items-center mb-1">Accepted<i class="isax isax-tick-circle ms-1"></i></span>
-										<p class="fs-13">18 Jan 2025</p>
-									</div>
-								</div>
-							</div> <!-- end card body -->
-						</div> <!-- end card -->
-					</div> <!-- end col -->
-					<div class="col-md-6 col-xl-4 d-flex flex-column">
-						<div class="card d-flex">
-							<div class="card-body flex-fill">
-								<div class="d-flex align-items-center justify-content-between">
-									<div>
-										<p class="mb-1">Total Income on Invoice</p>
-										<h6 class="fs-16 fw-semibold">$98,545</h6>
-									</div>
-									<div>
-										<h6 class="fs-14 fw-semibold mb-1">30.2 <i class="isax isax-arrow-circle-up4 text-success"></i></h6>
-										<p class="fs-13">Vs Last Week</p>
-									</div>
-								</div>
-							</div> <!-- end card body -->
-							<div id="invoice_income"></div>
-						</div> <!-- end card -->
-						<div class="card d-flex">
-							<div class="card-body flex-fill">
-								<h6 class="mb-3">Top Sales Statistics</h6>
-								<div class="d-flex align-items-center justify-content-between flex-wrap gap-1 mb-3">
-									<p class="d-flex align-items-center fs-13 text-dark mb-0"><i class="fa-solid fa-circle fs-8 me-1 text-pink"></i>Dell XPS 13</p>
-									<p class="d-flex align-items-center fs-13 text-dark mb-0"><i class="fa-solid fa-circle fs-8 me-1 text-secondary"></i>Nike T-shirt</p>
-									<p class="d-flex align-items-center fs-13 text-dark mb-0"><i class="fa-solid fa-circle fs-8 me-1 text-success"></i>Apple iPhone 15</p>
-								</div>								
-								<div id="total_sales"></div>
-							</div> <!-- end card body -->
-						</div> <!-- end card -->
-					</div> <!-- end col -->
-				</div>
-				<!-- end row -->
-
-			</div>
-	
-
-  )
+/* ------------------------------------------------------------------ */
+/*  CSS – paste into your global stylesheet or a CSS module          */
+/* ------------------------------------------------------------------ */
+const excelStyles = `
+.excel-worksheet {
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  font-size: 13px;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
 }
 
-export default Dashboard
+/* Toolbar */
+.excel-toolbar {
+  background: #f8f9fa;
+  border-bottom: 1px solid #dee2e6;
+}
+
+/* Grid container */
+.excel-grid-container {
+  flex: 1;
+  overflow: auto;
+}
+
+/* Grid layout */
+.excel-grid {
+  display: grid;
+  grid-template-columns: 50px 1fr;
+  border: 1px solid #dee2e6;
+  background: #fff;
+}
+
+/* Row numbers */
+.excel-row-numbers {
+  background: #f8f9fa;
+  border-right: 1px solid #dee2e6;
+  user-select: none;
+}
+.excel-row-number {
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 500;
+  color: #6c757d;
+  border-bottom: 1px solid #d0d0d0;
+}
+
+/* Table wrapper */
+.excel-table-wrapper {
+  overflow: auto;
+}
+.excel-table {
+  width: 100%;
+  border-collapse: collapse;
+  table-layout: fixed;
+}
+
+/* Header cells */
+.excel-header-cell {
+  background: #f1f3f5;
+  border-bottom: 1px solid #dee2e6;
+  border-right: 1px solid #dee2e6;
+  position: relative;
+  height: 36px;
+  text-align: center;
+  font-weight: 600;
+}
+.excel-corner-cell {
+  background: #e9ecef;
+  border-right: 1px solid #dee2e6;
+  border-bottom: 1px solid #dee2e6;
+}
+.excel-col-letter {
+  font-weight: 600;
+  color: #495057;
+}
+.excel-sort-icon {
+  font-size: 12px;
+}
+
+/* Resize handle */
+.excel-resize-handle {
+  position: absolute;
+  right: 0;
+  top: 0;
+  width: 5px;
+  height: 100%;
+  cursor: col-resize;
+  background: transparent;
+}
+.excel-resize-handle:hover {
+  background: rgba(13, 110, 253, 0.3);
+}
+
+/* Data cells */
+.excel-data-cell {
+  border-bottom: 1px solid #dee2e6;
+  border-right: 1px solid #dee2e6;
+  height: 32px;
+  padding: 0 8px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.excel-select-cell {
+  text-align: center;
+}
+
+/* Row selection & hover */
+.excel-selected-row {
+  background-color: #e3f2fd !important;
+}
+.excel-table tr:hover {
+  background-color: #f5f5f5;
+}
+
+/* Bottom sheet tabs */
+.excel-sheet-tabs {
+  border-top: 1px solid #dee2e6;
+}
+.excel-sheet-tab {
+  font-weight: 500;
+  color: #495057;
+  border-bottom: 2px solid transparent;
+  transition: all 0.2s;
+}
+.excel-active-tab {
+  color: #0d6efd !important;
+  border-bottom-color: #0d6efd !important;
+}
+.excel-add-tab {
+  color: #28a745;
+}
+
+/* Pagination */
+.excel-pagination {
+  background: #fff;
+  border-top: 1px solid #dee2e6;
+}
+
+/* Badges */
+.badge {
+  font-size: 11px;
+}
+`;
+
+// Inject CSS once (client-side only)
+if (typeof document !== "undefined") {
+  const styleSheet = document.createElement("style");
+  styleSheet.textContent = excelStyles;
+  document.head.appendChild(styleSheet);
+}
+
+export default Table;
