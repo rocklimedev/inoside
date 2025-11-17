@@ -1,592 +1,587 @@
-// src/components/ExcelWorksheet.jsx
-import React, { useMemo, useState, useEffect } from "react";
+import React, { useMemo, useState } from "react";
 import {
   useReactTable,
   getCoreRowModel,
   getSortedRowModel,
   getFilteredRowModel,
-  getPaginationRowModel,
   flexRender,
+  createColumnHelper,
 } from "@tanstack/react-table";
 import { saveAs } from "file-saver";
 import * as XLSX from "xlsx";
+import { format } from "date-fns";
 import {
   FiPlus,
   FiDownload,
-  FiRefreshCw,
   FiSearch,
-  FiChevronUp,
-  FiChevronDown,
-  FiMoreVertical,
+  FiGrid,
+  FiList,
   FiEdit2,
   FiTrash2,
+  FiPhone,
+  FiMapPin,
+  FiBriefcase,
+  FiTag,
+  FiRefreshCw,
+  FiChevronLeft,
+  FiChevronRight,
+  FiChevronsLeft,
+  FiChevronsRight,
 } from "react-icons/fi";
-import PageHeader from "../Common/PageHeader";
+
 import AddModal from "../Tabulars/AddModal";
 import {
   useGetPersonsQuery,
   useDeletePersonMutation,
   useGetPersonTypesQuery,
 } from "../../api/personApi";
+import { useGetBrandCompaniesQuery } from "../../api/brandCompanyApi";
 
-/* ------------------------------------------------------------------ */
-/*  Excel-style Worksheet (pure JSX)                                 */
-/* ------------------------------------------------------------------ */
-const Table = () => {
-  /* -------------------------- RTK Query --------------------------- */
-  const {
-    data: persons = [],
-    isLoading,
-    isFetching,
-    refetch,
-  } = useGetPersonsQuery(undefined);
-  const { data: personTypes = [] } = useGetPersonTypesQuery(undefined);
-  const [deletePerson, { isLoading: isDeleting }] = useDeletePersonMutation();
+const columnHelper = createColumnHelper();
 
-  /* --------------------------- UI State --------------------------- */
-  const [selectedTypeId, setSelectedTypeId] = useState(null);
-  const [showModal, setShowModal] = useState(false);
-  const [editingPerson, setEditingPerson] = useState(null);
-  const [sorting, setSorting] = useState([]);
-  const [globalFilter, setGlobalFilter] = useState("");
-
-  /* --------------------- Filter by Sheet (PersonType) ------------- */
-  const filteredData = useMemo(() => {
-    if (!selectedTypeId) return persons;
-    return persons.filter((p) => p.person_type_id === selectedTypeId);
-  }, [persons, selectedTypeId]);
-
-  /* --------------------------- Columns ---------------------------- */
-  const columns = useMemo(
-    () => [
-      {
-        id: "select",
-        header: () => null,
-        cell: ({ row }) => (
-          <input
-            type="checkbox"
-            checked={row.getIsSelected()}
-            onChange={row.getToggleSelectedHandler()}
-          />
-        ),
-        enableSorting: false,
-        enableColumnFilter: false,
-        size: 40,
-        minSize: 40,
-        maxSize: 40,
-      },
-      {
-        accessorKey: "id",
-        header: "ID",
-        cell: (info) => `PUR${String(info.getValue()).padStart(5, "0")}`,
-        size: 90,
-      },
-      {
-        accessorFn: (row) =>
-          row.created_at
-            ? new Date(row.created_at).toLocaleDateString("en-GB")
-            : "—",
-        id: "date",
-        header: "Date",
-        size: 110,
-      },
-      {
-        accessorKey: "name",
-        header: "Vendor",
-        cell: (info) => {
-          const name = info.getValue();
-          const email = info.row.original.email ?? "";
-          return (
+// Person Card Component (Bootstrap Card + Inline CSS)
+const PersonCard = ({ person, onEdit, onDelete, isDeleting }) => {
+  return (
+    <div className="col-12 col-md-6 col-lg-4 col-xl-3 mb-4">
+      <div
+        className="card border-0 shadow-sm h-100"
+        style={{
+          borderRadius: "16px",
+          overflow: "hidden",
+          transition: "all 0.3s",
+        }}
+        onMouseEnter={(e) =>
+          (e.currentTarget.style.boxShadow = "0 10px 30px rgba(0,0,0,0.15)")
+        }
+        onMouseLeave={(e) =>
+          (e.currentTarget.style.boxShadow = "0 4px 15px rgba(0,0,0,0.08)")
+        }
+      >
+        <div className="card-body p-4">
+          <div className="d-flex justify-content-between align-items-start mb-3">
             <div className="d-flex align-items-center">
               <img
                 src={`https://ui-avatars.com/api/?name=${encodeURIComponent(
-                  name
-                )}&background=random`}
-                alt=""
-                className="avatar avatar-xs rounded-circle me-2"
+                  person.name
+                )}&background=6366f1&color=fff&bold=true&rounded=true&size=80`}
+                alt={person.name}
+                className="rounded-circle me-3"
+                style={{
+                  width: "60px",
+                  height: "60px",
+                  ring: "4px solid #e0e7ff",
+                }}
               />
               <div>
-                <div className="fw-medium">{name}</div>
-                <small className="text-muted">{email}</small>
-              </div>
-            </div>
-          );
-        },
-        size: 240,
-      },
-      {
-        accessorKey: "amount",
-        header: "Amount",
-        cell: () => "$10,000", // replace with real field
-        size: 110,
-      },
-      {
-        accessorKey: "payment_mode",
-        header: "Payment Mode",
-        cell: () => "Cash",
-        size: 130,
-      },
-      {
-        accessorKey: "status",
-        header: "Status",
-        cell: () => (
-          <span className="badge bg-success-subtle text-success badge-sm">
-            Paid
-          </span>
-        ),
-        size: 100,
-      },
-      {
-        id: "actions",
-        header: () => null,
-        cell: ({ row }) => {
-          const person = row.original;
-          return (
-            <div className="dropdown">
-              <button
-                className="btn btn-sm btn-link text-muted p-0"
-                data-bs-toggle="dropdown"
-              >
-                <FiMoreVertical />
-              </button>
-              <ul className="dropdown-menu dropdown-menu-end">
-                <li>
-                  <button
-                    className="dropdown-item d-flex align-items-center"
-                    onClick={() => {
-                      setEditingPerson(person);
-                      setShowModal(true);
-                    }}
-                  >
-                    <FiEdit2 className="me-2" /> Edit
-                  </button>
-                </li>
-                <li>
-                  <button
-                    className="dropdown-item d-flex align-items-center text-danger"
-                    onClick={() => handleDelete(person.id)}
-                    disabled={isDeleting}
-                  >
-                    <FiTrash2 className="me-2" />
-                    {isDeleting ? "Deleting…" : "Delete"}
-                  </button>
-                </li>
-              </ul>
-            </div>
-          );
-        },
-        enableSorting: false,
-        enableColumnFilter: false,
-        size: 60,
-      },
-    ],
-    [isDeleting]
-  );
-
-  /* -------------------------- Table Instance ---------------------- */
-  const table = useReactTable({
-    data: filteredData,
-    columns,
-    state: {
-      sorting,
-      globalFilter,
-    },
-    onSortingChange: setSorting,
-    onGlobalFilterChange: setGlobalFilter,
-    getCoreRowModel: getCoreRowModel(),
-    getSortedRowModel: getSortedRowModel(),
-    getFilteredRowModel: getFilteredRowModel(),
-    getPaginationRowModel: getPaginationRowModel(),
-    columnResizeMode: "onChange",
-    enableColumnResizing: true,
-    enableRowSelection: true,
-    enableMultiRowSelection: true,
-  });
-
-  /* ----------------------------- Helpers -------------------------- */
-  const handleDelete = async (id) => {
-    if (!window.confirm("Delete this row?")) return;
-    try {
-      await deletePerson(id).unwrap();
-    } catch {
-      alert("Delete failed");
-    }
-  };
-
-  const exportToExcel = () => {
-    const rows = table.getRowModel().rows.map((r) => r.original);
-    const ws = XLSX.utils.json_to_sheet(rows);
-    const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, "Data");
-    const buffer = XLSX.write(wb, { bookType: "xlsx", type: "array" });
-    const blob = new Blob([buffer], { type: "application/octet-stream" });
-    saveAs(blob, `worksheet_${new Date().toISOString().slice(0, 10)}.xlsx`);
-  };
-
-  const openAddModal = () => {
-    setEditingPerson(null);
-    setShowModal(true);
-  };
-
-  /* --------------------------- Render ---------------------------- */
-  return (
-    <div className="excel-worksheet">
-      {/* ---------- Toolbar (top) ---------- */}
-      <div className="excel-toolbar d-flex align-items-center justify-content-between flex-wrap gap-2 p-2 border-bottom bg-light">
-        <div className="d-flex align-items-center gap-2">
-          <button className="btn btn-sm btn-success" onClick={openAddModal}>
-            <FiPlus /> Add Row
-          </button>
-          <button
-            className="btn btn-sm btn-outline-secondary"
-            onClick={exportToExcel}
-          >
-            <FiDownload /> Export
-          </button>
-          <button
-            className="btn btn-sm btn-outline-secondary"
-            onClick={refetch}
-            disabled={isFetching}
-          >
-            <FiRefreshCw /> {isFetching ? "Refreshing…" : "Refresh"}
-          </button>
-        </div>
-
-        <div className="d-flex align-items-center gap-2">
-          <div className="position-relative">
-            <FiSearch className="position-absolute top-50 start-2 translate-middle-y text-muted" />
-            <input
-              type="text"
-              className="form-control form-control-sm ps-5"
-              placeholder="Search…"
-              value={globalFilter ?? ""}
-              onChange={(e) => setGlobalFilter(e.target.value)}
-              style={{ width: "200px" }}
-            />
-          </div>
-        </div>
-      </div>
-
-      {/* ---------- Main Grid ---------- */}
-      <div className="excel-grid-container position-relative">
-        {isLoading ? (
-          <div className="text-center py-5">
-            <div className="spinner-border text-primary" role="status">
-              <span className="visually-hidden">Loading…</span>
-            </div>
-          </div>
-        ) : filteredData.length === 0 ? (
-          <div className="text-center py-5 text-muted">No data</div>
-        ) : (
-          <div className="excel-grid">
-            {/* ---------- Pagination (just below tabs) ---------- */}
-            <div className="excel-pagination d-flex justify-content-between align-items-center mt-2 px-2 bg-white border-top">
-              <span className="text-muted small">
-                Rows {table.getState().pagination.pageIndex * 10 + 1} -{" "}
-                {Math.min(
-                  (table.getState().pagination.pageIndex + 1) * 10,
-                  filteredData.length
-                )}{" "}
-                of {filteredData.length}
-              </span>
-              <div className="pagination">
-                <button
-                  className="btn btn-sm btn-outline-secondary me-1"
-                  onClick={() => table.previousPage()}
-                  disabled={!table.getCanPreviousPage()}
-                >
-                  Prev
-                </button>
-                <button
-                  className="btn btn-sm btn-outline-secondary"
-                  onClick={() => table.nextPage()}
-                  disabled={!table.getCanNextPage()}
-                >
-                  Next
-                </button>
-              </div>
-            </div>
-
-            {/* Row Numbers */}
-            <div className="excel-row-numbers">
-              {table.getRowModel().rows.map((row, idx) => (
-                <div key={row.id} className="excel-row-number">
-                  {idx + 1}
+                <h5 className="mb-1 fw-bold text-dark">{person.name}</h5>
+                <div className="d-flex align-items-center text-muted small">
+                  <FiPhone size={14} className="me-1" />
+                  <span>{person.mobile_number}</span>
+                  {person.optional_mobile && (
+                    <>
+                      <span className="mx-1">•</span>
+                      <span>{person.optional_mobile}</span>
+                    </>
+                  )}
                 </div>
-              ))}
+              </div>
             </div>
 
-            {/* Table */}
-            <div className="excel-table-wrapper">
-              <table className="excel-table">
-                <thead>
-                  {table.getHeaderGroups().map((headerGroup) => (
-                    <tr key={headerGroup.id}>
-                      {/* Corner cell (A1 style) */}
-                      <th className="excel-corner-cell"></th>
-
-                      {headerGroup.headers.map((header, i) => (
-                        <th
-                          key={header.id}
-                          style={{ width: header.getSize() }}
-                          className="excel-header-cell"
-                        >
-                          <div
-                            className="d-flex align-items-center justify-content-center gap-1 cursor-pointer select-none"
-                            onClick={header.column.getToggleSortingHandler()}
-                          >
-                            {/* Column Letter (A, B, C…) */}
-                            <span className="excel-col-letter">
-                              {String.fromCharCode(65 + i)}
-                            </span>
-
-                            {/* Sort Icons */}
-                            {header.column.getIsSorted() === "asc" && (
-                              <FiChevronUp className="excel-sort-icon" />
-                            )}
-                            {header.column.getIsSorted() === "desc" && (
-                              <FiChevronDown className="excel-sort-icon" />
-                            )}
-                          </div>
-
-                          {/* Resize Handle */}
-                          {header.column.getCanResize() && (
-                            <div
-                              onMouseDown={header.getResizeHandler()}
-                              onTouchStart={header.getResizeHandler()}
-                              className="excel-resize-handle"
-                            />
-                          )}
-                        </th>
-                      ))}
-                    </tr>
-                  ))}
-                </thead>
-                <tbody>
-                  {table.getRowModel().rows.map((row) => (
-                    <tr
-                      key={row.id}
-                      className={
-                        row.getIsSelected() ? "excel-selected-row" : ""
-                      }
-                    >
-                      <td className="excel-select-cell">
-                        <input
-                          type="checkbox"
-                          checked={row.getIsSelected()}
-                          onChange={row.getToggleSelectedHandler()}
-                        />
-                      </td>
-                      {row.getVisibleCells().map((cell) => (
-                        <td key={cell.id} className="excel-data-cell">
-                          {flexRender(
-                            cell.column.columnDef.cell,
-                            cell.getContext()
-                          )}
-                        </td>
-                      ))}
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+            <div className="d-flex gap-2">
+              <button
+                onClick={() => onEdit(person)}
+                className="btn btn-sm btn-outline-primary rounded-circle"
+                style={{ width: "38px", height: "38px" }}
+                title="Edit"
+              >
+                <FiEdit2 size={16} />
+              </button>
+              <button
+                onClick={() => onDelete(person.id)}
+                disabled={isDeleting}
+                className="btn btn-sm btn-outline-danger rounded-circle"
+                style={{ width: "38px", height: "38px" }}
+                title="Delete"
+              >
+                <FiTrash2 size={16} />
+              </button>
             </div>
           </div>
-        )}
-      </div>
 
-      {/* ---------- Sheet Tabs (bottom) ---------- */}
-      <div className="excel-sheet-tabs d-flex overflow-auto border-top bg-light">
-        <button
-          className={`excel-sheet-tab px-3 py-2 border-0 bg-transparent ${
-            selectedTypeId === null ? "excel-active-tab" : ""
-          }`}
-          onClick={() => setSelectedTypeId(null)}
-        >
-          All
-        </button>
-        {personTypes.map((pt) => (
-          <button
-            key={pt.id}
-            className={`excel-sheet-tab px-3 py-2 border-0 bg-transparent ${
-              selectedTypeId === pt.id ? "excel-active-tab" : ""
-            }`}
-            onClick={() => setSelectedTypeId(pt.id)}
-          >
-            {pt.name}
-          </button>
-        ))}
-        {/* Optional “+” to add a new sheet */}
-        <button className="excel-sheet-tab excel-add-tab px-3 py-2 border-0 bg-transparent text-success">
-          <FiPlus />
-        </button>
-      </div>
+          <div className="mt-3">
+            {person.type?.name && (
+              <span
+                className="badge rounded-pill me-2"
+                style={{ backgroundColor: "#eef2ff", color: "#4f46e5" }}
+              >
+                <FiTag size={12} className="me-1" />
+                {person.type.name}
+              </span>
+            )}
+            {person.brandCompany?.name && (
+              <span
+                className="badge rounded-pill"
+                style={{ backgroundColor: "#ecfdf5", color: "#059669" }}
+              >
+                <FiBriefcase size={12} className="me-1" />
+                {person.brandCompany.name}
+              </span>
+            )}
+          </div>
 
-      {/* ---------- Add / Edit Modal ---------- */}
-      <AddModal
-        show={showModal}
-        onHide={() => {
-          setShowModal(false);
-          setEditingPerson(null);
-        }}
-        // editingPerson={editingPerson}
-        // onSuccess={refetch}
-      />
+          {(person.company_name || person.position) && (
+            <p className="text-muted small mt-3 mb-2">
+              <strong>{person.company_name}</strong>
+              {person.position && ` • ${person.position}`}
+            </p>
+          )}
+
+          {person.address?.city && (
+            <p className="text-muted small d-flex align-items-center">
+              <FiMapPin size={14} className="me-1" />
+              {person.address.city},{" "}
+              {person.address.state || person.address.country}
+            </p>
+          )}
+
+          <div className="mt-4 pt-3 border-top text-muted small">
+            Added{" "}
+            {person.created_at
+              ? format(new Date(person.created_at), "dd MMM yyyy")
+              : "Recently"}
+          </div>
+        </div>
+      </div>
     </div>
   );
 };
 
-/* ------------------------------------------------------------------ */
-/*  CSS – paste into your global stylesheet or a CSS module          */
-/* ------------------------------------------------------------------ */
-const excelStyles = `
-.excel-worksheet {
-  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-  font-size: 13px;
-  display: flex;
-  flex-direction: column;
-  height: 100%;
-}
+const Table = () => {
+  const {
+    data: persons = [],
+    isLoading,
+    refetch,
+    isFetching,
+  } = useGetPersonsQuery();
+  const { data: personTypes = [] } = useGetPersonTypesQuery();
+  const { data: brandCompanies = [] } = useGetBrandCompaniesQuery();
+  const [deletePerson, { isLoading: isDeleting }] = useDeletePersonMutation();
 
-/* Toolbar */
-.excel-toolbar {
-  background: #f8f9fa;
-  border-bottom: 1px solid #dee2e6;
-}
+  const [globalFilter, setGlobalFilter] = useState("");
+  const [selectedType, setSelectedType] = useState("all");
+  const [viewMode, setViewMode] = useState("card"); // 'card' or 'table'
+  const [pageIndex, setPageIndex] = useState(0);
+  const [pageSize, setPageSize] = useState(20);
+  const [showModal, setShowModal] = useState(false);
+  const [editingPerson, setEditingPerson] = useState(null);
 
-/* Grid container */
-.excel-grid-container {
-  flex: 1;
-  overflow: auto;
-}
+  const filteredData = useMemo(() => {
+    let data = persons;
+    if (selectedType !== "all") {
+      data = data.filter((p) => String(p.type_id) === selectedType);
+    }
+    return data;
+  }, [persons, selectedType]);
 
-/* Grid layout */
-.excel-grid {
-  display: grid;
-  grid-template-columns: 50px 1fr;
-  border: 1px solid #dee2e6;
-  background: #fff;
-}
+  const columns = useMemo(
+    () => [
+      columnHelper.accessor("name", {
+        header: "Name",
+        cell: (info) => (
+          <div className="d-flex align-items-center">
+            <img
+              src={`https://ui-avatars.com/api/?name=${encodeURIComponent(
+                info.getValue()
+              )}&background=6366f1&color=fff&size=40&rounded=true`}
+              alt=""
+              className="rounded-circle me-3"
+              style={{ width: "40px", height: "40px" }}
+            />
+            <div>
+              <div className="fw-semibold">{info.getValue()}</div>
+              <small className="text-muted">
+                {info.row.original.mobile_number}
+              </small>
+            </div>
+          </div>
+        ),
+      }),
+      columnHelper.accessor("type.name", {
+        header: "Type",
+        cell: (info) => (
+          <span
+            className="badge rounded-pill"
+            style={{ backgroundColor: "#eef2ff", color: "#4f46e5" }}
+          >
+            {info.getValue() || "—"}
+          </span>
+        ),
+      }),
+      columnHelper.accessor("brandCompany.name", {
+        header: "Brand",
+        cell: (info) => (
+          <span
+            className="badge rounded-pill"
+            style={{ backgroundColor: "#ecfdf5", color: "#059669" }}
+          >
+            {info.getValue() || "—"}
+          </span>
+        ),
+      }),
+      columnHelper.accessor("company_name", { header: "Company" }),
+      columnHelper.accessor("position", { header: "Position" }),
+      columnHelper.accessor("created_at", {
+        header: "Added On",
+        cell: (info) =>
+          info.getValue()
+            ? format(new Date(info.getValue()), "dd MMM yyyy")
+            : "—",
+      }),
+      columnHelper.display({
+        id: "actions",
+        header: "Actions",
+        cell: ({ row }) => (
+          <div className="btn-group" role="group">
+            <button
+              onClick={() => {
+                setEditingPerson(row.original);
+                setShowModal(true);
+              }}
+              className="btn btn-sm btn-outline-primary"
+            >
+              <FiEdit2 size={14} />
+            </button>
+            <button
+              onClick={() => handleDelete(row.original.id)}
+              disabled={isDeleting}
+              className="btn btn-sm btn-outline-danger"
+            >
+              <FiTrash2 size={14} />
+            </button>
+          </div>
+        ),
+      }),
+    ],
+    [isDeleting]
+  );
 
-/* Row numbers */
-.excel-row-numbers {
-  background: #f8f9fa;
-  border-right: 1px solid #dee2e6;
-  user-select: none;
-}
-.excel-row-number {
-  height: 32px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-weight: 500;
-  color: #6c757d;
-  border-bottom: 1px solid #d0d0d0;
-}
+  const table = useReactTable({
+    data: filteredData,
+    columns,
+    getCoreRowModel: getCoreRowModel(),
+    getSortedRowModel: getSortedRowModel(),
+    getFilteredRowModel: getFilteredRowModel(),
+    state: { globalFilter },
+    onGlobalFilterChange: setGlobalFilter,
+  });
 
-/* Table wrapper */
-.excel-table-wrapper {
-  overflow: auto;
-}
-.excel-table {
-  width: 100%;
-  border-collapse: collapse;
-  table-layout: fixed;
-}
+  const handleDelete = async (id) => {
+    if (!window.confirm("Delete this person permanently?")) return;
+    try {
+      await deletePerson(id).unwrap();
+      refetch();
+    } catch {
+      alert("Failed to delete");
+    }
+  };
 
-/* Header cells */
-.excel-header-cell {
-  background: #f1f3f5;
-  border-bottom: 1px solid #dee2e6;
-  border-right: 1px solid #dee2e6;
-  position: relative;
-  height: 36px;
-  text-align: center;
-  font-weight: 600;
-}
-.excel-corner-cell {
-  background: #e9ecef;
-  border-right: 1px solid #dee2e6;
-  border-bottom: 1px solid #dee2e6;
-}
-.excel-col-letter {
-  font-weight: 600;
-  color: #495057;
-}
-.excel-sort-icon {
-  font-size: 12px;
-}
+  const exportToExcel = () => {
+    const data = filteredData.map((p) => ({
+      Name: p.name,
+      Mobile: p.mobile_number,
+      "Alt Mobile": p.optional_mobile || "",
+      Type: p.type?.name || "",
+      Brand: p.brandCompany?.name || "",
+      Company: p.company_name || "",
+      Position: p.position || "",
+      City: p.address?.city || "",
+      "Added On": p.created_at
+        ? format(new Date(p.created_at), "dd-MM-yyyy")
+        : "",
+    }));
 
-/* Resize handle */
-.excel-resize-handle {
-  position: absolute;
-  right: 0;
-  top: 0;
-  width: 5px;
-  height: 100%;
-  cursor: col-resize;
-  background: transparent;
-}
-.excel-resize-handle:hover {
-  background: rgba(13, 110, 253, 0.3);
-}
+    const ws = XLSX.utils.json_to_sheet(data);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "Directory");
+    const excelBuffer = XLSX.write(wb, { bookType: "xlsx", type: "array" });
+    const blob = new Blob([excelBuffer], { type: "application/octet-stream" });
+    saveAs(blob, `Directory_${format(new Date(), "yyyy-MM-dd")}.xlsx`);
+  };
 
-/* Data cells */
-.excel-data-cell {
-  border-bottom: 1px solid #dee2e6;
-  border-right: 1px solid #dee2e6;
-  height: 32px;
-  padding: 0 8px;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-.excel-select-cell {
-  text-align: center;
-}
+  if (isLoading) {
+    return (
+      <div
+        className="d-flex justify-content-center align-items-center"
+        style={{ height: "80vh" }}
+      >
+        <div
+          className="spinner-border text-primary"
+          style={{ width: "4rem", height: "4rem" }}
+          role="status"
+        >
+          <span className="visually-hidden">Loading...</span>
+        </div>
+      </div>
+    );
+  }
 
-/* Row selection & hover */
-.excel-selected-row {
-  background-color: #e3f2fd !important;
-}
-.excel-table tr:hover {
-  background-color: #f5f5f5;
-}
+  const paginatedData = filteredData.slice(
+    pageIndex * pageSize,
+    (pageIndex + 1) * pageSize
+  );
+  const totalPages = Math.ceil(filteredData.length / pageSize);
 
-/* Bottom sheet tabs */
-.excel-sheet-tabs {
-  border-top: 1px solid #dee2e6;
-}
-.excel-sheet-tab {
-  font-weight: 500;
-  color: #495057;
-  border-bottom: 2px solid transparent;
-  transition: all 0.2s;
-}
-.excel-active-tab {
-  color: #0d6efd !important;
-  border-bottom-color: #0d6efd !important;
-}
-.excel-add-tab {
-  color: #28a745;
-}
+  return (
+    <div
+      className="container-fluid py-4"
+      style={{ backgroundColor: "#f8fafc" }}
+    >
+      <div className="row">
+        <div className="col-12">
+          {/* Header */}
+          <div className="d-flex flex-column flex-lg-row justify-content-between align-items-start align-items-lg-center mb-4 gap-3">
+            <div>
+              <h2 className="fw-bold text-dark mb-1">Persons Directory</h2>
+              <p className="text-muted">
+                {filteredData.length.toLocaleString()} contact
+                {filteredData.length !== 1 ? "s" : ""}
+              </p>
+            </div>
 
-/* Pagination */
-.excel-pagination {
-  background: #fff;
-  border-top: 1px solid #dee2e6;
-}
+            <div className="d-flex flex-wrap gap-2">
+              <button
+                onClick={() =>
+                  setViewMode(viewMode === "card" ? "table" : "card")
+                }
+                className="btn btn-outline-secondary"
+              >
+                {viewMode === "card" ? (
+                  <FiList size={20} />
+                ) : (
+                  <FiGrid size={20} />
+                )}
+              </button>
 
-/* Badges */
-.badge {
-  font-size: 11px;
-}
-`;
+              <select
+                value={selectedType}
+                onChange={(e) => setSelectedType(e.target.value)}
+                className="form-select"
+                style={{ width: "auto" }}
+              >
+                <option value="all">All Types</option>
+                {personTypes.map((t) => (
+                  <option key={t.id} value={t.id}>
+                    {t.name}
+                  </option>
+                ))}
+              </select>
 
-// Inject CSS once (client-side only)
-if (typeof document !== "undefined") {
-  const styleSheet = document.createElement("style");
-  styleSheet.textContent = excelStyles;
-  document.head.appendChild(styleSheet);
-}
+              <button
+                onClick={() => {
+                  setEditingPerson(null);
+                  setShowModal(true);
+                }}
+                className="btn btn-primary d-flex align-items-center gap-2"
+              >
+                <FiPlus size={20} /> Add Person
+              </button>
+            </div>
+          </div>
+
+          {/* Search & Actions */}
+          <div className="row mb-4 g-3">
+            <div className="col-lg-8">
+              <div className="input-group">
+                <span className="input-group-text bg-white border-end-0">
+                  <FiSearch />
+                </span>
+                <input
+                  type="text"
+                  className="form-control border-start-0"
+                  placeholder="Search by name, mobile, company..."
+                  value={globalFilter}
+                  onChange={(e) => setGlobalFilter(e.target.value)}
+                  style={{ height: "50px" }}
+                />
+              </div>
+            </div>
+            <div className="col-lg-4 d-flex gap-2">
+              <button
+                onClick={exportToExcel}
+                className="btn btn-success d-flex align-items-center gap-2"
+              >
+                <FiDownload /> Export
+              </button>
+              <button
+                onClick={refetch}
+                disabled={isFetching}
+                className="btn btn-outline-secondary"
+              >
+                <FiRefreshCw
+                  className={
+                    isFetching ? "spinner-border spinner-border-sm" : ""
+                  }
+                />
+              </button>
+            </div>
+          </div>
+
+          {/* Content */}
+          {/* Content */}
+          {filteredData.length === 0 ? (
+            <div className="text-center py-5">
+              <div
+                className="bg-light rounded-circle d-inline-flex align-items-center justify-content-center mb-4"
+                style={{ width: "100px", height: "100px" }}
+              >
+                <FiSearch size={50} className="text-muted" />
+              </div>
+              <h4>No contacts found</h4>
+              <p className="text-muted">
+                Try adjusting your filters or add a new person.
+              </p>
+            </div>
+          ) : (
+            <>
+              {/* Card or Table View */}
+              {viewMode === "card" ? (
+                <div className="row">
+                  {paginatedData.map((person) => (
+                    <PersonCard
+                      key={person.id}
+                      person={person}
+                      onEdit={() => {
+                        setEditingPerson(person);
+                        setShowModal(true);
+                      }}
+                      onDelete={handleDelete}
+                      isDeleting={isDeleting}
+                    />
+                  ))}
+                </div>
+              ) : (
+                /* Table View */
+                <div className="card border-0 shadow-sm">
+                  <div className="table-responsive">
+                    <table className="table table-hover align-middle mb-0">
+                      <thead className="table-primary">
+                        <tr>
+                          {table.getHeaderGroups()[0].headers.map((header) => (
+                            <th key={header.id} className="fw-semibold">
+                              {flexRender(
+                                header.column.columnDef.header,
+                                header.getContext()
+                              )}
+                            </th>
+                          ))}
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {table
+                          .getRowModel()
+                          .rows.slice(
+                            pageIndex * pageSize,
+                            (pageIndex + 1) * pageSize
+                          )
+                          .map((row) => (
+                            <tr key={row.id}>
+                              {row.getVisibleCells().map((cell) => (
+                                <td key={cell.id}>
+                                  {flexRender(
+                                    cell.column.columnDef.cell,
+                                    cell.getContext()
+                                  )}
+                                </td>
+                              ))}
+                            </tr>
+                          ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              )}
+
+              {/* Shared Pagination – Now visible in BOTH views */}
+              {totalPages > 1 && (
+                <div className="mt-4 d-flex justify-content-between align-items-center flex-wrap gap-3">
+                  <div className="text-muted small">
+                    Showing {pageIndex * pageSize + 1} to{" "}
+                    {Math.min((pageIndex + 1) * pageSize, filteredData.length)}{" "}
+                    of {filteredData.length} contacts
+                  </div>
+
+                  <div className="btn-group">
+                    <button
+                      className="btn btn-outline-primary"
+                      onClick={() => setPageIndex(0)}
+                      disabled={pageIndex === 0}
+                    >
+                      <FiChevronsLeft />
+                    </button>
+                    <button
+                      className="btn btn-outline-primary"
+                      onClick={() => setPageIndex(Math.max(0, pageIndex - 1))}
+                      disabled={pageIndex === 0}
+                    >
+                      <FiChevronLeft />
+                    </button>
+                    <button className="btn btn-primary" disabled>
+                      Page {pageIndex + 1} of {totalPages}
+                    </button>
+                    <button
+                      className="btn btn-outline-primary"
+                      onClick={() =>
+                        setPageIndex(Math.min(totalPages - 1, pageIndex + 1))
+                      }
+                      disabled={pageIndex >= totalPages - 1}
+                    >
+                      <FiChevronRight />
+                    </button>
+                    <button
+                      className="btn btn-outline-primary"
+                      onClick={() => setPageIndex(totalPages - 1)}
+                      disabled={pageIndex >= totalPages - 1}
+                    >
+                      <FiChevronsRight />
+                    </button>
+                  </div>
+
+                  {/* Optional: Page Size Selector */}
+                  <select
+                    className="form-select"
+                    style={{ width: "auto" }}
+                    value={pageSize}
+                    onChange={(e) => {
+                      setPageSize(Number(e.target.value));
+                      setPageIndex(0);
+                    }}
+                  >
+                    {[10, 20, 30, 50, 100].map((size) => (
+                      <option key={size} value={size}>
+                        Show {size}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              )}
+            </>
+          )}
+          {/* Modal */}
+          <AddModal
+            show={showModal}
+            onHide={() => {
+              setShowModal(false);
+              setEditingPerson(null);
+            }}
+            editingPerson={editingPerson}
+            personTypes={personTypes}
+            brandCompanies={brandCompanies}
+            onSuccess={refetch}
+          />
+        </div>
+      </div>
+    </div>
+  );
+};
 
 export default Table;

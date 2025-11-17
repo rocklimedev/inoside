@@ -1,0 +1,171 @@
+[
+  {
+    "id": "c86b9b22-3bd4-432a-a602-61db1c446226",
+    "name": "CIVIL"
+  },
+  {
+    "id": "583a6e61-9800-451c-8eee-3cd442d184b1",
+    "name": "Metal Works"
+  },
+  {
+    "id": "14b62cc5-6ef3-4572-a324-1b6f2b4d0b55",
+    "name": "Glass Works"
+  },
+  {
+    "id": "474125d8-f6e8-40ff-b201-8a34edc1d9ff",
+    "name": "FURNITURE & WOOD WORK"
+  },
+  {
+    "id": "4705566e-b4fa-4e1b-a028-38ba68543696",
+    "name": "STONE WORKS"
+  },
+  {
+    "id": "543c31af-bef5-4813-9de3-91a8a42c445c",
+    "name": "PAINTS & FINISHES"
+  },
+  {
+    "id": "d499fff2-92ae-42d6-846d-a184083ab00f",
+    "name": "ELECTRICAL"
+  },
+  {
+    "id": "ff246ed7-67a6-485b-8462-81c408875c29",
+    "name": "PLUMBING & WATERPROOFING"
+  },
+  {
+    "id": "e70f8501-23fd-4bc9-abe1-0300b153f75f",
+    "name": "HORTICULTURE"
+  },
+  {
+    "id": "89c58245-7f7c-42b4-b491-514398737a3f",
+    "name": "MISCELLANEOUS & DECOR"
+  },
+  {
+    "id": "0edad025-0421-41b7-a3f4-08122ecf55a4",
+    "name": "CP_FITTINGS"
+  },
+  {
+    "id": "70e0e423-9532-4724-b3c0-8ec4613d920d",
+    "name": "ceramic_items"
+  },
+  {
+    "id": "99c0cac0-adec-4492-a0e0-72fa3e0e25f2",
+    "name": "floor_drain"
+  },
+  {
+    "id": "93dfcd5f-1b8b-43f3-9a7a-8e6fbc58b120",
+    "name": "steel_kitchen_sinks"
+  },
+  {
+    "id": "1832de78-aa2c-41b0-acec-24cf88911f2f",
+    "name": "bank"
+  },
+  {
+    "id": "d295cea8-124c-467a-b3bc-f64d43528fb3",
+    "name": "tape"
+  },
+  {
+    "id": "c31539ef-64cb-4ed3-8c1b-9cf6dce9bece",
+    "name": "fire_fighting_gases"
+  },
+  {
+    "id": "8b550d9e-bd03-45c3-9cd3-e20f32cd887b",
+    "name": "tiles"
+  },
+  {
+    "id": "5a90512c-2fd2-4def-a884-c901c306d0a0",
+    "name": "marble"
+  },
+  {
+    "id": "12503c13-5671-4b1a-a144-479c7735025b",
+    "name": "Adhesive"
+  },
+  {
+    "id": "c03dd6c0-2ef0-46ea-b66a-2a1aace16419",
+    "name": "Accessories"
+  },
+  {
+    "id": "ef26d590-31e2-4cc5-8a85-868665d117b6",
+    "name": "Software"
+  },
+  {
+    "id": "cccb8789-a3bb-4a03-a5af-9040c4dd8e57",
+    "name": "CorporationServices"
+  },
+  {
+    "id": "bfba3653-e058-40b5-a687-055a99ebfd85",
+    "name": "GraphicDesign"
+  },
+  {
+    "id": "47537308-a0cd-4bda-b7d7-acf52ea45616",
+    "name": "InteriorDesigner"
+  },
+  {
+    "id": "b4283885-e4f3-4a71-adf4-c7287d62aa27",
+    "name": "Properties"
+  },
+  {
+    "id": "1db199fd-129c-48c1-aee7-c0b708a4b002",
+    "name": "OTHERS"
+  },
+  {
+    "id": "2b39a3b5-4249-4ecc-90da-127a0c455a93",
+    "name": "RIPPOTAI Vendor"
+  },
+  {
+    "id": "bc154eb4-7c23-42bc-aa45-5eccdafc1d2d",
+    "name": "Materials"
+  },
+
+  {
+    "id": "7f73086d-d647-4e97-acb8-3a13761e7128",
+    "name": "Stones Tiles"
+  },
+  {
+    "id": "9810c073-a8dc-4bfb-ae79-b3916b4cc3f8",
+    "name": "3D Render"
+  },
+  {
+    "id": "ebff3b9d-c099-487b-b48a-0a72434b5749",
+    "name": "CAD Site supervisor"
+  },
+  {
+    "id": "ecef3cab-28ae-49ec-8a59-4ce2a5a573a2",
+    "name": "WebsiteLogo"
+  },
+  {
+    "id": "ad983f52-5f8d-4a72-a937-802c17692bb9",
+    "name": "Photographer"
+  },
+  {
+    "id": "28e6e019-9f9d-45b6-ae4d-c26cce6aa613",
+    "name": "Plumbers"
+  },
+  {
+    "id": "9246513c-8849-4bfc-b0fa-0c448fac3e0c",
+    "name": "Interiors & Architects"
+  },
+  {
+    "id": "813ca920-6ab3-4a38-bd54-545b3b5c9588",
+    "name": "Vendor"
+  },
+  {
+    "id": "25cbbda9-ce0c-443e-831a-7afafeea2263",
+    "name": "Builders"
+  },
+  {
+    "id": "8af436e9-ee06-4ff0-bf68-505de5a2499d",
+    "name": "Contractors"
+  },
+  {
+    "id": "9948b78f-621a-45db-a41a-11b254ddca38",
+    "name": "Supervisors"
+  },
+  {
+    "id": "235103c5-85f9-4f1d-b0c7-b43b5f980371",
+    "name": "Nikku Chhabra Contacts"
+  },
+  {
+    "id": "680e79a6-00b2-4396-b675-1c45c2e77019",
+    "name": "CM CONTRACTORS"
+  }
+]

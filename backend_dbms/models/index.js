@@ -22,13 +22,13 @@ if (config.use_env_variable) {
 }
 
 /* --------------------------------------------------------------
-   1. Load every model file in this folder
+   1. Load all model files dynamically
    -------------------------------------------------------------- */
 fs.readdirSync(__dirname)
   .filter((file) => {
     return (
       file.indexOf(".") !== 0 && // ignore hidden files
-      file !== basename && // ignore this index file
+      file !== basename && // ignore this file
       file.slice(-3) === ".js" && // only .js files
       file.indexOf(".test.js") === -1 // ignore test files
     );
@@ -42,41 +42,36 @@ fs.readdirSync(__dirname)
   });
 
 /* --------------------------------------------------------------
-   2. Define relationships (UUID-aware)
+   2. Define relationships (reflecting new schema)
    -------------------------------------------------------------- */
-const { Person, Address, PersonType, PersonTypePerson } = db;
+const { Person, BrandCompany, PersonType } = db;
 
-/* ---- Person ↔ Address (One-to-One) ---- */
-if (Person && Address) {
-  Person.belongsTo(Address, {
-    foreignKey: "address_id",
-    as: "address",
-    onDelete: "SET NULL",
+/* ---- Person ↔ BrandCompany (Many-to-One) ---- */
+if (Person && BrandCompany) {
+  Person.belongsTo(BrandCompany, {
+    foreignKey: "brand_company_id",
+    as: "brandCompany",
   });
-  Address.hasMany(Person, {
-    foreignKey: "address_id",
-    as: "residents",
+  BrandCompany.hasMany(Person, {
+    foreignKey: "brand_company_id",
+    as: "persons",
   });
 }
 
-/* ---- Person ↔ PersonType (Many-to-Many) ---- */
-if (Person && PersonType && PersonTypePerson) {
-  Person.belongsToMany(PersonType, {
-    through: PersonTypePerson,
-    foreignKey: "person_id",
-    otherKey: "type_id",
-    as: "types",
-  });
-  PersonType.belongsToMany(Person, {
-    through: PersonTypePerson,
+/* ---- Person ↔ PersonType (Many-to-One) ---- */
+if (Person && PersonType) {
+  Person.belongsTo(PersonType, {
     foreignKey: "type_id",
-    otherKey: "person_id",
+    as: "type",
+  });
+  PersonType.hasMany(Person, {
+    foreignKey: "type_id",
     as: "persons",
   });
 }
 
 /* --------------------------------------------------------------
-   3. Run any `associate` functions that live inside the models
+   3. Run associate() if defined in any model
    -------------------------------------------------------------- */
 Object.keys(db).forEach((modelName) => {
   if (db[modelName].associate) {

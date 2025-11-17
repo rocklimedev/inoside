@@ -1,21 +1,23 @@
-import { useState } from "react";
-import reactLogo from "./assets/react.svg";
-import viteLogo from "/vite.svg";
+import React from "react";
+import { BrowserRouter as Router } from "react-router-dom";
 import Header from "./components/Common/Header";
 import Sidebar from "./components/Common/Sidebar";
-import Tables from "./components/Dashboard/Dashboard";
 import Footer from "./components/Common/Footer";
-function App() {
-  const [count, setCount] = useState(0);
+import { Router as AppRoutes } from "./router/Router"; // <-- renamed from Router.js for clarity
 
+function App() {
   return (
-    <div class="main-wrapper">
-      <Header />
-      <div class="page-wrapper">
-        <Tables />
-        <Footer />
+    <Router>
+      <div className="main-wrapper">
+        <Header />
+        <div className="page-wrapper">
+          <div className="page-content">
+            <AppRoutes /> {/* All route rendering handled here */}
+          </div>
+          <Footer />
+        </div>
       </div>
-    </div>
+    </Router>
   );
 }
 

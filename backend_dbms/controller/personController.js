@@ -1,16 +1,20 @@
 // controllers/personController.js
-const { Person, Address, PersonType } = require("../models");
+const { Person, BrandCompany, PersonType } = require("../models");
 
 module.exports = {
-  // Get all persons
+  // GET /api/persons → get all persons
   async getAll(req, res) {
     try {
       const persons = await Person.findAll({
         include: [
-          { model: Address, as: "address" },
-          { model: PersonType, as: "types" },
+          {
+            model: BrandCompany,
+            as: "brandCompany",
+            attributes: ["id", "name"],
+          },
+          { model: PersonType, as: "type", attributes: ["id", "name"] },
         ],
-        order: [["id", "DESC"]],
+        order: [["created_at", "DESC"]],
       });
       res.json(persons);
     } catch (error) {
@@ -18,13 +22,17 @@ module.exports = {
     }
   },
 
-  // Get a person by ID
+  // GET /api/persons/:id → get a person by id
   async getById(req, res) {
     try {
       const person = await Person.findByPk(req.params.id, {
         include: [
-          { model: Address, as: "address" },
-          { model: PersonType, as: "types" },
+          {
+            model: BrandCompany,
+            as: "brandCompany",
+            attributes: ["id", "name"],
+          },
+          { model: PersonType, as: "type", attributes: ["id", "name"] },
         ],
       });
       if (!person) return res.status(404).json({ message: "Person not found" });
@@ -34,9 +42,16 @@ module.exports = {
     }
   },
 
-  // Create a new person
+  // POST /api/persons → create new person
   async create(req, res) {
     try {
+      const requiredFields = ["name", "mobile_number", "type_id"];
+      for (const field of requiredFields) {
+        if (!req.body[field]) {
+          return res.status(400).json({ error: `${field} is required` });
+        }
+      }
+
       const person = await Person.create(req.body);
       res.status(201).json(person);
     } catch (error) {
@@ -44,7 +59,7 @@ module.exports = {
     }
   },
 
-  // Update an existing person
+  // PUT /api/persons/:id → update existing person
   async update(req, res) {
     try {
       const person = await Person.findByPk(req.params.id);
@@ -57,7 +72,7 @@ module.exports = {
     }
   },
 
-  // Delete a person
+  // DELETE /api/persons/:id → delete person
   async delete(req, res) {
     try {
       const person = await Person.findByPk(req.params.id);
@@ -69,18 +84,18 @@ module.exports = {
       res.status(500).json({ error: error.message });
     }
   },
+
+  // ======================== PERSON TYPE ENDPOINTS ========================
+
   async getAllTypes(req, res) {
     try {
-      const types = await PersonType.findAll({
-        order: [["name", "ASC"]],
-      });
+      const types = await PersonType.findAll({ order: [["name", "ASC"]] });
       res.json(types);
     } catch (error) {
       res.status(500).json({ error: error.message });
     }
   },
 
-  /** GET /api/person-types/:id      → single type */
   async getTypeById(req, res) {
     try {
       const type = await PersonType.findByPk(req.params.id);
@@ -92,16 +107,11 @@ module.exports = {
     }
   },
 
-  /** POST /api/person-types         → create new type */
   async createType(req, res) {
     try {
-      // `req.body` should contain at least `{ name: "Customer" }`
-      const type = await PersonType.create(req.body, {
-        fields: ["name"], // protect against extra fields
-      });
+      const type = await PersonType.create(req.body, { fields: ["name"] });
       res.status(201).json(type);
     } catch (error) {
-      // Sequelize unique-constraint violation → friendly message
       if (error.name === "SequelizeUniqueConstraintError") {
         return res
           .status(400)
@@ -111,7 +121,6 @@ module.exports = {
     }
   },
 
-  /** PUT /api/person-types/:id      → update existing type */
   async updateType(req, res) {
     try {
       const type = await PersonType.findByPk(req.params.id);
@@ -130,17 +139,13 @@ module.exports = {
     }
   },
 
-  /** DELETE /api/person-types/:id   → delete type */
   async deleteType(req, res) {
     try {
       const type = await PersonType.findByPk(req.params.id);
       if (!type)
         return res.status(404).json({ message: "PersonType not found" });
 
-      // Optional: prevent deletion if the type is still referenced
-      const usageCount = await Person.count({
-        where: { person_type_id: type.id },
-      });
+      const usageCount = await Person.count({ where: { type_id: type.id } });
       if (usageCount > 0) {
         return res.status(409).json({
           error: `Cannot delete PersonType "${type.name}" – it is used by ${usageCount} person(s).`,
