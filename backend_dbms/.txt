@@ -10,7 +10,7 @@ entity_type_id (FK → entity_types.id)
 created_at
 updated_at
 
-
+/**/
 
 id (PK)
 name (Architect, Contractor, Vendor, Designer, etc.)
