@@ -9,6 +9,8 @@ const brandCompanyRoutes = require("./routes/brandCompanyRoute");
 const personRoutes = require("./routes/personRoutes");
 const addressRoutes = require("./routes/addressRoutes");
 const userRoutes = require("./routes/userRoutes");
+const projectRoutes = require("./routes/projectRoutes");
+const inventoryRoutes = require("./routes/inventoryRoutes");
 const app = express();
 
 // Middleware
@@ -24,6 +26,8 @@ app.use("/api/addresses", addressRoutes);
 
 app.use("/api/brand-companies", brandCompanyRoutes);
 app.use("/api/users", userRoutes);
+app.use("/api/project", projectRoutes);
+app.use("/api/inventory", inventoryRoutes);
 // Root check route
 app.get("/", (req, res) => {
   res.json({ message: "API is running successfully." });

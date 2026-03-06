@@ -1,392 +1,539 @@
 // src/components/AddEditModal.jsx
-import React, { useEffect } from "react";
-import { Modal, Button, Form, Row, Col, InputGroup } from "react-bootstrap";
+import React, { useEffect, useState } from "react";
+import {
+  Modal,
+  Form,
+  Input,
+  Select,
+  DatePicker,
+  Checkbox,
+  Switch,
+  Row,
+  Col,
+  message,
+  Button,
+  Space,
+} from "antd";
+import {
+  UserOutlined,
+  PhoneOutlined,
+  HomeOutlined,
+  PlusOutlined,
+} from "@ant-design/icons";
+
 import {
   useCreatePersonMutation,
   useUpdatePersonMutation,
 } from "../../api/personApi";
 
-const AddEditModal = ({
-  show,
-  onHide,
-  editingPerson,
-  personTypes = [],
-  brandCompanies = [],
-}) => {
+// Person Types
+import {
+  useGetPersonTypesQuery,
+  useCreatePersonTypeMutation,
+} from "../../api/personApi"; // adjust path if needed
+
+// Brand Companies
+import {
+  useGetBrandCompaniesQuery,
+  useCreateBrandCompanyMutation,
+} from "../../api/brandCompanyApi";
+
+const { TextArea } = Input;
+
+const AddEditModal = ({ open, onCancel, editingPerson, onSuccess }) => {
+  const [form] = Form.useForm();
+
+  // === Person Types ===
+  const { data: personTypes = [], isLoading: loadingPersonTypes } =
+    useGetPersonTypesQuery();
+  const [createPersonType, { isLoading: creatingType }] =
+    useCreatePersonTypeMutation();
+
+  // === Brand Companies ===
+  const { data: brandCompanies = [], isLoading: loadingBrands } =
+    useGetBrandCompaniesQuery();
+  console.log(brandCompanies);
+  const [createBrandCompany, { isLoading: creatingBrand }] =
+    useCreateBrandCompanyMutation();
+
+  // Inline Add States
+  const [showTypeInput, setShowTypeInput] = useState(false);
+  const [newTypeName, setNewTypeName] = useState("");
+  const [showBrandInput, setShowBrandInput] = useState(false);
+  const [newBrandName, setNewBrandName] = useState("");
+
+  // Mutations
   const [createPerson, { isLoading: isCreating }] = useCreatePersonMutation();
   const [updatePerson, { isLoading: isUpdating }] = useUpdatePersonMutation();
 
   const isEdit = !!editingPerson?.id;
-  const isSubmitting = isCreating || isUpdating;
+  const loading = isCreating || isUpdating;
 
-  // Reset form when modal opens/closes or person changes
+  // Reset inline inputs when modal closes
   useEffect(() => {
-    if (show && editingPerson) {
-      const form = document.getElementById("personForm");
-      if (form) form.reset();
+    if (!open) {
+      setShowTypeInput(false);
+      setShowBrandInput(false);
+      setNewTypeName("");
+      setNewBrandName("");
+      form.resetFields();
     }
-  }, [show, editingPerson]);
+  }, [open, form]);
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    const form = e.currentTarget;
+  // Populate form when editing
+  useEffect(() => {
+    if (editingPerson && open) {
+      form.setFieldsValue({
+        ...editingPerson,
+        type_id: editingPerson.type_id || undefined,
+        brand_company_id: editingPerson.brand_company_id || undefined,
+        is_architect: editingPerson.is_architect === 1,
+        is_interior: editingPerson.is_interior === 1,
+        is_furniture: editingPerson.is_furniture === 1,
+        is_active: editingPerson.is_active !== 0,
+        dob: editingPerson.dob ? window.dayjs(editingPerson.dob) : null,
+        address_line1: editingPerson.address?.line1 || "",
+        address_line2: editingPerson.address?.line2 || "",
+        address_city: editingPerson.address?.city || "",
+        address_state: editingPerson.address?.state || "",
+        address_pincode: editingPerson.address?.pincode || "",
+      });
+    }
+  }, [editingPerson, open, form]);
 
-    const address = {
-      line1: form.address_line1?.value || null,
-      line2: form.address_line2?.value || null,
-      city: form.address_city?.value || null,
-      state: form.address_state?.value || null,
-      pincode: form.address_pincode?.value || null,
-      country: form.address_country?.value || "India",
-    };
-
-    // Remove null/empty fields from address
-    Object.keys(address).forEach(
-      (key) => address[key] == null && delete address[key]
-    );
-    const finalAddress = Object.keys(address).length > 0 ? address : null;
-
-    const payload = {
-      name: form.name.value.trim(),
-      mobile_number: form.mobile_number.value.trim(),
-      optional_mobile: form.optional_mobile.value.trim() || null,
-
-      type_id: form.type_id.value || null,
-      brand_company_id: form.brand_company_id.value || null,
-      company_name: form.company_name.value.trim() || null,
-      position: form.position.value.trim() || null,
-      type_of_business: form.type_of_business.value.trim() || null,
-      notes: form.notes.value.trim() || null,
-      area_covered: form.area_covered.value.trim() || null,
-      reference_name: form.reference_name.value.trim() || null,
-      reference_mobile: form.reference_mobile.value.trim() || null,
-      age: form.age.value ? parseInt(form.age.value) : null,
-      dob: form.dob.value || null,
-      is_architect: form.is_architect.checked ? 1 : 0,
-      is_interior: form.is_interior.checked ? 1 : 0,
-      is_furniture: form.is_furniture.checked ? 1 : 0,
-      address: finalAddress,
-      is_active: form.is_active.checked ? 1 : 0,
-    };
+  // Create Person Type
+  const handleCreateType = async () => {
+    const name = newTypeName.trim();
+    if (!name) return message.warning("Enter a type name");
 
     try {
+      await createPersonType({ name }).unwrap();
+      message.success(`"${name}" added!`);
+      setNewTypeName("");
+      setShowTypeInput(false);
+    } catch (err) {
+      message.error(err?.data?.message || "Failed to add type");
+    }
+  };
+
+  // Create Brand
+  const handleCreateBrand = async () => {
+    const name = newBrandName.trim();
+    if (!name) return message.warning("Enter a brand name");
+
+    try {
+      await createBrandCompany({ name }).unwrap();
+      message.success(`"${name}" added!`);
+      setNewBrandName("");
+      setShowBrandInput(false);
+    } catch (err) {
+      message.error(err?.data?.message || "Failed to add brand");
+    }
+  };
+
+  const handleSubmit = async () => {
+    try {
+      const values = await form.validateFields();
+
+      const address = {
+        line1: values.address_line1 || null,
+        line2: values.address_line2 || null,
+        city: values.address_city || null,
+        state: values.address_state || null,
+        pincode: values.address_pincode || null,
+        country: "India",
+      };
+
+      Object.keys(address).forEach(
+        (key) => !address[key] && delete address[key]
+      );
+      const finalAddress = Object.keys(address).length > 0 ? address : null;
+
+      const payload = {
+        name: values.name?.trim(),
+        mobile_number: values.mobile_number?.trim(),
+        optional_mobile: values.optional_mobile?.trim() || null,
+        type_id: values.type_id || null,
+        brand_company_id: values.brand_company_id || null,
+        company_name: values.company_name?.trim() || null,
+        position: values.position?.trim() || null,
+        type_of_business: values.type_of_business?.trim() || null,
+        notes: values.notes?.trim() || null,
+        area_covered: values.area_covered?.trim() || null,
+        reference_name: values.reference_name?.trim() || null,
+        reference_mobile: values.reference_mobile?.trim() || null,
+        age: values.age ? Number(values.age) : null,
+        dob: values.dob ? values.dob.format("YYYY-MM-DD") : null,
+        is_architect: values.is_architect ? 1 : 0,
+        is_interior: values.is_interior ? 1 : 0,
+        is_furniture: values.is_furniture ? 1 : 0,
+        address: finalAddress,
+        is_active: values.is_active ? 1 : 0,
+      };
+
       if (isEdit) {
         await updatePerson({ id: editingPerson.id, ...payload }).unwrap();
+        message.success("Person updated successfully!");
       } else {
         await createPerson(payload).unwrap();
+        message.success("Person created successfully!");
       }
-      onHide();
+
+      form.resetFields();
+      onCancel();
+      onSuccess?.();
     } catch (err) {
-      console.error("Save failed:", err);
-      alert(err?.data?.message || "Failed to save person. Please try again.");
+      console.error(err);
+      message.error(err?.data?.message || "Failed to save person");
     }
   };
 
   return (
-    <Modal show={show} onHide={onHide} size="lg" centered backdrop="static">
-      <Form id="personForm" onSubmit={handleSubmit}>
-        <Modal.Header closeButton>
-          <Modal.Title className="fw-bold">
-            {isEdit ? "Edit" : "Add New"} Person
-          </Modal.Title>
-        </Modal.Header>
+    <Modal
+      title={
+        <strong style={{ fontSize: "1.4rem" }}>
+          {isEdit ? "Edit Person" : "Add New Person"}
+        </strong>
+      }
+      open={open}
+      onCancel={onCancel}
+      width={1000}
+      footer={[
+        <Button key="cancel" onClick={onCancel} disabled={loading}>
+          Cancel
+        </Button>,
+        <Button
+          key="submit"
+          type="primary"
+          loading={loading}
+          onClick={handleSubmit}
+        >
+          {isEdit ? "Update" : "Create"} Person
+        </Button>,
+      ]}
+      centered
+      destroyOnClose
+    >
+      <Form form={form} layout="vertical" style={{ marginTop: 20 }}>
+        {/* Basic Information */}
+        <div
+          style={{
+            borderBottom: "1px solid #f0f0f0",
+            paddingBottom: 20,
+            marginBottom: 24,
+          }}
+        >
+          <h6
+            style={{ color: "#6366f1", fontWeight: "bold", marginBottom: 16 }}
+          >
+            Basic Information
+          </h6>
+          <Row gutter={16}>
+            <Col span={12}>
+              <Form.Item
+                name="name"
+                label="Full Name"
+                rules={[{ required: true, message: "Required" }]}
+              >
+                <Input
+                  prefix={<UserOutlined />}
+                  placeholder="Enter full name"
+                />
+              </Form.Item>
+            </Col>
+            <Col span={12}>
+              <Form.Item
+                name="mobile_number"
+                label="Mobile Number"
+                rules={[
+                  { required: true, message: "Required" },
+                  {
+                    pattern: /^[6-9]\d{9}$/,
+                    message: "Invalid Indian mobile number",
+                  },
+                ]}
+              >
+                <Input prefix={<PhoneOutlined />} placeholder="9876543210" />
+              </Form.Item>
+            </Col>
+            <Col span={12}>
+              <Form.Item name="optional_mobile" label="Alternate Mobile">
+                <Input prefix={<PhoneOutlined />} placeholder="Optional" />
+              </Form.Item>
+            </Col>
+          </Row>
+        </div>
 
-        <Modal.Body className="pb-0">
-          {/* Basic Info */}
-          <div className="border-bottom pb-3 mb-4">
-            <h6 className="text-primary mb-3">Basic Information</h6>
-            <Row>
-              <Col md={6}>
-                <Form.Group className="mb-3">
-                  <Form.Label>
-                    Full Name <span className="text-danger">*</span>
-                  </Form.Label>
-                  <Form.Control
-                    name="name"
-                    required
-                    defaultValue={editingPerson?.name || ""}
-                    placeholder="Enter full name"
-                  />
-                </Form.Group>
-              </Col>
-              <Col md={6}>
-                <Form.Group className="mb-3">
-                  <Form.Label>
-                    Mobile Number <span className="text-danger">*</span>
-                  </Form.Label>
-                  <Form.Control
-                    name="mobile_number"
-                    type="tel"
-                    required
-                    defaultValue={editingPerson?.mobile_number || ""}
-                    placeholder="e.g. 9876543210"
-                  />
-                </Form.Group>
-              </Col>
-              <Col md={6}>
-                <Form.Group className="mb-3">
-                  <Form.Label>Alternate Mobile</Form.Label>
-                  <Form.Control
-                    name="optional_mobile"
-                    type="tel"
-                    defaultValue={editingPerson?.optional_mobile || ""}
-                    placeholder="Secondary number"
-                  />
-                </Form.Group>
-              </Col>
-            </Row>
-          </div>
+        {/* Category & Business */}
+        <div
+          style={{
+            borderBottom: "1px solid #f0f0f0",
+            paddingBottom: 20,
+            marginBottom: 24,
+          }}
+        >
+          <h6
+            style={{ color: "#6366f1", fontWeight: "bold", marginBottom: 16 }}
+          >
+            Category & Business
+          </h6>
+          <Row gutter={16}>
+            {/* Person Type + Inline Add */}
+            <Col span={12}>
+              <Form.Item
+                name="type_id"
+                label="Person Type"
+                rules={[{ required: true }]}
+              >
+                <Select
+                  placeholder="Select or add new type"
+                  loading={loadingPersonTypes}
+                  dropdownRender={(menu) => (
+                    <>
+                      {menu}
+                      {showTypeInput ? (
+                        <Space style={{ padding: 8 }}>
+                          <Input
+                            placeholder="New type name"
+                            value={newTypeName}
+                            onChange={(e) => setNewTypeName(e.target.value)}
+                            onKeyDown={(e) => e.stopPropagation()}
+                          />
+                          <Button
+                            type="text"
+                            icon={<PlusOutlined />}
+                            loading={creatingType}
+                            onClick={handleCreateType}
+                          >
+                            Add
+                          </Button>
+                          <Button
+                            type="text"
+                            size="small"
+                            onClick={() => {
+                              setShowTypeInput(false);
+                              setNewTypeName("");
+                            }}
+                          >
+                            Cancel
+                          </Button>
+                        </Space>
+                      ) : (
+                        <div style={{ padding: "4px 8px" }}>
+                          <Button
+                            type="dashed"
+                            block
+                            icon={<PlusOutlined />}
+                            onClick={() => setShowTypeInput(true)}
+                          >
+                            Add New Person Type
+                          </Button>
+                        </div>
+                      )}
+                    </>
+                  )}
+                >
+                  {personTypes.map((pt) => (
+                    <Select.Option key={pt.id} value={pt.id}>
+                      {pt.name}
+                    </Select.Option>
+                  ))}
+                </Select>
+              </Form.Item>
+            </Col>
 
-          {/* Category & Business */}
-          <div className="border-bottom pb-3 mb-4">
-            <h6 className="text-primary mb-3">Category & Business</h6>
-            <Row>
-              <Col md={6}>
-                <Form.Group className="mb-3">
-                  <Form.Label>
-                    Person Type <span className="text-danger">*</span>
-                  </Form.Label>
-                  <Form.Select
-                    name="type_id"
-                    required
-                    defaultValue={editingPerson?.type_id || ""}
-                  >
-                    <option value="">Select type</option>
-                    {personTypes.map((pt) => (
-                      <option key={pt.id} value={pt.id}>
-                        {pt.name}
-                      </option>
-                    ))}
-                  </Form.Select>
-                </Form.Group>
-              </Col>
-              <Col md={6}>
-                <Form.Group className="mb-3">
-                  <Form.Label>Associated Brand</Form.Label>
-                  <Form.Select
-                    name="brand_company_id"
-                    defaultValue={editingPerson?.brand_company_id || ""}
-                  >
-                    <option value="">None</option>
-                    {brandCompanies.map((bc) => (
-                      <option key={bc.id} value={bc.id}>
-                        {bc.name}
-                      </option>
-                    ))}
-                  </Form.Select>
-                </Form.Group>
-              </Col>
-              <Col md={6}>
-                <Form.Group className="mb-3">
-                  <Form.Label>Company Name</Form.Label>
-                  <Form.Control
-                    name="company_name"
-                    defaultValue={editingPerson?.company_name || ""}
-                    placeholder="Their company"
-                  />
-                </Form.Group>
-              </Col>
-              <Col md={6}>
-                <Form.Group className="mb-3">
-                  <Form.Label>Position / Designation</Form.Label>
-                  <Form.Control
-                    name="position"
-                    defaultValue={editingPerson?.position || ""}
-                    placeholder="e.g. Senior Architect"
-                  />
-                </Form.Group>
-              </Col>
-              <Col md={12}>
-                <Form.Group className="mb-3">
-                  <Form.Label>Type of Business</Form.Label>
-                  <Form.Control
-                    name="type_of_business"
-                    defaultValue={editingPerson?.type_of_business || ""}
-                    placeholder="e.g. Modular Kitchen, Furniture Retail, etc."
-                  />
-                </Form.Group>
-              </Col>
-            </Row>
-          </div>
+            {/* Brand + Inline Add */}
+            <Col span={12}>
+              <Form.Item name="brand_company_id" label="Associated Brand">
+                <Select
+                  placeholder="Select or add new brand"
+                  loading={loadingBrands}
+                  allowClear
+                  showSearch
+                  optionFilterProp="children"
+                  dropdownRender={(menu) => (
+                    <>
+                      {menu}
+                      {showBrandInput ? (
+                        <Space style={{ padding: 8 }}>
+                          <Input
+                            placeholder="New brand name"
+                            value={newBrandName}
+                            onChange={(e) => setNewBrandName(e.target.value)}
+                            onKeyDown={(e) => e.stopPropagation()}
+                          />
+                          <Button
+                            type="text"
+                            icon={<PlusOutlined />}
+                            loading={creatingBrand}
+                            onClick={handleCreateBrand}
+                          >
+                            Add
+                          </Button>
+                          <Button
+                            type="text"
+                            size="small"
+                            onClick={() => {
+                              setShowBrandInput(false);
+                              setNewBrandName("");
+                            }}
+                          >
+                            Cancel
+                          </Button>
+                        </Space>
+                      ) : (
+                        <div style={{ padding: "4px 8px" }}>
+                          <Button
+                            type="dashed"
+                            block
+                            icon={<PlusOutlined />}
+                            onClick={() => setShowBrandInput(true)}
+                          >
+                            Add New Brand
+                          </Button>
+                        </div>
+                      )}
+                    </>
+                  )}
+                >
+                  {brandCompanies.map((brand) => (
+                    <Select.Option key={brand.id} value={brand.id}>
+                      {brand.name}
+                    </Select.Option>
+                  ))}
+                </Select>
+              </Form.Item>
+            </Col>
 
-          {/* Roles */}
-          <div className="border-bottom pb-3 mb-4">
-            <h6 className="text-primary mb-3">Professional Roles</h6>
-            <div className="hstack gap-4">
-              <Form.Check
-                type="checkbox"
-                name="is_architect"
-                label="Architect"
-                defaultChecked={editingPerson?.is_architect}
-              />
-              <Form.Check
-                type="checkbox"
-                name="is_interior"
-                label="Interior Designer"
-                defaultChecked={editingPerson?.is_interior}
-              />
-              <Form.Check
-                type="checkbox"
-                name="is_furniture"
-                label="Furniture Dealer / Manufacturer"
-                defaultChecked={editingPerson?.is_furniture}
-              />
-            </div>
-          </div>
+            <Col span={12}>
+              <Form.Item name="company_name" label="Company Name">
+                <Input placeholder="Their company" />
+              </Form.Item>
+            </Col>
+            <Col span={12}>
+              <Form.Item name="position" label="Position / Designation">
+                <Input placeholder="e.g. Senior Architect" />
+              </Form.Item>
+            </Col>
+            <Col span={24}>
+              <Form.Item name="type_of_business" label="Type of Business">
+                <Input placeholder="e.g. Modular Kitchen, Furniture Retail" />
+              </Form.Item>
+            </Col>
+          </Row>
+        </div>
 
-          {/* Additional Info */}
-          <div className="border-bottom pb-3 mb-4">
-            <h6 className="text-primary mb-3">Additional Information</h6>
-            <Row>
-              <Col md={6}>
-                <Form.Group className="mb-3">
-                  <Form.Label>Age</Form.Label>
-                  <Form.Control
-                    name="age"
-                    type="number"
-                    min="18"
-                    max="100"
-                    defaultValue={editingPerson?.age || ""}
-                  />
-                </Form.Group>
-              </Col>
-              <Col md={6}>
-                <Form.Group className="mb-3">
-                  <Form.Label>Date of Birth</Form.Label>
-                  <Form.Control
-                    name="dob"
-                    type="date"
-                    defaultValue={editingPerson?.dob || ""}
-                  />
-                </Form.Group>
-              </Col>
-              <Col md={6}>
-                <Form.Group className="mb-3">
-                  <Form.Label>Reference Name</Form.Label>
-                  <Form.Control
-                    name="reference_name"
-                    defaultValue={editingPerson?.reference_name || ""}
-                  />
-                </Form.Group>
-              </Col>
-              <Col md={6}>
-                <Form.Group className="mb-3">
-                  <Form.Label>Reference Mobile</Form.Label>
-                  <Form.Control
-                    name="reference_mobile"
-                    type="tel"
-                    defaultValue={editingPerson?.reference_mobile || ""}
-                  />
-                </Form.Group>
-              </Col>
-              <Col md={12}>
-                <Form.Group className="mb-3">
-                  <Form.Label>Areas Covered</Form.Label>
-                  <Form.Control
-                    name="area_covered"
-                    defaultValue={editingPerson?.area_covered || ""}
-                    placeholder="e.g. Delhi NCR, Mumbai, Pune"
-                  />
-                </Form.Group>
-              </Col>
-              <Col md={12}>
-                <Form.Group className="mb-3">
-                  <Form.Label>Notes</Form.Label>
-                  <Form.Control
-                    as="textarea"
-                    rows={3}
-                    name="notes"
-                    defaultValue={editingPerson?.notes || ""}
-                    placeholder="Any additional remarks..."
-                  />
-                </Form.Group>
-              </Col>
-            </Row>
-          </div>
+        {/* Professional Roles */}
+        <div style={{ marginBottom: 24 }}>
+          <h6
+            style={{ color: "#6366f1", fontWeight: "bold", marginBottom: 12 }}
+          >
+            Professional Roles
+          </h6>
+          <Space direction="vertical" style={{ width: "100%" }}>
+            <Form.Item name="is_architect" valuePropName="checked">
+              <Checkbox>Architect</Checkbox>
+            </Form.Item>
+            <Form.Item name="is_interior" valuePropName="checked">
+              <Checkbox>Interior Designer</Checkbox>
+            </Form.Item>
+            <Form.Item name="is_furniture" valuePropName="checked">
+              <Checkbox>Furniture Dealer / Manufacturer</Checkbox>
+            </Form.Item>
+          </Space>
+        </div>
 
-          {/* Address */}
-          <div className="border-bottom pb-3 mb-4">
-            <h6 className="text-primary mb-3">Address</h6>
-            <Row>
-              <Col md={12}>
-                <Form.Group className="mb-3">
-                  <Form.Label>Address Line 1</Form.Label>
-                  <Form.Control
-                    name="address_line1"
-                    defaultValue={editingPerson?.address?.line1 || ""}
-                    placeholder="Building, Flat no, Street"
-                  />
-                </Form.Group>
-              </Col>
-              <Col md={12}>
-                <Form.Group className="mb-3">
-                  <Form.Label>Address Line 2 (Optional)</Form.Label>
-                  <Form.Control
-                    name="address_line2"
-                    defaultValue={editingPerson?.address?.line2 || ""}
-                    placeholder="Landmark, Area"
-                  />
-                </Form.Group>
-              </Col>
-              <Col md={4}>
-                <Form.Group className="mb-3">
-                  <Form.Label>City</Form.Label>
-                  <Form.Control
-                    name="address_city"
-                    defaultValue={editingPerson?.address?.city || ""}
-                  />
-                </Form.Group>
-              </Col>
-              <Col md={4}>
-                <Form.Group className="mb-3">
-                  <Form.Label>State</Form.Label>
-                  <Form.Control
-                    name="address_state"
-                    defaultValue={editingPerson?.address?.state || ""}
-                  />
-                </Form.Group>
-              </Col>
-              <Col md={4}>
-                <Form.Group className="mb-3">
-                  <Form.Label>PIN Code</Form.Label>
-                  <Form.Control
-                    name="address_pincode"
-                    defaultValue={editingPerson?.address?.pincode || ""}
-                  />
-                </Form.Group>
-              </Col>
-            </Row>
-          </div>
+        {/* Additional Information */}
+        <div
+          style={{
+            borderBottom: "1px solid #f0f0f0",
+            paddingBottom: 20,
+            marginBottom: 24,
+          }}
+        >
+          <h6
+            style={{ color: "#6366f1", fontWeight: "bold", marginBottom: 16 }}
+          >
+            Additional Information
+          </h6>
+          <Row gutter={16}>
+            <Col span={8}>
+              <Form.Item name="age" label="Age">
+                <Input type="number" min={18} max={100} />
+              </Form.Item>
+            </Col>
+            <Col span={8}>
+              <Form.Item name="dob" label="Date of Birth">
+                <DatePicker style={{ width: "100%" }} />
+              </Form.Item>
+            </Col>
+            <Col span={8}>
+              <Form.Item name="reference_name" label="Reference Name">
+                <Input />
+              </Form.Item>
+            </Col>
+            <Col span={8}>
+              <Form.Item name="reference_mobile" label="Reference Mobile">
+                <Input />
+              </Form.Item>
+            </Col>
+            <Col span={24}>
+              <Form.Item name="area_covered" label="Areas Covered">
+                <Input placeholder="e.g. Delhi NCR, Mumbai, Pune" />
+              </Form.Item>
+            </Col>
+            <Col span={24}>
+              <Form.Item name="notes" label="Notes">
+                <TextArea rows={3} placeholder="Any additional remarks..." />
+              </Form.Item>
+            </Col>
+          </Row>
+        </div>
 
-          {/* Status */}
-          <div className="mb-4">
-            <Form.Check
-              type="switch"
-              name="is_active"
-              label="Active Person"
-              defaultChecked={editingPerson?.is_active !== 0}
-              className="fs-6"
-            />
-          </div>
-        </Modal.Body>
+        {/* Address */}
+        <div style={{ marginBottom: 24 }}>
+          <h6
+            style={{ color: "#6366f1", fontWeight: "bold", marginBottom: 16 }}
+          >
+            Address
+          </h6>
+          <Row gutter={16}>
+            <Col span={24}>
+              <Form.Item name="address_line1" label="Address Line 1">
+                <Input
+                  prefix={<HomeOutlined />}
+                  placeholder="Building, Flat no, Street"
+                />
+              </Form.Item>
+            </Col>
+            <Col span={24}>
+              <Form.Item name="address_line2" label="Address Line 2 (Optional)">
+                <Input placeholder="Landmark, Area" />
+              </Form.Item>
+            </Col>
+            <Col span={8}>
+              <Form.Item name="address_city" label="City">
+                <Input />
+              </Form.Item>
+            </Col>
+            <Col span={8}>
+              <Form.Item name="address_state" label="State">
+                <Input />
+              </Form.Item>
+            </Col>
+            <Col span={8}>
+              <Form.Item name="address_pincode" label="PIN Code">
+                <Input />
+              </Form.Item>
+            </Col>
+          </Row>
+        </div>
 
-        <Modal.Footer>
-          <Button variant="secondary" onClick={onHide} disabled={isSubmitting}>
-            Cancel
-          </Button>
-          <Button type="submit" variant="primary" disabled={isSubmitting}>
-            {isSubmitting ? (
-              <>
-                <span className="spinner-border spinner-border-sm me-2" />
-                Saving...
-              </>
-            ) : isEdit ? (
-              "Update Person"
-            ) : (
-              "Create Person"
-            )}
-          </Button>
-        </Modal.Footer>
+        {/* Status */}
+        <Form.Item name="is_active" valuePropName="checked">
+          <Switch checkedChildren="Active" unCheckedChildren="Inactive" />{" "}
+          <strong>Active Person</strong>
+        </Form.Item>
       </Form>
     </Modal>
   );

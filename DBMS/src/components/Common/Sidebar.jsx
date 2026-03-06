@@ -1,36 +1,70 @@
+// components/Common/SidebarNew.jsx
 import React from "react";
+import { NavLink, useLocation } from "react-router-dom";
+import { ChevronsLeft } from "react-feather";
+import masterRoutes from "../../router/routes";
+import logo from "../../assets/img/logo.png";
+import logo_small from "../../assets/img/fav_icon.png";
+import { DownOutlined } from "@ant-design/icons";
+const Sidebar = ({ isSidebarOpen, toggleSidebar }) => {
+  const location = useLocation();
 
-const Sidebar = () => {
+  // Only show routes where isSidebarActive is true (or undefined)
+  const sidebarRoutes = masterRoutes.filter(
+    (route) => route.isSidebarActive === true
+  );
+
   return (
-    <div class="sidebar" id="sidebar-two">
-      <div class="sidebar-logo">
-        <a href="index.html" class="logo logo-normal">
-          <img src="assets/img/logo.svg" alt="Logo" />
-        </a>
-        <a href="index.html" class="logo-small">
-          <img src="assets/img/logo-small.svg" alt="Logo" />
-        </a>
-        <a href="index.html" class="dark-logo">
-          <img src="assets/img/logo-white.svg" alt="Logo" />
-        </a>
-        <a href="index.html" class="dark-small">
-          <img src="assets/img/logo-small-white.svg" alt="Logo" />
-        </a>
+    <div className={`sidebar ${isSidebarOpen ? "active" : ""}`} id="sidebar">
+      {/* Logo Section */}
+      <div className={`sidebar-logo ${isSidebarOpen ? "active" : ""}`}>
+        <NavLink to="/" className="logo logo-normal">
+          <img src={logo} alt="Logo" />
+        </NavLink>
+        <NavLink to="/" className="logo logo-small">
+          <img src={logo_small} alt="Logo Small" />
+        </NavLink>
 
-        <a id="toggle_btn" href="javascript:void(0);">
-          <i class="isax isax-menu-1"></i>
+        <a
+          href="#"
+          id="toggle_btn"
+          onClick={(e) => {
+            e.preventDefault();
+            toggleSidebar();
+          }}
+          className="sidebar-toggle"
+        >
+          <ChevronsLeft size={18} />
         </a>
       </div>
 
-      <div class="sidebar-inner" data-simplebar>
-        <div id="sidebar-menu" class="sidebar-menu">
+      {/* Menu */}
+      <div className="sidebar-inner slimscroll">
+        <div id="sidebar-menu" className="sidebar-menu">
           <ul>
-            <li>
-              <a href="https://kanakku.dreamstechnologies.com/html/sass-landing/index.html">
-                <i class="isax isax-note-215"></i>
-                <span>Frontend</span>
-              </a>
-            </li>
+            {sidebarRoutes.map((route) => {
+              const isActive =
+                location.pathname === route.path ||
+                (route.path !== "/" &&
+                  location.pathname.startsWith(route.path));
+
+              return (
+                <li key={route.path}>
+                  <NavLink
+                    to={route.path}
+                    className={`nav-link ${isActive ? "active" : ""}`}
+                    end={route.path === "/"} // "end" only for exact match on root
+                  >
+                    {route.icon ? (
+                      route.icon
+                    ) : (
+                      <DownOutlined className="menu-icon" />
+                    )}
+                    <span>{route.name}</span>
+                  </NavLink>
+                </li>
+              );
+            })}
           </ul>
         </div>
       </div>

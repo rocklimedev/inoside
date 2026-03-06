@@ -5,12 +5,15 @@ import { Provider } from "react-redux"; // <-- Import Provider
 import { store } from "./config/store.js"; // <-- Import your store
 import "./index.css";
 import App from "./App.jsx";
+import { BrowserRouter } from "react-router-dom";
 
 // Render the app with Redux Provider
 createRoot(document.getElementById("root")).render(
   <StrictMode>
     <Provider store={store}>
-      <App />
+      <BrowserRouter>
+        <App />
+      </BrowserRouter>
     </Provider>
   </StrictMode>
 );

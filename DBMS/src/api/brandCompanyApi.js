@@ -5,9 +5,9 @@ export const brandCompanyApi = createApi({
   reducerPath: "brandCompanyApi",
   baseQuery: fetchBaseQuery({
     baseUrl: "http://localhost:5000/api/brand-companies",
-    credentials: "include", // if using sessions/cookies
+    credentials: "include",
     prepareHeaders: (headers, { getState }) => {
-      const token = getState().auth?.token; // adjust based on your auth slice
+      const token = getState().auth?.token;
       if (token) {
         headers.set("authorization", `Bearer ${token}`);
       }
@@ -16,22 +16,27 @@ export const brandCompanyApi = createApi({
   }),
   tagTypes: ["BrandCompany"],
   endpoints: (builder) => ({
-    // GET all brand companies
     getBrandCompanies: builder.query({
       query: () => "/",
+      transformResponse: (response) => {
+        console.log("Brand companies API response:", response);
+        if (Array.isArray(response)) return response;
+        if (response?.data && Array.isArray(response.data))
+          return response.data;
+        return [];
+      },
       providesTags: (result = []) => [
         ...result.map(({ id }) => ({ type: "BrandCompany", id })),
         { type: "BrandCompany", id: "LIST" },
       ],
     }),
 
-    // GET single brand company by ID
     getBrandCompanyById: builder.query({
       query: (id) => `/${id}`,
+      transformResponse: (response) => response,
       providesTags: (result, error, id) => [{ type: "BrandCompany", id }],
     }),
 
-    // CREATE new brand company
     createBrandCompany: builder.mutation({
       query: (newBrand) => ({
         url: "/",
@@ -41,7 +46,6 @@ export const brandCompanyApi = createApi({
       invalidatesTags: [{ type: "BrandCompany", id: "LIST" }],
     }),
 
-    // UPDATE brand company
     updateBrandCompany: builder.mutation({
       query: ({ id, ...updates }) => ({
         url: `/${id}`,
@@ -54,7 +58,6 @@ export const brandCompanyApi = createApi({
       ],
     }),
 
-    // DELETE brand company
     deleteBrandCompany: builder.mutation({
       query: (id) => ({
         url: `/${id}`,
@@ -68,7 +71,6 @@ export const brandCompanyApi = createApi({
   }),
 });
 
-// Export hooks (auto-generated)
 export const {
   useGetBrandCompaniesQuery,
   useGetBrandCompanyByIdQuery,
