@@ -83,8 +83,22 @@ const InventoryList = () => {
     <div style={{ padding: 24 }}>
       <Card>
         <Space direction="vertical" size="middle" style={{ width: "100%" }}>
-          <Title level={3}>All Projects</Title>
+          <Space
+            style={{
+              width: "100%",
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "center",
+            }}
+          >
+            <Title level={3} style={{ margin: 0 }}>
+              All Projects
+            </Title>
 
+            <Link to="/add-project">
+              <Button type="primary">+ Add Project</Button>
+            </Link>
+          </Space>
           <Table
             columns={columns}
             dataSource={projects}

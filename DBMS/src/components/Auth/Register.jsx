@@ -46,13 +46,6 @@ const Register = () => {
               className="d-flex justify-content-center align-items-center"
             >
               <div className="d-flex flex-column justify-content-lg-center p-4 p-lg-0 pt-lg-4 pb-0 flex-fill">
-                <div className="mx-auto mb-5 text-center">
-                  <img
-                    src="assets/img/logo.svg"
-                    className="img-fluid"
-                    alt="Logo"
-                  />
-                </div>
                 <div className="card border-0 p-lg-3 shadow-lg rounded-2">
                   <div className="card-body">
                     <div className="text-center mb-3">

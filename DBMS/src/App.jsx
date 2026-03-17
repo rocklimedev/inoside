@@ -26,7 +26,7 @@ function App() {
 
   const authPages = [
     "/login",
-    "/signup",
+    "/register",
     "/forgot-password",
     "/reset-password",
     "/verify-account",

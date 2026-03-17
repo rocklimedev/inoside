@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import * as XLSX from "xlsx";
 import { useUploadInventoryExcelMutation } from "../../api/projectApi";
-
+import { useNavigate } from "react-router-dom";
 import {
   Card,
   Form,
@@ -37,7 +37,7 @@ const AddProject = () => {
   const [rows, setRows] = useState([]);
   const [columns, setColumns] = useState([]);
   const [mapping, setMapping] = useState({});
-
+  const navigate = useNavigate();
   const [uploadProject, { isLoading }] = useUploadInventoryExcelMutation();
 
   const handleFileChange = async (file) => {
@@ -96,6 +96,7 @@ const AddProject = () => {
       }).unwrap();
 
       message.success("Project imported successfully");
+      navigate("/"); // redirect to home or list page
 
       setName("");
       setRows([]);

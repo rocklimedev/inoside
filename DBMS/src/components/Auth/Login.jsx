@@ -43,14 +43,6 @@ const Login = () => {
               className="d-flex justify-content-center align-items-center"
             >
               <div className="d-flex flex-column justify-content-lg-center p-4 p-lg-0 pb-0 flex-fill">
-                <div className="mx-auto mb-5 text-center">
-                  <img
-                    src="assets/img/logo.svg"
-                    className="img-fluid"
-                    alt="Logo"
-                  />
-                </div>
-
                 <div className="card border-0 p-lg-3 shadow-lg">
                   <div className="card-body">
                     <div className="text-center mb-3">
@@ -115,9 +107,6 @@ const Login = () => {
                           </label>
                         </div>
                       </div>
-                      <div className="text-end">
-                        <a href="/forgot-password">Forgot Password</a>
-                      </div>
                     </div>
 
                     <div className="mb-1">
@@ -128,16 +117,6 @@ const Login = () => {
                       >
                         {isLoading ? "Signing In..." : "Sign In"}
                       </button>
-                    </div>
-
-                    <div className="text-center">
-                      <h6 className="fw-normal fs-14 text-dark mb-0">
-                        Don’t have an account yet?
-                        <a href="/register" className="hover-a">
-                          {" "}
-                          Register
-                        </a>
-                      </h6>
                     </div>
                   </div>
                 </div>
