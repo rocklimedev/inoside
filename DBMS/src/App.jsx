@@ -39,7 +39,7 @@ function App() {
   const isAuthPage = authPages.some(
     (path) =>
       location.pathname.startsWith(path) ||
-      location.pathname === path.split(":")[0]
+      location.pathname === path.split(":")[0],
   );
 
   const isMaintenancePage = location.pathname === "/under-maintenance";
@@ -82,7 +82,7 @@ function App() {
   useEffect(() => {
     if (profileData && !reduxUser) {
       dispatch(
-        setCredentials({ user: profileData.user || profileData, token })
+        setCredentials({ user: profileData.user || profileData, token }),
       );
     }
   }, [profileData, reduxUser, token, dispatch]);
@@ -136,7 +136,7 @@ function App() {
   }
 
   return (
-    <div className="main-wrapper">
+    <div className={`main-wrapper ${isSidebarOpen ? "sidebar-open" : ""}`}>
       {!isAuthPage && (
         <>
           <Header

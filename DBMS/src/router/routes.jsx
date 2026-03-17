@@ -12,7 +12,7 @@ const masterRoutes = [
     name: "Dashboard",
     icon: null, // you can add an icon later like <Layout />
     isSidebarActive: true,
-    element: <Table />,
+    element: <InventoryList />,
   },
   {
     path: "/login",
@@ -32,12 +32,7 @@ const masterRoutes = [
     isSidebarActive: false,
     element: <AddProject />,
   },
-  {
-    path: "/projects/list",
-    name: "List Projects",
-    isSidebarActive: false,
-    element: <InventoryList />,
-  },
+
   {
     path: "/project/:id",
     name: "Project Details",

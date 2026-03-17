@@ -11,9 +11,8 @@ const Sidebar = ({ isSidebarOpen, toggleSidebar }) => {
 
   // Only show routes where isSidebarActive is true (or undefined)
   const sidebarRoutes = masterRoutes.filter(
-    (route) => route.isSidebarActive === true
+    (route) => route.isSidebarActive !== false,
   );
-
   return (
     <div className={`sidebar ${isSidebarOpen ? "active" : ""}`} id="sidebar">
       {/* Logo Section */}

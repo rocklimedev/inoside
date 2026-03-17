@@ -2,6 +2,25 @@ import React, { useState } from "react";
 import * as XLSX from "xlsx";
 import { useUploadInventoryExcelMutation } from "../../api/projectApi";
 
+import {
+  Card,
+  Form,
+  Input,
+  Upload,
+  Select,
+  Button,
+  Table,
+  Typography,
+  Space,
+  Alert,
+  message,
+} from "antd";
+
+import { UploadOutlined } from "@ant-design/icons";
+
+const { Title, Text } = Typography;
+const { Option } = Select;
+
 const inventoryFields = [
   { key: "date_added", label: "Date Added" },
   { key: "item_name", label: "Item Name" },
@@ -15,20 +34,14 @@ const inventoryFields = [
 
 const AddProject = () => {
   const [name, setName] = useState("");
-  const [file, setFile] = useState(null);
   const [rows, setRows] = useState([]);
   const [columns, setColumns] = useState([]);
   const [mapping, setMapping] = useState({});
 
-  const [uploadProject] = useUploadInventoryExcelMutation();
+  const [uploadProject, { isLoading }] = useUploadInventoryExcelMutation();
 
-  const handleFileChange = async (e) => {
-    const f = e.target.files[0];
-    if (!f) return;
-
-    setFile(f);
-
-    const buffer = await f.arrayBuffer();
+  const handleFileChange = async (file) => {
+    const buffer = await file.arrayBuffer();
     const workbook = XLSX.read(buffer);
     const sheet = workbook.Sheets[workbook.SheetNames[0]];
     const json = XLSX.utils.sheet_to_json(sheet, { defval: "" });
@@ -49,6 +62,8 @@ const AddProject = () => {
 
       setMapping(autoMap);
     }
+
+    return false;
   };
 
   const handleMappingChange = (field, column) => {
@@ -66,112 +81,116 @@ const AddProject = () => {
     });
   };
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    if (!name || !file) return;
+  const handleSubmit = async () => {
+    if (!name) {
+      message.error("Project name required");
+      return;
+    }
 
     try {
       const mappedRows = transformRows();
-      await uploadProject({ name, inventory: mappedRows }).unwrap();
 
-      alert("Project and inventory imported successfully");
+      await uploadProject({
+        name,
+        inventory: mappedRows,
+      }).unwrap();
+
+      message.success("Project imported successfully");
 
       setName("");
-      setFile(null);
       setRows([]);
       setColumns([]);
       setMapping({});
     } catch (err) {
       console.error(err);
-      alert("Upload failed");
+      message.error("Upload failed");
     }
   };
 
+  const previewColumns = columns.map((col) => ({
+    title: col,
+    dataIndex: col,
+    key: col,
+  }));
+
   return (
-    <div className="container mt-4">
-      <h3 className="mb-4">Add Project</h3>
+    <div style={{ padding: 24 }}>
+      <Card>
+        <Space direction="vertical" size="large" style={{ width: "100%" }}>
+          <Title level={3}>Add Project</Title>
 
-      <form onSubmit={handleSubmit}>
-        <div className="mb-3">
-          <label className="form-label">Project Name</label>
-          <input
-            type="text"
-            className="form-control"
-            placeholder="Project name"
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            required
-          />
-        </div>
+          <Form layout="vertical">
+            <Form.Item label="Project Name" required>
+              <Input
+                placeholder="Project name"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+              />
+            </Form.Item>
 
-        <div className="mb-3">
-          <label className="form-label">Upload Excel</label>
-          <input
-            type="file"
-            className="form-control"
-            accept=".xlsx,.xls"
-            onChange={handleFileChange}
-            required
-          />
-        </div>
+            <Form.Item label="Upload Excel">
+              <Upload
+                beforeUpload={handleFileChange}
+                accept=".xlsx,.xls"
+                showUploadList={false}
+              >
+                <Button icon={<UploadOutlined />}>Select Excel File</Button>
+              </Upload>
+            </Form.Item>
+          </Form>
 
-        {columns.length > 0 && (
-          <div className="mb-4">
-            <h5>Column Mapping</h5>
-            {inventoryFields.map((field) => (
-              <div className="row mb-2 align-items-center" key={field.key}>
-                <div className="col-3">{field.label}</div>
-                <div className="col-6">
-                  <select
-                    className="form-select"
-                    value={mapping[field.key] || ""}
-                    onChange={(e) =>
-                      handleMappingChange(field.key, e.target.value)
-                    }
+          {columns.length > 0 && (
+            <Card size="small" title="Column Mapping">
+              <Space direction="vertical" style={{ width: "100%" }}>
+                {inventoryFields.map((field) => (
+                  <Space
+                    key={field.key}
+                    style={{ width: "100%", justifyContent: "space-between" }}
                   >
-                    <option value="">Select Column</option>
-                    {columns.map((col) => (
-                      <option key={col} value={col}>
-                        {col}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
+                    <Text style={{ width: 200 }}>{field.label}</Text>
 
-        {rows.length > 0 && (
-          <div className="mb-4">
-            <h5>Excel Preview ({rows.length} rows)</h5>
-            <div className="table-responsive" style={{ maxHeight: "500px" }}>
-              <table className="table table-bordered table-striped table-hover">
-                <thead className="table-light">
-                  <tr>
-                    {columns.map((col) => (
-                      <th key={col}>{col}</th>
-                    ))}
-                  </tr>
-                </thead>
-                <tbody>
-                  {rows.slice(0, 20).map((row, i) => (
-                    <tr key={i}>
+                    <Select
+                      style={{ width: 250 }}
+                      value={mapping[field.key] || undefined}
+                      placeholder="Select column"
+                      onChange={(val) => handleMappingChange(field.key, val)}
+                    >
                       {columns.map((col) => (
-                        <td key={col + i}>{row[col]}</td>
+                        <Option key={col} value={col}>
+                          {col}
+                        </Option>
                       ))}
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </div>
-        )}
+                    </Select>
+                  </Space>
+                ))}
+              </Space>
+            </Card>
+          )}
 
-        <button type="submit" className="btn btn-primary">
-          Create Project
-        </button>
-      </form>
+          {rows.length > 0 && (
+            <Card size="small" title={`Excel Preview (${rows.length} rows)`}>
+              <Table
+                columns={previewColumns}
+                dataSource={rows.slice(0, 20)}
+                rowKey={(_, index) => index}
+                pagination={false}
+                scroll={{ x: true, y: 400 }}
+                bordered
+                size="small"
+              />
+            </Card>
+          )}
+
+          <Button
+            type="primary"
+            size="large"
+            loading={isLoading}
+            onClick={handleSubmit}
+          >
+            Create Project
+          </Button>
+        </Space>
+      </Card>
     </div>
   );
 };

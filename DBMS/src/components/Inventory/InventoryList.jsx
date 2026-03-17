@@ -1,87 +1,102 @@
 import React from "react";
+import { Link } from "react-router-dom";
 import {
   useGetAllProjectsQuery,
   useDeleteProjectMutation,
 } from "../../api/projectApi";
 
+import {
+  Table,
+  Card,
+  Space,
+  Button,
+  Typography,
+  Popconfirm,
+  Spin,
+  Alert,
+} from "antd";
+
+import { EyeOutlined, EditOutlined, DeleteOutlined } from "@ant-design/icons";
+
+const { Title } = Typography;
+
 const InventoryList = () => {
   const { data, isLoading, isError } = useGetAllProjectsQuery();
   const [deleteProject] = useDeleteProjectMutation();
 
-  if (isLoading) return <p>Loading...</p>;
-  if (isError) return <p>Failed to load projects</p>;
-
   const projects = data || [];
 
   const handleDelete = async (id) => {
-    if (window.confirm("Delete this project?")) {
-      await deleteProject(id);
+    try {
+      await deleteProject(id).unwrap();
+    } catch (err) {
+      console.error("Delete failed", err);
     }
   };
 
+  const columns = [
+    {
+      title: "Project Name",
+      dataIndex: "name",
+      key: "name",
+      render: (text, record) => (
+        <Link to={`/project/${record.id}`}>{text}</Link>
+      ),
+    },
+
+    {
+      title: "Action",
+      key: "action",
+      render: (_, record) => (
+        <Space>
+          <Link to={`/project/${record.id}`}>
+            <Button icon={<EyeOutlined />} size="small" />
+          </Link>
+
+          <Link to={`/project/edit/${record.id}`}>
+            <Button icon={<EditOutlined />} size="small" />
+          </Link>
+
+          <Popconfirm
+            title="Delete Project"
+            description="Are you sure you want to delete this project?"
+            onConfirm={() => handleDelete(record.id)}
+            okText="Yes"
+            cancelText="No"
+          >
+            <Button danger icon={<DeleteOutlined />} size="small" />
+          </Popconfirm>
+        </Space>
+      ),
+    },
+  ];
+
+  if (isLoading) {
+    return <Spin fullscreen tip="Loading projects..." />;
+  }
+
+  if (isError) {
+    return <Alert type="error" message="Failed to load projects" showIcon />;
+  }
+
   return (
-    <div className="container mt-4">
-      <div className="d-flex justify-content-between align-items-center mb-3 flex-wrap">
-        <h3>All Projects</h3>
-      </div>
+    <div style={{ padding: 24 }}>
+      <Card>
+        <Space direction="vertical" size="middle" style={{ width: "100%" }}>
+          <Title level={3}>All Projects</Title>
 
-      <div className="card">
-        <div className="table-responsive">
-          <table className="table table-hover table-bordered mb-0">
-            <thead className="table-light">
-              <tr>
-                <th>Project Name</th>
-                <th>Project ID</th>
-                <th>Created</th>
-                <th>Action</th>
-              </tr>
-            </thead>
-            <tbody>
-              {projects.map((project) => (
-                <tr key={project.id}>
-                  <td>
-                    <a
-                      href={`/project/${project.id}`}
-                      className="text-decoration-none"
-                    >
-                      {project.name}
-                    </a>
-                  </td>
-                  <td>{project.id}</td>
-                  <td>{new Date(project.createdAt).toLocaleDateString()}</td>
-                  <td>
-                    <div className="d-flex gap-2">
-                      <a
-                        href={`/project/${project.id}`}
-                        className="btn btn-sm btn-outline-primary"
-                        title="View"
-                      >
-                        <i className="bi bi-eye"></i>
-                      </a>
-
-                      <a
-                        href={`/project/edit/${project.id}`}
-                        className="btn btn-sm btn-outline-secondary"
-                        title="Edit"
-                      >
-                        <i className="bi bi-pencil"></i>
-                      </a>
-
-                      <button
-                        className="btn btn-sm btn-outline-danger"
-                        onClick={() => handleDelete(project.id)}
-                        title="Delete"
-                      >
-                        <i className="bi bi-trash"></i>
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </div>
+          <Table
+            columns={columns}
+            dataSource={projects}
+            rowKey="id"
+            bordered
+            pagination={{
+              pageSize: 10,
+              showSizeChanger: true,
+            }}
+          />
+        </Space>
+      </Card>
     </div>
   );
 };

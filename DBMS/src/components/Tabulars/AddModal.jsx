@@ -52,7 +52,7 @@ const AddEditModal = ({ open, onCancel, editingPerson, onSuccess }) => {
   // === Brand Companies ===
   const { data: brandCompanies = [], isLoading: loadingBrands } =
     useGetBrandCompaniesQuery();
-  console.log(brandCompanies);
+
   const [createBrandCompany, { isLoading: creatingBrand }] =
     useCreateBrandCompanyMutation();
 
@@ -145,7 +145,7 @@ const AddEditModal = ({ open, onCancel, editingPerson, onSuccess }) => {
       };
 
       Object.keys(address).forEach(
-        (key) => !address[key] && delete address[key]
+        (key) => !address[key] && delete address[key],
       );
       const finalAddress = Object.keys(address).length > 0 ? address : null;
 
@@ -183,7 +183,6 @@ const AddEditModal = ({ open, onCancel, editingPerson, onSuccess }) => {
       onCancel();
       onSuccess?.();
     } catch (err) {
-      console.error(err);
       message.error(err?.data?.message || "Failed to save person");
     }
   };
