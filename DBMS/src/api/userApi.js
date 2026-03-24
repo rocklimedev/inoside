@@ -1,9 +1,9 @@
 // src/services/userApi.js
 import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
-
+import { API_URL } from "../config";
 export const userApi = createApi({
   reducerPath: "userApi",
-  baseQuery: fetchBaseQuery({ baseUrl: "http://localhost:8000/api" }), // adjust base URL
+  baseQuery: fetchBaseQuery({ baseUrl: `${API_URL}/` }), // adjust base URL
   tagTypes: ["User"],
 
   endpoints: (builder) => ({

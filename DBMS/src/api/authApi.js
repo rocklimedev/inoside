@@ -1,10 +1,10 @@
 // src/services/authApi.js
 import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
-
+import { API_URL } from "../config";
 export const authApi = createApi({
   reducerPath: "authApi",
   baseQuery: fetchBaseQuery({
-    baseUrl: "http://localhost:5000/api/auth", // adjust to your backend
+    baseUrl: `${API_URL}/auth`, // adjust to your backend
     prepareHeaders: (headers, { getState }) => {
       const token = getState().auth?.token;
       if (token) headers.set("authorization", `Bearer ${token}`);

@@ -1,8 +1,8 @@
 import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
-
+import { API_URL } from "../config";
 export const addressApi = createApi({
   reducerPath: "addressApi",
-  baseQuery: fetchBaseQuery({ baseUrl: "http://locahost:5000/api/address" }),
+  baseQuery: fetchBaseQuery({ baseUrl: `${API_URL}/address` }),
   tagTypes: ["Address"],
   endpoints: (builder) => ({
     getAddresses: builder.query({

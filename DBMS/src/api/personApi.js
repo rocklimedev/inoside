@@ -1,10 +1,10 @@
 // src/features/api/personApi.ts
 import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
-
+import { API_URL } from "../config";
 export const personApi = createApi({
   reducerPath: "personApi",
   baseQuery: fetchBaseQuery({
-    baseUrl: "http://localhost:5000/api/persons", // fixed typo + base for both resources
+    baseUrl: `${API_URL}/persons`, // fixed typo + base for both resources
   }),
   tagTypes: ["Person", "PersonType"], // <-- added PersonType tag
   endpoints: (builder) => ({

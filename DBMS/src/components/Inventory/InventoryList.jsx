@@ -53,10 +53,6 @@ const InventoryList = () => {
             <Button icon={<EyeOutlined />} size="small" />
           </Link>
 
-          <Link to={`/project/edit/${record.id}`}>
-            <Button icon={<EditOutlined />} size="small" />
-          </Link>
-
           <Popconfirm
             title="Delete Project"
             description="Are you sure you want to delete this project?"

@@ -67,16 +67,6 @@ const Header = ({ toggleSidebar, isSidebarOpen }) => {
         <Menu.Divider />
 
         <Menu.Item
-          key="profile"
-          icon={<FaUserCircle style={{ fontSize: 16 }} />}
-          onClick={() => navigate(`/u/${userId}`)}
-        >
-          Profile
-        </Menu.Item>
-
-        <Menu.Divider />
-
-        <Menu.Item
           key="logout"
           icon={<BiLogOut style={{ fontSize: 16 }} />}
           onClick={handleLogout}
@@ -86,22 +76,12 @@ const Header = ({ toggleSidebar, isSidebarOpen }) => {
         </Menu.Item>
       </Menu>
     ),
-    [displayName, username, userId, navigate, handleLogout]
+    [displayName, username, userId, navigate, handleLogout],
   );
 
   // === Mobile Menu Items ===
   const mobileMenuItems = useMemo(
     () => [
-      {
-        key: "profile",
-        label: "My Profile",
-        icon: <FaUserCircle />,
-        onClick: () => navigate(`/u/${userId}`),
-      },
-      {
-        key: "divider",
-        type: "divider",
-      },
       {
         key: "logout",
         label: "Logout",
@@ -110,7 +90,7 @@ const Header = ({ toggleSidebar, isSidebarOpen }) => {
         onClick: handleLogout,
       },
     ],
-    [userId, navigate, handleLogout]
+    [userId, navigate, handleLogout],
   );
 
   // Loading State
@@ -162,20 +142,6 @@ const Header = ({ toggleSidebar, isSidebarOpen }) => {
 
         {/* Desktop User Menu */}
         <ul className="nav user-menu">
-          <li className="nav-item nav-searchinputs">
-            {/* <div className="top-nav-search">
-          <Button
-            type="link"
-            className="responsive-search d-md-none"
-            aria-label="Search"
-          >
-            <FaSearch />
-          </Button>
-          <div className="d-none d-md-block">
-             <SearchDropdown /> 
-          </div>
-        </div> */}
-          </li>
           <li className="nav-item dropdown main-drop profile-nav">
             {isAuthenticated && user && (
               <Dropdown

@@ -1,10 +1,10 @@
 // src/api/brandCompanyApi.js
 import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
-
+import { API_URL } from "../config";
 export const brandCompanyApi = createApi({
   reducerPath: "brandCompanyApi",
   baseQuery: fetchBaseQuery({
-    baseUrl: "http://localhost:5000/api/brand-companies",
+    baseUrl: `${API_URL}/brand-companies`,
     credentials: "include",
     prepareHeaders: (headers, { getState }) => {
       const token = getState().auth?.token;
