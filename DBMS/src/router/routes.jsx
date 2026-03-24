@@ -39,6 +39,12 @@ const masterRoutes = [
     isSidebarActive: false,
     element: <ProjectDetails />,
   },
+  {
+    path: "/persons/list",
+    name: "Persons",
+    isSidebarActive: false,
+    element: <Table />,
+  },
 ];
 
 export default masterRoutes;
