@@ -12,7 +12,6 @@ import {
   Table,
   Typography,
   Space,
-  Alert,
   message,
 } from "antd";
 
@@ -70,12 +69,41 @@ const AddProject = () => {
     setMapping((prev) => ({ ...prev, [field]: column }));
   };
 
+  const formatExcelDate = (value) => {
+    // Excel serial number
+    if (!isNaN(Number(value))) {
+      const excelEpoch = new Date(1900, 0, 1);
+      excelEpoch.setDate(excelEpoch.getDate() + Number(value) - 2); // Excel offset
+      const day = String(excelEpoch.getDate()).padStart(2, "0");
+      const month = String(excelEpoch.getMonth() + 1).padStart(2, "0");
+      const year = excelEpoch.getFullYear();
+      return `${day}/${month}/${year}`;
+    }
+
+    // Date object or string
+    const date = new Date(value);
+    if (!isNaN(date)) {
+      const day = String(date.getDate()).padStart(2, "0");
+      const month = String(date.getMonth() + 1).padStart(2, "0");
+      const year = date.getFullYear();
+      return `${day}/${month}/${year}`;
+    }
+
+    return value; // fallback
+  };
+
   const transformRows = () => {
     return rows.map((row) => {
       const obj = {};
       inventoryFields.forEach((field) => {
         const col = mapping[field.key];
-        obj[field.key] = col ? row[col] : null;
+        let value = col ? row[col] : null;
+
+        if (field.key === "date_added" && value) {
+          value = formatExcelDate(value);
+        }
+
+        obj[field.key] = value;
       });
       return obj;
     });
@@ -172,8 +200,15 @@ const AddProject = () => {
             <Card size="small" title={`Excel Preview (${rows.length} rows)`}>
               <Table
                 columns={previewColumns}
-                dataSource={rows.slice(0, 20)}
-                rowKey={(_, index) => index}
+                dataSource={rows.slice(0, 20).map((r, i) => ({
+                  ...r,
+                  date_added:
+                    mapping["date_added"] && r[mapping["date_added"]]
+                      ? formatExcelDate(r[mapping["date_added"]])
+                      : r["date_added"],
+                  key: i,
+                }))}
+                rowKey="key"
                 pagination={false}
                 scroll={{ x: true, y: 400 }}
                 bordered

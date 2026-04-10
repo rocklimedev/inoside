@@ -18,6 +18,33 @@ BEGIN
     RETURN NEW;
 END;
 $$ LANGUAGE plpgsql;
+CREATE TABLE IF NOT EXISTS roles (
+    id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    name VARCHAR(50) UNIQUE NOT NULL,                    -- e.g., 'admin', 'architect', etc.
+    display_name VARCHAR(100) NOT NULL,
+    description TEXT,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE IF NOT EXISTS permissions (
+    id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    name VARCHAR(100) UNIQUE NOT NULL,                   -- e.g., 'project.create', 'boq.view', 'drawing.approve'
+    module VARCHAR(50) NOT NULL,                         -- e.g., 'projects', 'brief', 'boq', 'drawings', 'inventory'
+    action VARCHAR(50) NOT NULL,                         -- create, view, edit, delete, approve, manage
+    description TEXT,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE IF NOT EXISTS role_permissions (
+    id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    role_id BIGINT UNSIGNED NOT NULL,
+    permission_id BIGINT UNSIGNED NOT NULL,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE KEY unique_role_permission (role_id, permission_id),
+    FOREIGN KEY (role_id) REFERENCES roles(id) ON DELETE CASCADE,
+    FOREIGN KEY (permission_id) REFERENCES permissions(id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 -- =============================================================================
 -- 1. ENUM TYPES (unchanged)
@@ -445,40 +472,3 @@ CREATE TABLE material_requests (
     status              VARCHAR(30) DEFAULT 'Pending',
     created_at          TIMESTAMPTZ DEFAULT now()
 );
-
--- =============================================================================
--- 15. MATERIALIZED VIEW – Dashboard (updated to UUID)
--- =============================================================================
-
-CREATE MATERIALIZED VIEW project_progress_dashboard AS
-SELECT
-    p.id                        AS project_id,
-    p.name,
-    p.status,
-    p.overall_completion,
-    p.current_stage,
-    a.city                      AS project_city,
-    MAX(dpr.report_date)        AS last_report_date,
-    COUNT(dpr.id)               AS report_count,
-    BOOL_OR(pi.status = 'Open') AS has_open_issues
-FROM projects p
-LEFT JOIN addresses a ON a.id = p.primary_site_address_id AND a.is_primary
-LEFT JOIN daily_progress_reports dpr ON dpr.project_id = p.id
-LEFT JOIN project_issues pi ON pi.project_id = p.id
-GROUP BY p.id, p.name, p.status, p.overall_completion, p.current_stage, a.city;
-
-CREATE UNIQUE INDEX idx_dashboard_project ON project_progress_dashboard(project_id);
-
--- =============================================================================
--- End of schema
--- =============================================================================
-
--- Example: inserting a project + address
-/*
-INSERT INTO addresses (entity_type, entity_id, line1, city, address_type, is_primary)
-VALUES ('projects', gen_random_uuid(), 'Plot 42, Sector 18', 'Noida', 'project_site', true)
-RETURNING id;   -- copy this uuid
-
--- then
-INSERT INTO projects (name, primary_site_address_id, ...) VALUES (... , <the_uuid_above>, ...);
-*/
