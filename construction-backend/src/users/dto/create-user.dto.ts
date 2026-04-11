@@ -5,9 +5,10 @@ import {
   IsString,
   MinLength,
   IsNumber,
+  IsEnum, // ✅ ADD THIS
 } from 'class-validator';
-
-import { PreferredComm } from '../../common/enums';
+import { Type } from 'class-transformer';
+import { PreferredComm } from '../../common/enums'; // ✅ ADD THIS
 
 export class CreateUserDto {
   @IsNotEmpty()
@@ -21,13 +22,14 @@ export class CreateUserDto {
   @IsString()
   phone?: string;
 
-  // ✅ REPLACED ENUM WITH ROLE ID
   @IsNotEmpty()
+  @Type(() => Number)
   @IsNumber()
   roleId!: number;
 
+  // 🔥 FIX STARTS HERE
   @IsOptional()
-  @IsString()
+  @IsEnum(PreferredComm)
   preferred_comm?: PreferredComm;
 
   @IsNotEmpty()

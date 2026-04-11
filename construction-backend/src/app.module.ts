@@ -7,6 +7,11 @@ import { UsersModule } from './users/users.module';
 import { RbacModule } from './rbac/rbac.module';
 import { ProjectsModule } from './projects/projects.module';
 import { AttachmentsModule } from './attachments/attachments.module';
+import { BoqModule } from './boq/boq.module'; // ← Added
+import { VendorsModule } from './vendors/vendors.module';
+import { ProjectProgressModule } from './project-progress/project-progress.module';
+import { ClientsModule } from './clients/client.module';
+import { SitesModule } from './sites/sites.module';
 @Module({
   imports: [
     ConfigModule.forRoot({ isGlobal: true }),
@@ -24,6 +29,11 @@ import { AttachmentsModule } from './attachments/attachments.module';
     RbacModule,
     ProjectsModule,
     AttachmentsModule,
+    BoqModule, // ← Added here
+    VendorsModule,
+    ProjectProgressModule,
+    ClientsModule,
+    SitesModule,
   ],
 })
 export class AppModule {}

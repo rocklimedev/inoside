@@ -215,6 +215,10 @@ export class ProjectsController {
 
     const proposal = await this.proposalsService.findByProject(project_id);
 
+    if (!proposal) {
+      throw new NotFoundException('Proposal not found for this project');
+    }
+
     const updated = await this.proposalsService.update(proposal.id, {
       signed_by_client: true,
     });
@@ -230,6 +234,10 @@ export class ProjectsController {
   @Roles(UserRole.ADMIN, UserRole.SUPERVISOR)
   async signByBuilder(@Param('id') project_id: string) {
     const proposal = await this.proposalsService.findByProject(project_id);
+
+    if (!proposal) {
+      throw new NotFoundException('Proposal not found for this project');
+    }
 
     const updated = await this.proposalsService.update(proposal.id, {
       signed_by_builder: true,

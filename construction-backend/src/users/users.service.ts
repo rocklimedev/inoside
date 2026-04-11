@@ -12,9 +12,10 @@ import * as bcrypt from 'bcryptjs';
 import { User } from './entities/user.entity';
 import { Address } from './entities/address.entity';
 import { Role } from '@/rbac/entities/role.entity';
-import { UserRole } from '../common/enums'; // ← Add this import
+import { UserRole } from '../common/enums';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
+
 @Injectable()
 export class UsersService {
   constructor(
@@ -23,25 +24,43 @@ export class UsersService {
     @InjectRepository(Role) private roleRepo: Repository<Role>,
   ) {}
 
-  // ====================== CREATE ======================
+  // ====================== CREATE (FIXED) ======================
   async create(dto: CreateUserDto): Promise<User> {
+    // ✅ Check duplicate email
     const exists = await this.usersRepo.findOne({
       where: { email: dto.email },
     });
 
-    if (exists) throw new ConflictException('Email already in use');
+    if (exists) {
+      throw new ConflictException('Email already in use');
+    }
 
-    const hashedPassword = await bcrypt.hash(dto.password, 10);
+    // ✅ FETCH ROLE (🔥 MAIN FIX)
+    const role = await this.roleRepo.findOne({
+      where: { id: dto.roleId },
+    });
 
+    if (!role) {
+      throw new BadRequestException(`Invalid roleId: ${dto.roleId}`);
+    }
+
+    // ✅ HASH PASSWORD
+    const password_hash = await bcrypt.hash(dto.password, 10);
+
+    // ✅ CREATE USER (🔥 DO NOT SPREAD DTO)
     const user = this.usersRepo.create({
-      ...dto,
-      password_hash: hashedPassword,
+      full_name: dto.full_name,
+      email: dto.email,
+      phone: dto.phone,
+      role, // 🔥 REQUIRED
+      password_hash,
+      preferred_comm: dto.preferred_comm,
     });
 
     return this.usersRepo.save(user);
   }
 
-  // ====================== READ USERS ======================
+  // ====================== READ ======================
   async findAll(): Promise<User[]> {
     return this.usersRepo.find({
       relations: ['primary_address', 'role'],
@@ -66,8 +85,7 @@ export class UsersService {
     });
   }
 
-  // ====================== ROLE-BASED QUERIES ======================
-
+  // ====================== ROLE QUERIES ======================
   async findByRoleId(roleId: number): Promise<User[]> {
     return this.usersRepo.find({
       where: { role: { id: roleId } },
@@ -77,7 +95,6 @@ export class UsersService {
   }
 
   async findByRole(role: UserRole): Promise<User[]> {
-    // More reliable approach using Role entity
     const roleEntity = await this.roleRepo.findOne({
       where: { name: role },
     });
@@ -86,11 +103,7 @@ export class UsersService {
       throw new BadRequestException(`Role "${role}" not found`);
     }
 
-    return this.usersRepo.find({
-      where: { role: { id: roleEntity.id } },
-      relations: ['role', 'primary_address'],
-      order: { full_name: 'ASC' },
-    });
+    return this.findByRoleId(roleEntity.id);
   }
 
   async findByRoleName(roleName: string): Promise<User[]> {
@@ -102,7 +115,6 @@ export class UsersService {
   }
 
   // ====================== COUNTS ======================
-
   async countByRoleId(roleId: number): Promise<number> {
     return this.usersRepo.count({
       where: { role: { id: roleId } },
@@ -125,7 +137,6 @@ export class UsersService {
   }
 
   // ====================== ROLE MANAGEMENT ======================
-
   async findAllRoles(): Promise<Role[]> {
     return this.roleRepo.find({ order: { id: 'ASC' } });
   }
@@ -135,34 +146,56 @@ export class UsersService {
   }
 
   // ====================== UPDATE ======================
-  async update(id: string, updateUserDto: UpdateUserDto): Promise<User> {
+  async update(id: string, dto: UpdateUserDto): Promise<User> {
     const user = await this.findOne(id);
 
-    if (updateUserDto.email && updateUserDto.email !== user.email) {
+    if (dto.email && dto.email !== user.email) {
       const exists = await this.usersRepo.findOne({
-        where: { email: updateUserDto.email },
+        where: { email: dto.email },
       });
-      if (exists) throw new ConflictException('Email already in use');
+
+      if (exists) {
+        throw new ConflictException('Email already in use');
+      }
     }
 
-    const updateData: Partial<User> = { ...updateUserDto };
+    // ✅ HANDLE ROLE UPDATE
+    if (dto.roleId) {
+      const role = await this.roleRepo.findOne({
+        where: { id: dto.roleId },
+      });
 
-    if (updateUserDto.password) {
-      updateData.password_hash = await bcrypt.hash(updateUserDto.password, 10);
-      delete (updateData as any).password;
+      if (!role) {
+        throw new BadRequestException(`Invalid roleId: ${dto.roleId}`);
+      }
+
+      user.role = role;
     }
 
-    Object.assign(user, updateData);
+    // ✅ HANDLE PASSWORD
+    if (dto.password) {
+      user.password_hash = await bcrypt.hash(dto.password, 10);
+    }
+
+    // ✅ ASSIGN OTHER FIELDS
+    if (dto.full_name) user.full_name = dto.full_name;
+    if (dto.phone !== undefined) user.phone = dto.phone;
+    if (dto.preferred_comm) user.preferred_comm = dto.preferred_comm;
+
     return this.usersRepo.save(user);
   }
 
   async updateUserRole(userId: string, roleId: number): Promise<User> {
     const user = await this.findOne(userId);
-    const role = await this.roleRepo.findOne({ where: { id: roleId } });
 
-    if (!role) throw new BadRequestException(`Invalid roleId: ${roleId}`);
+    const role = await this.roleRepo.findOne({
+      where: { id: roleId },
+    });
 
-    // Prevent removing the last admin
+    if (!role) {
+      throw new BadRequestException(`Invalid roleId: ${roleId}`);
+    }
+
     if (user.role?.name === 'admin' && role.name !== 'admin') {
       const adminCount = await this.countAdmins();
       if (adminCount <= 1) {
@@ -179,14 +212,13 @@ export class UsersService {
     const user = await this.findOne(id);
 
     if (!user.is_active) {
-      throw new BadRequestException('User is already deactivated');
+      throw new BadRequestException('User already inactive');
     }
 
     user.is_active = false;
     await this.usersRepo.save(user);
   }
 
-  // ====================== ACTIVATE / DEACTIVATE ======================
   async activateUser(id: string): Promise<User> {
     const user = await this.findOne(id);
     user.is_active = true;
@@ -206,7 +238,7 @@ export class UsersService {
     });
   }
 
-  // ====================== OTHER METHODS ======================
+  // ====================== ADDRESS ======================
   async assignPrimaryAddress(userId: string, addressId: string): Promise<User> {
     const user = await this.findOne(userId);
 
@@ -214,27 +246,35 @@ export class UsersService {
       where: { id: addressId, entity_id: userId },
     });
 
-    if (!address) throw new NotFoundException('Address not found for user');
+    if (!address) {
+      throw new NotFoundException('Address not found for user');
+    }
 
     user.primary_address_id = addressId;
     return this.usersRepo.save(user);
   }
 
+  // ====================== PASSWORD ======================
   async changePassword(
     id: string,
     oldPassword: string,
     newPassword: string,
   ): Promise<void> {
     const user = await this.usersRepo.findOne({ where: { id } });
+
     if (!user) throw new NotFoundException('User not found');
 
     const isMatch = await bcrypt.compare(oldPassword, user.password_hash);
-    if (!isMatch) throw new BadRequestException('Old password incorrect');
+
+    if (!isMatch) {
+      throw new BadRequestException('Old password incorrect');
+    }
 
     user.password_hash = await bcrypt.hash(newPassword, 10);
     await this.usersRepo.save(user);
   }
 
+  // ====================== AUTH ======================
   async validateUser(email: string, password: string): Promise<any> {
     const user = await this.usersRepo.findOne({
       where: { email },

@@ -11,8 +11,12 @@ export class AuthService {
   ) {}
 
   async register(dto: CreateUserDto) {
-    // UsersService already handles duplicate email check
     const user = await this.usersService.create(dto);
+
+    if (!user) {
+      throw new ConflictException('User registration failed');
+    }
+
     return this.login(user);
   }
 
@@ -24,15 +28,16 @@ export class AuthService {
     const payload = {
       sub: user.id,
       email: user.email,
-      role: user.role,
+      role: user.role?.name, // ✅ or role.id
     };
+
     return {
       access_token: this.jwtService.sign(payload),
       user: {
         id: user.id,
         full_name: user.full_name,
         email: user.email,
-        role: user.role,
+        role: user.role?.name,
         phone: user.phone,
       },
     };

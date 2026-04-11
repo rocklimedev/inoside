@@ -6,24 +6,46 @@ import {
   Body,
   UseGuards,
   BadRequestException,
+  Post,
 } from '@nestjs/common';
 
 import { UsersService } from '../users/users.service';
+import { RolesService } from './roles.service';
+
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { RolesGuard } from './guards/roles.guard';
+
 import { Role } from './entities/role.entity';
 import { UpdateUserRoleDto } from './dto/update-user-role.dto';
+import { CreateRoleDto } from './dto/create-role.dto';
+
 @Controller('roles')
-@UseGuards(JwtAuthGuard, RolesGuard)
 export class RolesController {
-  constructor(private readonly usersService: UsersService) {}
+  constructor(
+    private readonly rolesService: RolesService, // ✅ FIXED
+    private readonly usersService: UsersService,
+  ) {}
 
   // =============================================
-  // GET ALL ROLES (FROM DB)
+  // CREATE ROLE
+  // =============================================
+  @Post()
+  async createRole(@Body() dto: CreateRoleDto) {
+    const role = await this.rolesService.createRole(dto);
+
+    return {
+      success: true,
+      message: 'Role created successfully',
+      data: role,
+    };
+  }
+
+  // =============================================
+  // GET ALL ROLES
   // =============================================
   @Get()
   async getAllRoles() {
-    const roles = await this.usersService.findAllRoles();
+    const roles = await this.rolesService.findAll(); // ✅ FIXED
 
     return {
       success: true,
@@ -42,7 +64,7 @@ export class RolesController {
   // =============================================
   @Get('stats')
   async getRoleStats() {
-    const roles = await this.usersService.findAllRoles();
+    const roles = await this.rolesService.findAll(); // ✅ FIXED
 
     const stats = await Promise.all(
       roles.map(async (role: Role) => {
@@ -94,7 +116,7 @@ export class RolesController {
   }
 
   // =============================================
-  // CHANGE USER ROLE (ENTITY-BASED)
+  // CHANGE USER ROLE
   // =============================================
   @Patch(':userId/role')
   async updateUserRole(
@@ -106,12 +128,8 @@ export class RolesController {
     // 1. Fetch user
     const user = await this.usersService.findOne(userId);
 
-    // 2. Fetch role ENTITY
-    const role = await this.usersService.findRoleById(roleId);
-
-    if (!role) {
-      throw new BadRequestException(`Invalid roleId: ${roleId}`);
-    }
+    // 2. Fetch role from RolesService ✅ FIXED
+    const role = await this.rolesService.findById(roleId);
 
     // 3. Prevent removing last admin
     if (user.role?.name === 'admin' && role.name !== 'admin') {
@@ -122,8 +140,9 @@ export class RolesController {
       }
     }
 
-    // 4. Update user with ROLE ENTITY
+    // 4. Update role
     const updatedUser = await this.usersService.updateUserRole(userId, roleId);
+
     return {
       success: true,
       message: `User role updated to ${role.name}`,

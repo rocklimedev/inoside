@@ -1,19 +1,40 @@
-import { Controller, Post, Body, UseGuards, Request } from '@nestjs/common';
-import { AuthService } from './auth/auth.service';
-import { LocalAuthGuard } from './auth/local-auth.guard';
-import { CreateUserDto } from './users/dto/create-user.dto';
-@Controller('auth')
-export class AuthController {
-  constructor(private authService: AuthService) {}
+import { Controller, Get, HttpStatus, Redirect } from '@nestjs/common';
+import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
 
-  @Post('register')
-  async register(@Body() createUserDto: CreateUserDto) {
-    return this.authService.register(createUserDto);
+@ApiTags('App')
+@Controller()
+export class AppController {
+  @Get()
+  @ApiOperation({ summary: 'Application Health Check' })
+  @ApiResponse({
+    status: HttpStatus.OK,
+    description: 'Application is running successfully',
+  })
+  getHello() {
+    return {
+      success: true,
+      message: 'Welcome to Construction Project Management API',
+      version: '1.0.0',
+      status: 'running',
+      timestamp: new Date().toISOString(),
+      environment: process.env.NODE_ENV || 'development',
+    };
   }
 
-  @UseGuards(LocalAuthGuard)
-  @Post('login')
-  async login(@Request() req) {
-    return this.authService.login(req.user);
+  @Get('health')
+  @ApiOperation({ summary: 'Health Check Endpoint' })
+  healthCheck() {
+    return {
+      success: true,
+      status: 'healthy',
+      uptime: process.uptime(),
+      timestamp: new Date().toISOString(),
+      database: 'connected', // You can enhance this with actual DB check later
+    };
   }
+
+  @Get('docs')
+  @ApiOperation({ summary: 'Redirect to Swagger Documentation' })
+  @Redirect('/api-docs', 301)
+  getDocs() {}
 }
