@@ -1,16 +1,40 @@
-import { useState, useEffect } from 'react';
-import { useAuth } from '@/contexts/AuthContext';
-import { Card } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
+import { useState, useEffect } from "react";
+import { useAuth } from "@/contexts/AuthContext";
+import { Card } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 import {
-  Briefcase, FileCheck2, PenLine, HardHat, AlertTriangle, CheckCircle2
-} from 'lucide-react';
-import { PriorityActions, ApprovalsPanel, DocumentCenter } from '@/components/dashboard/WorkPanels';
-import { ActiveProjects, SiteProgress, ClientComms, AlertsPanel } from '@/components/dashboard/MonitoringPanels';
+  Briefcase,
+  FileCheck2,
+  PenLine,
+  HardHat,
+  AlertTriangle,
+  CheckCircle2,
+} from "lucide-react";
+import {
+  PriorityActions,
+  ApprovalsPanel,
+  DocumentCenter,
+} from "@/components/dashboard/WorkPanels";
+import {
+  ActiveProjects,
+  SiteProgress,
+  ClientComms,
+  AlertsPanel,
+} from "@/components/dashboard/MonitoringPanels";
 
 const STAGE_LIST = [
-  "Brief", "Pitch", "Site Reki", "Scope", "Time & Cost", "BOQ",
-  "Design", "Execution", "Vendor", "Inventory", "Quality", "Handover"
+  "Brief",
+  "Pitch",
+  "Site Reki",
+  "Scope",
+  "Time & Cost",
+  "BOQ",
+  "Design",
+  "Execution",
+  "Vendor",
+  "Inventory",
+  "Quality",
+  "Handover",
 ];
 
 export default function ArchitectDashboard() {
@@ -33,15 +57,15 @@ export default function ArchitectDashboard() {
   const fetchAll = async () => {
     try {
       const [k, p, proj, act, apr, doc, sp, cc, al] = await Promise.all([
-        api.get('/dashboard/kpis'),
-        api.get('/dashboard/pipeline'),
-        api.get('/dashboard/projects'),
-        api.get('/dashboard/priority-actions'),
-        api.get('/dashboard/approvals'),
-        api.get('/dashboard/documents'),
-        api.get('/dashboard/site-progress'),
-        api.get('/dashboard/client-comms'),
-        api.get('/dashboard/alerts'),
+        api.get("/dashboard/kpis"),
+        api.get("/dashboard/pipeline"),
+        api.get("/dashboard/projects"),
+        api.get("/dashboard/priority-actions"),
+        api.get("/dashboard/approvals"),
+        api.get("/dashboard/documents"),
+        api.get("/dashboard/site-progress"),
+        api.get("/dashboard/client-comms"),
+        api.get("/dashboard/alerts"),
       ]);
       setKpis(k.data);
       setPipeline(p.data);
@@ -53,7 +77,7 @@ export default function ArchitectDashboard() {
       setClientComms(cc.data);
       setAlerts(al.data);
     } catch (err) {
-      console.error('Dashboard fetch error:', err);
+      console.error("Dashboard fetch error:", err);
     } finally {
       setLoading(false);
     }
@@ -71,18 +95,60 @@ export default function ArchitectDashboard() {
   }
 
   const kpiCards = [
-    { label: 'Active Projects', value: kpis?.total_active || 0, icon: Briefcase, color: '#ef7f1b', testId: 'kpi-total-active' },
-    { label: 'Pending Approvals', value: kpis?.pending_approvals || 0, icon: FileCheck2, color: '#ef7f1b', testId: 'kpi-pending-approvals' },
-    { label: 'Under Revision', value: kpis?.under_revision || 0, icon: PenLine, color: '#ef7f1b', testId: 'kpi-under-revision' },
-    { label: 'Execution Awaiting', value: kpis?.exec_awaiting || 0, icon: HardHat, color: '#ef7f1b', testId: 'kpi-exec-awaiting' },
-    { label: 'Delay Flags', value: kpis?.delay_flags || 0, icon: AlertTriangle, color: kpis?.delay_flags > 0 ? '#e31d3b' : '#94a3b8', testId: 'kpi-delay-flags' },
-    { label: 'Handover Ready', value: kpis?.handover_ready || 0, icon: CheckCircle2, color: '#22c55e', testId: 'kpi-handover-ready' },
+    {
+      label: "Active Projects",
+      value: kpis?.total_active || 0,
+      icon: Briefcase,
+      color: "#ef7f1b",
+      testId: "kpi-total-active",
+    },
+    {
+      label: "Pending Approvals",
+      value: kpis?.pending_approvals || 0,
+      icon: FileCheck2,
+      color: "#ef7f1b",
+      testId: "kpi-pending-approvals",
+    },
+    {
+      label: "Under Revision",
+      value: kpis?.under_revision || 0,
+      icon: PenLine,
+      color: "#ef7f1b",
+      testId: "kpi-under-revision",
+    },
+    {
+      label: "Execution Awaiting",
+      value: kpis?.exec_awaiting || 0,
+      icon: HardHat,
+      color: "#ef7f1b",
+      testId: "kpi-exec-awaiting",
+    },
+    {
+      label: "Delay Flags",
+      value: kpis?.delay_flags || 0,
+      icon: AlertTriangle,
+      color: kpis?.delay_flags > 0 ? "#e31d3b" : "#94a3b8",
+      testId: "kpi-delay-flags",
+    },
+    {
+      label: "Handover Ready",
+      value: kpis?.handover_ready || 0,
+      icon: CheckCircle2,
+      color: "#22c55e",
+      testId: "kpi-handover-ready",
+    },
   ];
 
   return (
-    <div className="p-4 md:p-6 lg:p-8 space-y-6" data-testid="architect-dashboard">
+    <div
+      className="p-4 md:p-6 lg:p-8 space-y-6"
+      data-testid="architect-dashboard"
+    >
       {/* KPI Cards */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 md:gap-4" data-testid="kpi-cards">
+      <div
+        className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 md:gap-4"
+        data-testid="kpi-cards"
+      >
         {kpiCards.map((kpi, i) => {
           const Icon = kpi.icon;
           return (
@@ -92,7 +158,7 @@ export default function ArchitectDashboard() {
               style={{
                 borderLeftColor: kpi.color,
                 animationDelay: `${i * 80}ms`,
-                animationFillMode: 'both'
+                animationFillMode: "both",
               }}
               data-testid={kpi.testId}
             >
@@ -101,9 +167,14 @@ export default function ArchitectDashboard() {
                   <p className="text-[10px] font-bold uppercase tracking-wider text-gray-400 leading-tight">
                     {kpi.label}
                   </p>
-                  <p className="text-2xl md:text-3xl font-black text-black mt-1.5">{kpi.value}</p>
+                  <p className="text-2xl md:text-3xl font-black text-black mt-1.5">
+                    {kpi.value}
+                  </p>
                 </div>
-                <Icon className="w-4 h-4 mt-0.5 shrink-0" style={{ color: kpi.color }} />
+                <Icon
+                  className="w-4 h-4 mt-0.5 shrink-0"
+                  style={{ color: kpi.color }}
+                />
               </div>
             </Card>
           );
@@ -112,19 +183,24 @@ export default function ArchitectDashboard() {
 
       {/* Project Pipeline */}
       <Card className="p-5 md:p-6" data-testid="project-pipeline">
-        <h2 className="text-sm font-bold text-black mb-5 uppercase tracking-wider">Project Pipeline</h2>
+        <h2 className="text-sm font-bold text-black mb-5 uppercase tracking-wider">
+          Project Pipeline
+        </h2>
         <div className="flex items-start overflow-x-auto pb-3 -mx-1">
           {pipeline.map((stage, i) => (
             <div key={i} className="flex items-center shrink-0">
               <div
                 className="flex flex-col items-center min-w-[72px] md:min-w-[80px] cursor-pointer group px-1 animate-fadeInUp"
-                style={{ animationDelay: `${i * 50}ms`, animationFillMode: 'both' }}
+                style={{
+                  animationDelay: `${i * 50}ms`,
+                  animationFillMode: "both",
+                }}
               >
                 <div
                   className={`w-8 h-8 md:w-9 md:h-9 rounded-full flex items-center justify-center text-xs font-bold border-2 transition-all group-hover:scale-110 ${
                     stage.count > 0
-                      ? 'border-[#ef7f1b] bg-[#ef7f1b] text-white shadow-sm shadow-orange-200'
-                      : 'border-gray-200 bg-white text-gray-400'
+                      ? "border-[#ef7f1b] bg-[#ef7f1b] text-white shadow-sm shadow-orange-200"
+                      : "border-gray-200 bg-white text-gray-400"
                   }`}
                 >
                   {stage.count}
