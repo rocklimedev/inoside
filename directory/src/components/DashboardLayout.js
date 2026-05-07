@@ -61,11 +61,11 @@ const navSections = [
   {
     title: "MAIN",
     items: [
-      { icon: LayoutDashboard, label: "Dashboard", path: "/dashboard" },
+      { icon: LayoutDashboard, label: "Dashboard", path: "/" },
       { icon: FolderKanban, label: "Projects", path: "/projects" },
-      { icon: Users, label: "Clients", path: "/clients" },
-      { icon: Calendar, label: "Calendar", path: "/calendar" },
-      { icon: MessageCircle, label: "Chat", path: "/chat" },
+      { icon: Users, label: "Vendors", path: "/vendors" },
+      { icon: Users, label: "Estimates", path: "/estimates" },
+      { icon: Users, label: "BOQs", path: "/boq" },
     ],
   },
 ];
@@ -263,44 +263,6 @@ export default function DashboardLayout({ children }) {
             </div>
 
             <div className="flex items-center gap-2">
-              {/* Search */}
-              <div className="hidden lg:flex items-center gap-2 bg-gray-50 rounded-lg px-3 py-2 w-56 border border-transparent focus-within:border-[#ef7f1b]/30 focus-within:bg-white transition-all">
-                <Search className="w-4 h-4 text-gray-400 shrink-0" />
-                <input
-                  type="text"
-                  placeholder="Search projects, docs..."
-                  className="bg-transparent text-sm outline-none w-full placeholder:text-gray-400"
-                />
-              </div>
-
-              {/* Quick Add */}
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <button className="w-8 h-8 rounded-lg bg-[#ef7f1b] text-white flex items-center justify-center hover:bg-[#d66e15] transition-colors">
-                    <Plus className="w-4 h-4" />
-                  </button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="w-56">
-                  {quickActions.map((action, i) => (
-                    <DropdownMenuItem
-                      key={i}
-                      onClick={() =>
-                        toast.info(`${action.label} - Coming soon`)
-                      }
-                    >
-                      <action.icon className="w-4 h-4 mr-2 text-[#ef7f1b]" />
-                      {action.label}
-                    </DropdownMenuItem>
-                  ))}
-                </DropdownMenuContent>
-              </DropdownMenu>
-
-              {/* Notifications */}
-              <button className="relative w-8 h-8 rounded-lg flex items-center justify-center text-gray-500 hover:bg-gray-100 transition-colors">
-                <Bell className="w-[18px] h-[18px]" />
-                <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-[#e31d3b] rounded-full" />
-              </button>
-
               {/* Profile */}
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>

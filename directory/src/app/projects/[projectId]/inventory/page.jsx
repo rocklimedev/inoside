@@ -1,10 +1,32 @@
-import React, { useState, useEffect } from "react";
+"use client";
+
+import React, { useMemo, useState } from "react";
+
+import { useParams } from "next/navigation";
+
 import { useAuth } from "@/contexts/AuthContext";
+
+import { useGetProjectByIdQuery } from "@/api/projectApi";
+
+import {
+  useGetInventoryByProjectQuery,
+  useCreateInventoryMutation,
+  useDeleteInventoryMutation,
+} from "@/api/inventoryApi";
+
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+
 import {
   Select,
   SelectTrigger,
@@ -12,31 +34,27 @@ import {
   SelectItem,
   SelectValue,
 } from "@/components/ui/select";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogFooter,
-} from "@/components/ui/dialog";
-import { ScrollArea } from "@/components/ui/scroll-area";
+
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
-import { toast } from "sonner";
+
+import { ScrollArea } from "@/components/ui/scroll-area";
+
 import {
-  Plus,
-  Search,
-  ArrowLeft,
   Loader2,
+  Plus,
   Trash2,
   Package,
-  TrendingUp,
-  Truck,
-  DollarSign,
-  AlertTriangle,
-  CheckCircle,
-  Clock,
-  X,
+  ArrowDownCircle,
+  ArrowUpCircle,
+  Boxes,
+  IndianRupee,
 } from "lucide-react";
+
+import { toast } from "sonner";
+
+// ======================================================
+// CONSTANTS
+// ======================================================
 
 const CATEGORIES = [
   "Civil",
@@ -45,31 +63,29 @@ const CATEGORIES = [
   "Furniture",
   "Fixtures",
   "Finishes",
+  "Hardware",
+  "Tools",
   "Other",
 ];
+
 const UNITS = [
-  "sqft",
-  "sqm",
   "nos",
-  "rft",
-  "kg",
-  "cum",
+  "pcs",
+  "box",
   "bag",
-  "lot",
-  "set",
+  "kg",
   "ltr",
-];
-const DELIVERY_STATUS = [
-  "pending",
-  "dispatched",
-  "delivered",
-  "partial",
-  "damaged",
+  "sqm",
+  "sqft",
+  "rft",
+  "set",
 ];
 
+const TRANSACTION_TYPES = ["IN", "OUT"];
+
 const fmt = (n) => {
-  const num = Number(n);
-  if (!num && num !== 0) return "—";
+  const num = Number(n || 0);
+
   return new Intl.NumberFormat("en-IN", {
     style: "currency",
     currency: "INR",
@@ -77,326 +93,302 @@ const fmt = (n) => {
   }).format(num);
 };
 
+const formatDate = (date) => {
+  if (!date || date === "0000-00-00") return "—";
+
+  const d = new Date(date);
+
+  if (isNaN(d)) return "—";
+
+  return d.toLocaleDateString("en-IN");
+};
+
+// ======================================================
+// PAGE
+// ======================================================
+
 export default function InventoryPage() {
-  const { api, user } = useAuth();
-  const [projects, setProjects] = useState([]);
-  const [selectedProject, setSelectedProject] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [search, setSearch] = useState("");
+  const { projectId } = useParams();
 
-  useEffect(() => {
-    api
-      .get("/projects")
-      .then((r) => setProjects(r.data))
-      .catch(() => {})
-      .finally(() => setLoading(false));
-  }, []);
+  const { user } = useAuth();
 
-  if (loading)
-    return (
-      <div className="flex items-center justify-center h-full min-h-[60vh]">
-        <div className="animate-spin w-8 h-8 border-2 border-[#ef7f1b] border-t-transparent rounded-full" />
-      </div>
-    );
-
-  if (selectedProject)
-    return (
-      <InventoryWorkspace
-        project={selectedProject}
-        api={api}
-        user={user}
-        onBack={() => setSelectedProject(null)}
-      />
-    );
-
-  return (
-    <div className="flex flex-col h-full" data-testid="inventory-page">
-      <div className="p-4 md:p-6 border-b border-gray-200 bg-white">
-        <h1
-          className="text-xl font-black text-black"
-          data-testid="inventory-title"
-        >
-          Inventory
-        </h1>
-        <p className="text-xs text-gray-400 mt-1">
-          Select a project to manage inventory
-        </p>
-      </div>
-      <div className="p-4 md:p-6">
-        <div className="relative mb-4">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-          <Input
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            placeholder="Search projects..."
-            className="pl-10"
-            data-testid="inv-project-search"
-          />
-        </div>
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-          {projects
-            .filter(
-              (p) =>
-                !search || p.name?.toLowerCase().includes(search.toLowerCase()),
-            )
-            .map((p, i) => (
-              <Card
-                key={p.id}
-                className="p-4 hover:shadow-lg hover:border-[#ef7f1b]/20 transition-all cursor-pointer"
-                onClick={() => setSelectedProject(p)}
-                data-testid={`inv-project-${i}`}
-              >
-                <h3 className="text-sm font-bold text-black">{p.name}</h3>
-                <p className="text-[10px] text-gray-400 mt-1">
-                  {p.client} &middot; {p.stage}
-                </p>
-              </Card>
-            ))}
-        </div>
-      </div>
-    </div>
-  );
+  return <InventoryWorkspace projectId={projectId} user={user} />;
 }
 
-function InventoryWorkspace({ project, api, user, onBack }) {
-  const [items, setItems] = useState([]);
-  const [summary, setSummary] = useState(null);
-  const [dispatches, setDispatches] = useState([]);
+// ======================================================
+// WORKSPACE
+// ======================================================
+
+function InventoryWorkspace({ projectId, user }) {
   const [showAdd, setShowAdd] = useState(false);
+
   const [activeTab, setActiveTab] = useState("ledger");
 
-  useEffect(() => {
-    loadData();
-  }, []);
+  const { data: project, isLoading: projectLoading } =
+    useGetProjectByIdQuery(projectId);
 
-  const loadData = async () => {
-    try {
-      const [inv, sum, disp] = await Promise.all([
-        api.get(`/inventory?project_id=${project.id}`),
-        api.get(`/inventory/summary/${project.id}`),
-        api.get(`/inventory/dispatches/${project.id}`),
-      ]);
-      setItems(inv.data);
-      setSummary(sum.data);
-      setDispatches(disp.data);
-    } catch (e) {
-      console.error(e);
-    }
-  };
+  const { data: inventoryResponse, isLoading: inventoryLoading } =
+    useGetInventoryByProjectQuery(projectId);
+
+  const [createInventory] = useCreateInventoryMutation();
+
+  const [deleteInventory] = useDeleteInventoryMutation();
+
+  const inventoryItems =
+    inventoryResponse?.inventories || inventoryResponse || [];
+
+  // ======================================================
+  // GROUP & CALCULATE STOCK
+  // ======================================================
+
+  const stockLedger = useMemo(() => {
+    const grouped = {};
+
+    inventoryItems.forEach((item) => {
+      const key = item.item_name?.trim()?.toUpperCase();
+
+      if (!key) return;
+
+      if (!grouped[key]) {
+        grouped[key] = {
+          item_name: item.item_name,
+          total_in: 0,
+          total_out: 0,
+          balance: 0,
+          transactions: [],
+          vendors: new Set(),
+          receivers: new Set(),
+        };
+      }
+
+      const qty = Number(item.quantity || 0);
+
+      if (item.in) {
+        grouped[key].total_in += qty;
+
+        grouped[key].vendors.add(item.in);
+      }
+
+      if (item.out) {
+        grouped[key].total_out += qty;
+
+        grouped[key].receivers.add(item.receiver_name || item.out);
+      }
+
+      // if no in/out, assume incoming stock
+      if (!item.in && !item.out) {
+        grouped[key].total_in += qty;
+      }
+
+      grouped[key].transactions.push(item);
+
+      grouped[key].balance = grouped[key].total_in - grouped[key].total_out;
+    });
+
+    return Object.values(grouped).sort((a, b) =>
+      a.item_name.localeCompare(b.item_name),
+    );
+  }, [inventoryItems]);
+
+  // ======================================================
+  // SUMMARY
+  // ======================================================
+
+  const summary = useMemo(() => {
+    let totalIn = 0;
+    let totalOut = 0;
+    let totalBalance = 0;
+
+    stockLedger.forEach((i) => {
+      totalIn += i.total_in;
+      totalOut += i.total_out;
+      totalBalance += i.balance;
+    });
+
+    return {
+      totalItems: stockLedger.length,
+      totalIn,
+      totalOut,
+      totalBalance,
+    };
+  }, [stockLedger]);
+
+  // ======================================================
+  // DELETE
+  // ======================================================
 
   const handleDelete = async (id) => {
     try {
-      await api.delete(`/inventory/${id}`);
-      loadData();
-      toast.success("Deleted");
-    } catch {
-      toast.error("Failed");
+      await deleteInventory(id).unwrap();
+
+      toast.success("Inventory entry deleted");
+    } catch (err) {
+      toast.error("Failed to delete entry");
     }
   };
 
-  const kpi = summary || {
-    total_items: 0,
-    total_purchased_cost: 0,
-    total_delivered: 0,
-    total_used_cost: 0,
-    remaining_stock_value: 0,
-    pending_deliveries: 0,
-  };
+  // ======================================================
+  // LOADING
+  // ======================================================
+
+  if (projectLoading || !project) {
+    return (
+      <div className="h-[60vh] flex items-center justify-center">
+        <Loader2 className="w-8 h-8 animate-spin text-[#ef7f1b]" />
+      </div>
+    );
+  }
+
+  // ======================================================
+  // UI
+  // ======================================================
 
   return (
-    <div className="flex flex-col h-full" data-testid="inventory-workspace">
-      <div className="p-4 md:px-6 border-b border-gray-200 bg-white">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <button onClick={onBack} className="text-gray-400 hover:text-black">
-              <ArrowLeft className="w-5 h-5" />
-            </button>
-            <div>
-              <h1 className="text-base font-bold text-black">{project.name}</h1>
-              <p className="text-[11px] text-gray-400">Inventory Management</p>
-            </div>
+    <div className="flex flex-col h-full bg-[#fafafa]">
+      {/* HEADER */}
+
+      <div className="border-b bg-white px-4 md:px-6 py-4">
+        <div className="flex items-start justify-between gap-4">
+          <div>
+            <h1 className="text-lg font-bold text-black">{project.name}</h1>
+
+            <p className="text-xs text-gray-400 mt-1">
+              Project Inventory Management
+            </p>
           </div>
+
           {user?.role !== "Client" && (
             <Button
-              size="sm"
               onClick={() => setShowAdd(true)}
-              className="bg-[#ef7f1b] hover:bg-[#d66e15] text-white"
-              data-testid="add-material-btn"
+              className="bg-[#ef7f1b] hover:bg-[#d56d16] text-white"
             >
-              <Plus className="w-4 h-4 mr-1" /> Add Material
+              <Plus className="w-4 h-4 mr-2" />
+              Add Entry
             </Button>
           )}
         </div>
+
+        {/* SUMMARY */}
+
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mt-5">
+          <SummaryCard
+            title="Materials"
+            value={summary.totalItems}
+            icon={Boxes}
+          />
+
+          <SummaryCard
+            title="Stock In"
+            value={summary.totalIn}
+            icon={ArrowDownCircle}
+          />
+
+          <SummaryCard
+            title="Stock Out"
+            value={summary.totalOut}
+            icon={ArrowUpCircle}
+          />
+
+          <SummaryCard
+            title="Balance"
+            value={summary.totalBalance}
+            icon={Package}
+          />
+        </div>
       </div>
 
-      {/* Summary Cards */}
-      <div className="grid grid-cols-3 md:grid-cols-6 gap-3 p-4 md:px-6 bg-gray-50/50 border-b border-gray-100">
-        {[
-          { label: "Materials", value: kpi.total_items, icon: Package },
-          {
-            label: "Purchased",
-            value: fmt(kpi.total_purchased_cost),
-            icon: DollarSign,
-          },
-          { label: "Delivered", value: kpi.total_delivered, icon: Truck },
-          {
-            label: "Used Cost",
-            value: fmt(kpi.total_used_cost),
-            icon: TrendingUp,
-          },
-          {
-            label: "Remaining",
-            value: fmt(kpi.remaining_stock_value),
-            icon: Package,
-          },
-          { label: "Pending", value: kpi.pending_deliveries, icon: Clock },
-        ].map((k, i) => {
-          const Icon = k.icon;
-          return (
-            <Card
-              key={i}
-              className="p-3 text-center"
-              data-testid={`inv-kpi-${i}`}
-            >
-              <Icon className="w-4 h-4 text-gray-400 mx-auto mb-1" />
-              <p className="text-sm font-black text-black truncate">
-                {k.value}
-              </p>
-              <p className="text-[9px] text-gray-400">{k.label}</p>
-            </Card>
-          );
-        })}
-      </div>
+      {/* TABS */}
 
       <Tabs
         value={activeTab}
         onValueChange={setActiveTab}
         className="flex-1 flex flex-col overflow-hidden"
       >
-        <TabsList className="mx-4 mt-3 bg-gray-100 p-0.5 rounded-lg w-fit">
-          <TabsTrigger value="ledger" className="text-xs px-3 py-1.5">
-            Material Ledger
-          </TabsTrigger>
-          <TabsTrigger value="dispatches" className="text-xs px-3 py-1.5">
-            Dispatches
-          </TabsTrigger>
-          <TabsTrigger value="cost" className="text-xs px-3 py-1.5">
-            Cost Summary
-          </TabsTrigger>
+        <TabsList className="m-4 w-fit bg-gray-100">
+          <TabsTrigger value="ledger">Material Ledger</TabsTrigger>
+
+          <TabsTrigger value="transactions">Transactions</TabsTrigger>
         </TabsList>
 
-        {/* Material Ledger */}
+        {/* ====================================================== */}
+        {/* LEDGER */}
+        {/* ====================================================== */}
+
         <TabsContent value="ledger" className="flex-1 overflow-hidden m-0">
           <ScrollArea className="h-full">
             <div className="p-4">
-              {items.length === 0 ? (
-                <div className="text-center py-16">
-                  <Package className="w-10 h-10 text-gray-200 mx-auto mb-3" />
-                  <p className="text-sm text-gray-400">
-                    No materials tracked yet
-                  </p>
+              {inventoryLoading ? (
+                <div className="flex justify-center py-20">
+                  <Loader2 className="w-8 h-8 animate-spin text-[#ef7f1b]" />
                 </div>
+              ) : stockLedger.length === 0 ? (
+                <EmptyState />
               ) : (
-                <Card className="overflow-hidden">
+                <Card className="overflow-hidden border-0 shadow-sm">
                   <div className="overflow-x-auto">
-                    <table className="w-full text-sm" data-testid="inv-table">
+                    <table className="w-full text-sm">
                       <thead>
-                        <tr className="bg-gray-50 text-[10px] uppercase tracking-wider text-gray-500">
-                          <th className="py-2.5 px-3 text-left font-bold">
+                        <tr className="bg-gray-50 text-[11px] uppercase tracking-wider text-gray-500">
+                          <th className="px-4 py-3 text-left font-bold">
                             Material
                           </th>
-                          <th className="py-2.5 px-3 text-left font-bold">
-                            Category
+
+                          <th className="px-4 py-3 text-right font-bold">In</th>
+
+                          <th className="px-4 py-3 text-right font-bold">
+                            Out
                           </th>
-                          <th className="py-2.5 px-3 text-left font-bold">
-                            Vendor
+
+                          <th className="px-4 py-3 text-right font-bold">
+                            Balance
                           </th>
-                          <th className="py-2.5 px-3 text-right font-bold">
-                            Purchased
+
+                          <th className="px-4 py-3 text-left font-bold">
+                            Vendors
                           </th>
-                          <th className="py-2.5 px-3 text-right font-bold">
-                            To Site
+
+                          <th className="px-4 py-3 text-left font-bold">
+                            Receivers
                           </th>
-                          <th className="py-2.5 px-3 text-right font-bold">
-                            Used
-                          </th>
-                          <th className="py-2.5 px-3 text-right font-bold">
-                            Remaining
-                          </th>
-                          <th className="py-2.5 px-3 text-left font-bold">
-                            Unit
-                          </th>
-                          <th className="py-2.5 px-3 text-right font-bold">
-                            Cost
-                          </th>
-                          <th className="py-2.5 px-3 text-center font-bold">
-                            Status
-                          </th>
-                          <th className="py-2.5 px-3 w-8"></th>
                         </tr>
                       </thead>
+
                       <tbody>
-                        {items.map((item, idx) => {
-                          const statusColors = {
-                            pending: "bg-yellow-50 text-yellow-700",
-                            dispatched: "bg-blue-50 text-blue-600",
-                            delivered: "bg-green-50 text-green-700",
-                            partial: "bg-orange-50 text-[#ef7f1b]",
-                            damaged: "bg-red-50 text-[#e31d3b]",
-                          };
-                          return (
-                            <tr
-                              key={item.id}
-                              className="border-t border-gray-100 hover:bg-gray-50/50"
-                              data-testid={`inv-row-${idx}`}
-                            >
-                              <td className="py-2 px-3 font-medium text-xs text-black">
-                                {item.material_name}
-                              </td>
-                              <td className="py-2 px-3 text-xs text-gray-600">
-                                {item.category}
-                              </td>
-                              <td className="py-2 px-3 text-xs text-gray-600">
-                                {item.vendor_name || "—"}
-                              </td>
-                              <td className="py-2 px-3 text-xs text-right">
-                                {item.quantity_purchased}
-                              </td>
-                              <td className="py-2 px-3 text-xs text-right">
-                                {item.quantity_sent_to_site}
-                              </td>
-                              <td className="py-2 px-3 text-xs text-right">
-                                {item.quantity_used}
-                              </td>
-                              <td className="py-2 px-3 text-xs text-right font-medium">
-                                {item.quantity_remaining}
-                              </td>
-                              <td className="py-2 px-3 text-xs text-gray-500">
-                                {item.unit}
-                              </td>
-                              <td className="py-2 px-3 text-xs text-right">
-                                {fmt(item.total_cost)}
-                              </td>
-                              <td className="py-2 px-3 text-center">
-                                <Badge
-                                  className={`${statusColors[item.delivery_status] || statusColors.pending} text-[9px] border-0`}
-                                >
-                                  {item.delivery_status}
-                                </Badge>
-                              </td>
-                              <td className="py-2 px-3">
-                                {user?.role !== "Client" && (
-                                  <button
-                                    onClick={() => handleDelete(item.id)}
-                                    className="text-gray-300 hover:text-[#e31d3b]"
-                                  >
-                                    <Trash2 className="w-3 h-3" />
-                                  </button>
-                                )}
-                              </td>
-                            </tr>
-                          );
-                        })}
+                        {stockLedger.map((item, idx) => (
+                          <tr key={idx} className="border-t hover:bg-gray-50">
+                            <td className="px-4 py-3">
+                              <div className="font-semibold text-black text-xs">
+                                {item.item_name}
+                              </div>
+
+                              <div className="text-[10px] text-gray-400 mt-1">
+                                {item.transactions.length} transactions
+                              </div>
+                            </td>
+
+                            <td className="px-4 py-3 text-right text-xs font-medium text-green-600">
+                              {item.total_in}
+                            </td>
+
+                            <td className="px-4 py-3 text-right text-xs font-medium text-red-500">
+                              {item.total_out}
+                            </td>
+
+                            <td className="px-4 py-3 text-right">
+                              <Badge className="bg-[#ef7f1b]/10 text-[#ef7f1b] border-0">
+                                {item.balance}
+                              </Badge>
+                            </td>
+
+                            <td className="px-4 py-3 text-xs text-gray-600">
+                              {[...item.vendors].join(", ") || "—"}
+                            </td>
+
+                            <td className="px-4 py-3 text-xs text-gray-600">
+                              {[...item.receivers].join(", ") || "—"}
+                            </td>
+                          </tr>
+                        ))}
                       </tbody>
                     </table>
                   </div>
@@ -406,125 +398,106 @@ function InventoryWorkspace({ project, api, user, onBack }) {
           </ScrollArea>
         </TabsContent>
 
-        {/* Dispatches */}
-        <TabsContent value="dispatches" className="flex-1 overflow-hidden m-0">
+        {/* ====================================================== */}
+        {/* TRANSACTIONS */}
+        {/* ====================================================== */}
+
+        <TabsContent
+          value="transactions"
+          className="flex-1 overflow-hidden m-0"
+        >
           <ScrollArea className="h-full">
-            <div className="p-4 space-y-3 max-w-3xl">
-              {dispatches.length === 0 ? (
-                <div className="text-center py-16">
-                  <Truck className="w-10 h-10 text-gray-200 mx-auto mb-3" />
-                  <p className="text-sm text-gray-400">No dispatches yet</p>
-                </div>
+            <div className="p-4">
+              {inventoryItems.length === 0 ? (
+                <EmptyState />
               ) : (
-                dispatches.map((d, i) => (
-                  <Card
-                    key={d.id}
-                    className="p-4"
-                    data-testid={`dispatch-${i}`}
-                  >
-                    <div className="flex items-center justify-between mb-2">
-                      <h3 className="text-xs font-bold text-black">
-                        {d.material_name}
-                      </h3>
-                      <Badge
-                        className={
-                          d.delivery_confirmed
-                            ? "bg-green-50 text-green-700 border-0"
-                            : "bg-blue-50 text-blue-600 border-0"
-                        }
-                      >
-                        {d.delivery_confirmed ? "Confirmed" : "Dispatched"}
-                      </Badge>
-                    </div>
-                    <div className="grid grid-cols-3 gap-3 text-[10px] text-gray-500">
-                      <div>
-                        <p className="font-bold uppercase text-gray-400">Qty</p>
-                        <p className="text-black text-xs">{d.quantity}</p>
-                      </div>
-                      <div>
-                        <p className="font-bold uppercase text-gray-400">
-                          From
-                        </p>
-                        <p className="text-black text-xs">
-                          {d.from_location || "—"}
-                        </p>
-                      </div>
-                      <div>
-                        <p className="font-bold uppercase text-gray-400">To</p>
-                        <p className="text-black text-xs">
-                          {d.to_location || "—"}
-                        </p>
-                      </div>
-                    </div>
-                    <p className="text-[9px] text-gray-400 mt-2">
-                      By {d.dispatched_by} &middot; {d.dispatch_date}
-                    </p>
-                  </Card>
-                ))
+                <div className="space-y-3">
+                  {inventoryItems.map((item) => {
+                    const isIn = !!item.in || !item.out;
+
+                    return (
+                      <Card key={item.id} className="p-4 border-0 shadow-sm">
+                        <div className="flex items-start justify-between gap-4">
+                          <div className="flex-1">
+                            <div className="flex items-center gap-2">
+                              <h3 className="text-sm font-bold text-black">
+                                {item.item_name}
+                              </h3>
+
+                              <Badge
+                                className={
+                                  isIn
+                                    ? "bg-green-50 text-green-700 border-0"
+                                    : "bg-red-50 text-red-600 border-0"
+                                }
+                              >
+                                {isIn ? "IN" : "OUT"}
+                              </Badge>
+                            </div>
+
+                            <div className="grid md:grid-cols-4 gap-3 mt-4">
+                              <Info label="Quantity" value={item.quantity} />
+
+                              <Info
+                                label="Date"
+                                value={formatDate(item.date_added)}
+                              />
+
+                              <Info
+                                label="Vendor / Source"
+                                value={item.in || "—"}
+                              />
+
+                              <Info
+                                label="Receiver / Site"
+                                value={item.receiver_name || item.out || "—"}
+                              />
+                            </div>
+
+                            {item.remarks && (
+                              <div className="mt-3 text-xs text-gray-500">
+                                {item.remarks}
+                              </div>
+                            )}
+                          </div>
+
+                          {user?.role !== "Client" && (
+                            <button
+                              onClick={() => handleDelete(item.id)}
+                              className="text-gray-300 hover:text-red-500"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                          )}
+                        </div>
+                      </Card>
+                    );
+                  })}
+                </div>
               )}
             </div>
           </ScrollArea>
         </TabsContent>
-
-        {/* Cost Summary */}
-        <TabsContent value="cost" className="flex-1 overflow-hidden m-0">
-          <div className="p-4 max-w-2xl">
-            <Card className="p-6" data-testid="inv-cost-summary">
-              <h3 className="text-sm font-bold text-black mb-4">
-                Cost Summary
-              </h3>
-              <div className="space-y-3">
-                {[
-                  ["Total Purchased Cost", kpi.total_purchased_cost],
-                  ["Total Used Cost", kpi.total_used_cost],
-                  ["Remaining Stock Value", kpi.remaining_stock_value],
-                ].map(([label, val], i) => (
-                  <div
-                    key={i}
-                    className="flex items-center justify-between py-2 border-b border-gray-100"
-                  >
-                    <span className="text-xs text-gray-600">{label}</span>
-                    <span className="text-sm font-bold text-black">
-                      {fmt(val)}
-                    </span>
-                  </div>
-                ))}
-                {/* Category breakdown */}
-                <h4 className="text-[10px] font-bold uppercase tracking-wider text-gray-400 pt-3">
-                  By Category
-                </h4>
-                {Object.entries(
-                  items.reduce((acc, i) => {
-                    acc[i.category] =
-                      (acc[i.category] || 0) + (i.total_cost || 0);
-                    return acc;
-                  }, {}),
-                ).map(([cat, cost]) => (
-                  <div key={cat} className="flex items-center justify-between">
-                    <span className="text-xs text-gray-600">{cat}</span>
-                    <span className="text-xs font-medium">{fmt(cost)}</span>
-                  </div>
-                ))}
-              </div>
-            </Card>
-          </div>
-        </TabsContent>
       </Tabs>
 
-      {/* Add Material Dialog */}
+      {/* ====================================================== */}
+      {/* ADD DIALOG */}
+      {/* ====================================================== */}
+
       <Dialog open={showAdd} onOpenChange={setShowAdd}>
-        <DialogContent className="max-w-lg" data-testid="add-material-dialog">
+        <DialogContent className="max-w-xl">
           <DialogHeader>
-            <DialogTitle>Add Material</DialogTitle>
+            <DialogTitle>Add Inventory Entry</DialogTitle>
           </DialogHeader>
-          <AddMaterialForm
-            api={api}
-            projectId={project.id}
+
+          <AddInventoryForm
+            projectId={projectId}
             projectName={project.name}
+            createInventory={createInventory}
             onSuccess={() => {
               setShowAdd(false);
-              loadData();
-              toast.success("Material added");
+
+              toast.success("Inventory added successfully");
             }}
           />
         </DialogContent>
@@ -533,173 +506,241 @@ function InventoryWorkspace({ project, api, user, onBack }) {
   );
 }
 
-function AddMaterialForm({ api, projectId, projectName, onSuccess }) {
-  const [form, setForm] = useState({
-    material_name: "",
-    category: "Civil",
-    vendor_name: "",
-    quantity_purchased: 0,
-    quantity_remaining: 0,
-    unit: "nos",
-    unit_cost: 0,
-    total_cost: 0,
-    delivery_status: "pending",
-  });
+// ======================================================
+// SUMMARY CARD
+// ======================================================
+
+function SummaryCard({ title, value, icon: Icon }) {
+  return (
+    <Card className="p-4 border-0 shadow-sm">
+      <div className="flex items-center justify-between">
+        <div>
+          <p className="text-[11px] uppercase tracking-wider text-gray-400 font-bold">
+            {title}
+          </p>
+
+          <h3 className="text-xl font-black text-black mt-2">{value}</h3>
+        </div>
+
+        <div className="w-10 h-10 rounded-xl bg-[#ef7f1b]/10 flex items-center justify-center">
+          <Icon className="w-5 h-5 text-[#ef7f1b]" />
+        </div>
+      </div>
+    </Card>
+  );
+}
+
+// ======================================================
+// INFO
+// ======================================================
+
+function Info({ label, value }) {
+  return (
+    <div>
+      <p className="text-[10px] uppercase tracking-wider text-gray-400 font-bold">
+        {label}
+      </p>
+
+      <p className="text-xs font-medium text-black mt-1">{value || "—"}</p>
+    </div>
+  );
+}
+
+// ======================================================
+// EMPTY STATE
+// ======================================================
+
+function EmptyState() {
+  return (
+    <div className="py-20 text-center">
+      <Package className="w-10 h-10 text-gray-200 mx-auto mb-3" />
+
+      <h3 className="text-sm font-semibold text-black">
+        No inventory records found
+      </h3>
+
+      <p className="text-xs text-gray-400 mt-1">
+        Add inventory transactions to track stock movement
+      </p>
+    </div>
+  );
+}
+
+// ======================================================
+// ADD FORM
+// ======================================================
+
+function AddInventoryForm({
+  projectId,
+  projectName,
+  createInventory,
+  onSuccess,
+}) {
   const [saving, setSaving] = useState(false);
 
+  const [form, setForm] = useState({
+    item_name: "",
+    quantity: "",
+    transaction_type: "IN",
+    in: "",
+    out: "",
+    receiver_name: "",
+    remarks: "",
+    category: "Other",
+    unit: "nos",
+  });
+
   const u = (k, v) => {
-    const nf = { ...form, [k]: v };
-    if (k === "quantity_purchased" || k === "unit_cost") {
-      nf.total_cost = Number(nf.quantity_purchased) * Number(nf.unit_cost);
-      if (k === "quantity_purchased") nf.quantity_remaining = Number(v);
-    }
-    setForm(nf);
+    setForm((p) => ({
+      ...p,
+      [k]: v,
+    }));
   };
 
   const handleSubmit = async () => {
-    if (!form.material_name.trim()) {
-      toast.error("Material name required");
+    if (!form.item_name.trim()) {
+      toast.error("Item name required");
       return;
     }
+
+    if (!form.quantity) {
+      toast.error("Quantity required");
+      return;
+    }
+
     setSaving(true);
+
     try {
-      await api.post("/inventory", {
-        ...form,
-        project_id: projectId,
+      const payload = {
+        projectId,
         project_name: projectName,
-      });
+        item_name: form.item_name,
+        quantity: Number(form.quantity),
+        receiver_name: form.receiver_name,
+        remarks: form.remarks,
+        date_added: new Date(),
+
+        in: form.transaction_type === "IN" ? form.in : null,
+
+        out: form.transaction_type === "OUT" ? projectName : null,
+      };
+
+      await createInventory(payload).unwrap();
+
       onSuccess();
-    } catch {
-      toast.error("Failed");
+    } catch (err) {
+      console.log(err);
+
+      toast.error("Failed to save inventory");
     } finally {
       setSaving(false);
     }
   };
 
   return (
-    <div className="space-y-3 py-2">
+    <div className="space-y-4 py-2">
       <div className="grid grid-cols-2 gap-3">
         <div>
-          <Label className="text-[10px] font-bold uppercase tracking-wider text-gray-400">
-            Material Name *
+          <Label className="text-[10px] uppercase tracking-wider text-gray-400 font-bold">
+            Item Name
           </Label>
+
           <Input
-            value={form.material_name}
-            onChange={(e) => u("material_name", e.target.value)}
+            value={form.item_name}
+            onChange={(e) => u("item_name", e.target.value)}
             className="mt-1"
-            data-testid="material-name-input"
           />
         </div>
+
         <div>
-          <Label className="text-[10px] font-bold uppercase tracking-wider text-gray-400">
-            Category
+          <Label className="text-[10px] uppercase tracking-wider text-gray-400 font-bold">
+            Quantity
           </Label>
-          <Select value={form.category} onValueChange={(v) => u("category", v)}>
-            <SelectTrigger className="mt-1">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              {CATEGORIES.map((c) => (
-                <SelectItem key={c} value={c}>
-                  {c}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+
+          <Input
+            type="number"
+            value={form.quantity}
+            onChange={(e) => u("quantity", e.target.value)}
+            className="mt-1"
+          />
         </div>
       </div>
+
       <div className="grid grid-cols-2 gap-3">
         <div>
-          <Label className="text-[10px] font-bold uppercase tracking-wider text-gray-400">
-            Vendor
+          <Label className="text-[10px] uppercase tracking-wider text-gray-400 font-bold">
+            Transaction Type
           </Label>
-          <Input
-            value={form.vendor_name}
-            onChange={(e) => u("vendor_name", e.target.value)}
-            className="mt-1"
-          />
-        </div>
-        <div>
-          <Label className="text-[10px] font-bold uppercase tracking-wider text-gray-400">
-            Delivery Status
-          </Label>
+
           <Select
-            value={form.delivery_status}
-            onValueChange={(v) => u("delivery_status", v)}
+            value={form.transaction_type}
+            onValueChange={(v) => u("transaction_type", v)}
           >
             <SelectTrigger className="mt-1">
               <SelectValue />
             </SelectTrigger>
+
             <SelectContent>
-              {DELIVERY_STATUS.map((s) => (
-                <SelectItem key={s} value={s}>
-                  {s}
+              {TRANSACTION_TYPES.map((t) => (
+                <SelectItem key={t} value={t}>
+                  {t}
                 </SelectItem>
               ))}
             </SelectContent>
           </Select>
         </div>
-      </div>
-      <div className="grid grid-cols-3 gap-3">
+
         <div>
-          <Label className="text-[10px] font-bold uppercase tracking-wider text-gray-400">
-            Qty Purchased
+          <Label className="text-[10px] uppercase tracking-wider text-gray-400 font-bold">
+            Receiver Name
           </Label>
+
           <Input
-            type="number"
-            value={form.quantity_purchased || ""}
-            onChange={(e) => u("quantity_purchased", e.target.value)}
-            className="mt-1"
-          />
-        </div>
-        <div>
-          <Label className="text-[10px] font-bold uppercase tracking-wider text-gray-400">
-            Unit
-          </Label>
-          <Select value={form.unit} onValueChange={(v) => u("unit", v)}>
-            <SelectTrigger className="mt-1">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              {UNITS.map((un) => (
-                <SelectItem key={un} value={un}>
-                  {un}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-        <div>
-          <Label className="text-[10px] font-bold uppercase tracking-wider text-gray-400">
-            Unit Cost
-          </Label>
-          <Input
-            type="number"
-            value={form.unit_cost || ""}
-            onChange={(e) => u("unit_cost", e.target.value)}
+            value={form.receiver_name}
+            onChange={(e) => u("receiver_name", e.target.value)}
             className="mt-1"
           />
         </div>
       </div>
-      <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-        <span className="text-xs text-gray-600">Total Cost</span>
-        <span className="text-sm font-black text-[#ef7f1b]">
-          {fmt(form.total_cost)}
-        </span>
+
+      {form.transaction_type === "IN" && (
+        <div>
+          <Label className="text-[10px] uppercase tracking-wider text-gray-400 font-bold">
+            Vendor / Source
+          </Label>
+
+          <Input
+            value={form.in}
+            onChange={(e) => u("in", e.target.value)}
+            className="mt-1"
+          />
+        </div>
+      )}
+
+      <div>
+        <Label className="text-[10px] uppercase tracking-wider text-gray-400 font-bold">
+          Remarks
+        </Label>
+
+        <Input
+          value={form.remarks}
+          onChange={(e) => u("remarks", e.target.value)}
+          className="mt-1"
+        />
       </div>
+
       <div className="flex justify-end">
         <Button
-          onClick={handleSubmit}
           disabled={saving}
-          className="bg-[#ef7f1b] hover:bg-[#d66e15] text-white"
-          data-testid="material-submit"
+          onClick={handleSubmit}
+          className="bg-[#ef7f1b] hover:bg-[#d56d16] text-white"
         >
           {saving ? (
-            <Loader2 className="w-4 h-4 animate-spin mr-1" />
+            <Loader2 className="w-4 h-4 animate-spin mr-2" />
           ) : (
-            <Plus className="w-4 h-4 mr-1" />
-          )}{" "}
-          Add Material
+            <Plus className="w-4 h-4 mr-2" />
+          )}
+          Save Entry
         </Button>
       </div>
     </div>
