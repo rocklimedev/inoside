@@ -13,62 +13,23 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 
-import {
-  Select,
-  SelectTrigger,
-  SelectContent,
-  SelectItem,
-  SelectValue,
-} from "@/components/ui/select";
-
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Separator } from "@/components/ui/separator";
 
 import { toast } from "sonner";
 
 import {
   Search,
-  Filter,
-  ArrowUpDown,
   LayoutGrid,
   List,
   Plus,
-  X,
+  Trash2,
+  FolderOpen,
+  Pencil,
 } from "lucide-react";
-
-import { FilterSection } from "@/components/projects/FilterSection";
 
 import NewProjectDialog from "@/components/projects/NewprojectDialog";
 
 import { Card } from "@/components/ui/card";
-
-// ===================== CONSTANTS =====================
-
-const STAGES = [
-  "Brief",
-  "Pitch",
-  "Site Reki",
-  "Scope",
-  "Time & Cost",
-  "BOQ",
-  "Design",
-  "Execution",
-  "Vendor",
-  "Inventory",
-  "Quality",
-  "Handover",
-];
-
-const TYPES = [
-  "Residential",
-  "Commercial",
-  "Interior",
-  "Architecture",
-  "Renovation",
-  "Infrastructure",
-];
-
-const STATUSES = ["Active", "On Hold", "Completed", "Delayed"];
 
 // ===================== MAIN COMPONENT =====================
 
@@ -92,62 +53,77 @@ export default function ProjectsPage() {
 
   const [search, setSearch] = useState("");
 
-  const [showFilters, setShowFilters] = useState(false);
-
-  const [filters, setFilters] = useState({
-    stages: [],
-    types: [],
-    statuses: [],
-  });
-
-  const [sortBy, setSortBy] = useState("name");
-
   const [showNewProject, setShowNewProject] = useState(false);
 
   const [saving, setSaving] = useState(false);
 
+  const [editingProject, setEditingProject] = useState(null);
+
   const [newProject, setNewProject] = useState({
     name: "",
-    client_name: "",
-    type: "",
-    service_type: "",
-    location: "",
-    stage: "Brief",
-    start_date: "",
-    expected_completion: "",
   });
 
   // ===================== CREATE PROJECT =====================
 
   const handleCreate = async () => {
-    if (!newProject.name || !newProject.type) {
-      toast.error("Project Name and Project Type are required");
+    if (!newProject.name.trim()) {
+      toast.error("Project Name is required");
       return;
     }
 
     setSaving(true);
 
     try {
-      await api.post("/projects", newProject);
+      await api.post("/projects", {
+        name: newProject.name,
+      });
 
       toast.success("Project created successfully");
 
       setShowNewProject(false);
 
+      setEditingProject(null);
+
       setNewProject({
         name: "",
-        client_name: "",
-        type: "",
-        service_type: "",
-        location: "",
-        stage: "Brief",
-        start_date: "",
-        expected_completion: "",
       });
 
       refetch();
     } catch (err) {
       toast.error("Failed to create project");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  // ===================== EDIT PROJECT =====================
+
+  const handleEdit = async () => {
+    if (!newProject.name.trim()) {
+      toast.error("Project Name is required");
+      return;
+    }
+
+    setSaving(true);
+
+    try {
+      await api.put(`/projects/${editingProject.id}`, {
+        name: newProject.name,
+      });
+
+      toast.success("Project updated successfully");
+
+      setShowNewProject(false);
+
+      setEditingProject(null);
+
+      setNewProject({
+        name: "",
+      });
+
+      refetch();
+    } catch (err) {
+      toast.error("Failed to update project");
     } finally {
       setSaving(false);
     }
@@ -171,67 +147,21 @@ export default function ProjectsPage() {
     }
   };
 
-  // ===================== FILTER TOGGLE =====================
-
-  const toggleFilter = (key, value) => {
-    setFilters((prev) => ({
-      ...prev,
-      [key]: prev[key].includes(value)
-        ? prev[key].filter((v) => v !== value)
-        : [...prev[key], value],
-    }));
-  };
-
   // ===================== FILTERED DATA =====================
 
   const filtered = useMemo(() => {
     let result = [...projectsData];
 
-    // Search
     if (search) {
       const s = search.toLowerCase();
 
-      result = result.filter((p) =>
-        [p.name, p.client_name, p.type, p.stage, p.location].some((field) =>
-          field?.toLowerCase().includes(s),
-        ),
-      );
+      result = result.filter((p) => p.name?.toLowerCase().includes(s));
     }
 
-    // Filters
-    if (filters.stages.length) {
-      result = result.filter((p) => filters.stages.includes(p.stage));
-    }
-
-    if (filters.types.length) {
-      result = result.filter((p) => filters.types.includes(p.type));
-    }
-
-    if (filters.statuses.length) {
-      result = result.filter((p) =>
-        filters.statuses.includes(p.status || "Active"),
-      );
-    }
-
-    // Sorting
-    result.sort((a, b) => {
-      if (sortBy === "name") {
-        return (a.name || "").localeCompare(b.name || "");
-      }
-
-      if (sortBy === "completion") {
-        return (b.completion || 0) - (a.completion || 0);
-      }
-
-      if (sortBy === "stage") {
-        return STAGES.indexOf(a.stage) - STAGES.indexOf(b.stage);
-      }
-
-      return 0;
-    });
+    result.sort((a, b) => (a.name || "").localeCompare(b.name || ""));
 
     return result;
-  }, [projectsData, search, filters, sortBy]);
+  }, [projectsData, search]);
 
   // ===================== LOADING =====================
 
@@ -269,83 +199,10 @@ export default function ProjectsPage() {
       className="flex h-full overflow-hidden bg-[#fafafa]"
       data-testid="projects-page"
     >
-      {/* ===================== FILTER SIDEBAR ===================== */}
-
-      {showFilters && (
-        <div className="animate-slideInRight w-[270px] shrink-0 overflow-y-auto border-r border-gray-200 bg-white px-5 py-5 shadow-sm">
-          {/* Header */}
-          <div className="mb-5 flex items-center justify-between">
-            <div>
-              <h3 className="text-sm font-black uppercase tracking-wider text-black">
-                Filters
-              </h3>
-
-              <p className="mt-1 text-[11px] text-gray-400">
-                Refine your projects
-              </p>
-            </div>
-
-            <button
-              onClick={() => setShowFilters(false)}
-              className="rounded-md p-1 text-gray-400 transition hover:bg-gray-100 hover:text-gray-600"
-            >
-              <X className="h-4 w-4" />
-            </button>
-          </div>
-
-          {/* Sections */}
-          <div className="space-y-5">
-            <FilterSection
-              title="Project Stage"
-              items={STAGES}
-              selected={filters.stages}
-              onToggle={(v) => toggleFilter("stages", v)}
-            />
-
-            <Separator />
-
-            <FilterSection
-              title="Project Type"
-              items={TYPES}
-              selected={filters.types}
-              onToggle={(v) => toggleFilter("types", v)}
-            />
-
-            <Separator />
-
-            <FilterSection
-              title="Status"
-              items={STATUSES}
-              selected={filters.statuses}
-              onToggle={(v) => toggleFilter("statuses", v)}
-            />
-          </div>
-
-          {(filters.stages.length > 0 ||
-            filters.types.length > 0 ||
-            filters.statuses.length > 0) && (
-            <button
-              onClick={() =>
-                setFilters({
-                  stages: [],
-                  types: [],
-                  statuses: [],
-                })
-              }
-              className="mt-5 text-xs font-semibold text-[#ef7f1b] transition hover:underline"
-            >
-              Clear all filters
-            </button>
-          )}
-        </div>
-      )}
-
-      {/* ===================== MAIN ===================== */}
-
       <div className="flex flex-1 flex-col overflow-hidden">
         {/* ===================== HEADER ===================== */}
 
-        <div className="animate-fadeIn border-b border-gray-200 bg-white px-4 py-5 shadow-sm md:px-6">
+        <div className="border-b border-gray-200 bg-white px-4 py-5 shadow-sm md:px-6">
           <div className="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
             {/* Title */}
             <div>
@@ -373,36 +230,6 @@ export default function ProjectsPage() {
                   className="h-10 border-gray-200 bg-gray-50 pl-10 text-sm focus-visible:ring-[#ef7f1b]"
                 />
               </div>
-
-              {/* Filter */}
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setShowFilters(!showFilters)}
-                className={`h-10 border-gray-200 ${
-                  showFilters ? "border-[#ef7f1b] text-[#ef7f1b]" : ""
-                }`}
-              >
-                <Filter className="mr-1 h-4 w-4" />
-                Filter
-              </Button>
-
-              {/* Sort */}
-              <Select value={sortBy} onValueChange={setSortBy}>
-                <SelectTrigger className="h-10 w-[140px] border-gray-200 text-xs">
-                  <ArrowUpDown className="mr-1 h-3 w-3" />
-
-                  <SelectValue />
-                </SelectTrigger>
-
-                <SelectContent>
-                  <SelectItem value="name">Name</SelectItem>
-
-                  <SelectItem value="completion">Progress</SelectItem>
-
-                  <SelectItem value="stage">Stage</SelectItem>
-                </SelectContent>
-              </Select>
 
               {/* View Switch */}
               <div className="flex overflow-hidden rounded-xl border border-gray-200 bg-white">
@@ -432,7 +259,15 @@ export default function ProjectsPage() {
 
               {/* Add */}
               <Button
-                onClick={() => setShowNewProject(true)}
+                onClick={() => {
+                  setEditingProject(null);
+
+                  setNewProject({
+                    name: "",
+                  });
+
+                  setShowNewProject(true);
+                }}
                 className="h-10 bg-[#ef7f1b] text-white hover:bg-[#d66e15]"
               >
                 <Plus className="mr-1 h-4 w-4" />
@@ -446,91 +281,156 @@ export default function ProjectsPage() {
 
         <ScrollArea className="flex-1">
           <div className="p-4 md:p-6">
-            {/* GRID VIEW */}
-            {viewMode === "grid" && (
-              <div className="grid gap-5 sm:grid-cols-2 xl:grid-cols-3">
-                {filtered.map((project) => (
-                  <Link
-                    key={project.id}
-                    href={`/projects/${project.id}/inventory`}
-                  >
-                    <Card className="cursor-pointer border border-gray-200 p-5 transition-all hover:-translate-y-1 hover:shadow-lg">
-                      <div className="space-y-3">
-                        <div>
-                          <h3 className="text-lg font-bold text-black">
-                            {project.name}
-                          </h3>
+            {filtered.length === 0 ? (
+              <div className="flex min-h-[50vh] flex-col items-center justify-center rounded-3xl border border-dashed border-gray-300 bg-white text-center">
+                <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-[#fff4eb] text-[#ef7f1b]">
+                  <FolderOpen className="h-8 w-8" />
+                </div>
 
-                          <p className="text-sm text-gray-500">
-                            {project.client_name}
-                          </p>
-                        </div>
+                <h3 className="mt-5 text-lg font-bold text-black">
+                  No Projects Found
+                </h3>
 
-                        <div className="flex flex-wrap gap-2">
-                          <span className="rounded-full bg-orange-100 px-2 py-1 text-xs font-medium text-[#ef7f1b]">
-                            {project.type}
-                          </span>
+                <p className="mt-1 text-sm text-gray-500">
+                  Create your first project to get started.
+                </p>
 
-                          <span className="rounded-full bg-gray-100 px-2 py-1 text-xs font-medium text-gray-700">
-                            {project.stage}
-                          </span>
-                        </div>
+                <Button
+                  onClick={() => {
+                    setEditingProject(null);
 
-                        <div className="text-sm text-gray-500">
-                          {project.location}
-                        </div>
-                      </div>
-                    </Card>
-                  </Link>
-                ))}
+                    setNewProject({
+                      name: "",
+                    });
+
+                    setShowNewProject(true);
+                  }}
+                  className="mt-5 bg-[#ef7f1b] text-white hover:bg-[#d66e15]"
+                >
+                  <Plus className="mr-2 h-4 w-4" />
+                  Create Project
+                </Button>
               </div>
-            )}
+            ) : (
+              <>
+                {/* GRID VIEW */}
+                {viewMode === "grid" && (
+                  <div className="grid gap-5 sm:grid-cols-2 xl:grid-cols-3">
+                    {filtered.map((project) => (
+                      <Card
+                        key={project.id}
+                        className="group border border-gray-200 p-5 transition-all hover:-translate-y-1 hover:shadow-lg"
+                      >
+                        <div className="flex h-full flex-col justify-between gap-5">
+                          <Link
+                            href={`/projects/${project.id}/inventory`}
+                            className="block"
+                          >
+                            <div className="space-y-3">
+                              <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-[#fff4eb] text-[#ef7f1b]">
+                                <FolderOpen className="h-6 w-6" />
+                              </div>
 
-            {/* LIST VIEW */}
-            {viewMode === "list" && (
-              <div className="space-y-3">
-                {filtered.map((project) => (
-                  <div
-                    key={project.id}
-                    className="flex items-center justify-between rounded-xl border border-gray-200 bg-white p-4 shadow-sm"
-                  >
-                    <Link
-                      href={`/projects/${project.id}/inventory`}
-                      className="flex flex-1 items-center justify-between"
-                    >
-                      <div>
-                        <h3 className="font-semibold text-black">
-                          {project.name}
-                        </h3>
+                              <div>
+                                <h3 className="text-lg font-bold text-black">
+                                  {project.name}
+                                </h3>
+                              </div>
+                            </div>
+                          </Link>
 
-                        <p className="text-sm text-gray-500">
-                          {project.client_name}
-                        </p>
-                      </div>
+                          <div className="flex gap-2">
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => {
+                                setEditingProject(project);
 
-                      <div className="flex items-center gap-3">
-                        <span className="rounded-full bg-orange-100 px-2 py-1 text-xs font-medium text-[#ef7f1b]">
-                          {project.type}
-                        </span>
+                                setNewProject({
+                                  name: project.name || "",
+                                });
 
-                        <span className="rounded-full bg-gray-100 px-2 py-1 text-xs font-medium text-gray-700">
-                          {project.stage}
-                        </span>
-                      </div>
-                    </Link>
+                                setShowNewProject(true);
+                              }}
+                              className="flex-1"
+                            >
+                              <Pencil className="mr-2 h-4 w-4" />
+                              Edit
+                            </Button>
 
-                    <Button
-                      variant="destructive"
-                      size="sm"
-                      disabled={isDeleting}
-                      onClick={() => handleDelete(project.id)}
-                      className="ml-4"
-                    >
-                      Delete
-                    </Button>
+                            <Button
+                              variant="destructive"
+                              size="sm"
+                              disabled={isDeleting}
+                              onClick={() => handleDelete(project.id)}
+                              className="flex-1"
+                            >
+                              <Trash2 className="mr-2 h-4 w-4" />
+                              Delete
+                            </Button>
+                          </div>
+                        </div>
+                      </Card>
+                    ))}
                   </div>
-                ))}
-              </div>
+                )}
+
+                {/* LIST VIEW */}
+                {viewMode === "list" && (
+                  <div className="space-y-3">
+                    {filtered.map((project) => (
+                      <div
+                        key={project.id}
+                        className="flex items-center justify-between rounded-2xl border border-gray-200 bg-white p-4 shadow-sm"
+                      >
+                        <Link
+                          href={`/projects/${project.id}/inventory`}
+                          className="flex flex-1 items-center gap-4"
+                        >
+                          <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-[#fff4eb] text-[#ef7f1b]">
+                            <FolderOpen className="h-6 w-6" />
+                          </div>
+
+                          <div>
+                            <h3 className="font-semibold text-black">
+                              {project.name}
+                            </h3>
+                          </div>
+                        </Link>
+
+                        <div className="ml-4 flex gap-2">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => {
+                              setEditingProject(project);
+
+                              setNewProject({
+                                name: project.name || "",
+                              });
+
+                              setShowNewProject(true);
+                            }}
+                          >
+                            <Pencil className="mr-2 h-4 w-4" />
+                            Edit
+                          </Button>
+
+                          <Button
+                            variant="destructive"
+                            size="sm"
+                            disabled={isDeleting}
+                            onClick={() => handleDelete(project.id)}
+                          >
+                            <Trash2 className="mr-2 h-4 w-4" />
+                            Delete
+                          </Button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </>
             )}
           </div>
         </ScrollArea>
@@ -543,10 +443,9 @@ export default function ProjectsPage() {
         onOpenChange={setShowNewProject}
         newProject={newProject}
         setNewProject={setNewProject}
-        onCreate={handleCreate}
+        onCreate={editingProject ? handleEdit : handleCreate}
         saving={saving}
-        STAGES={STAGES}
-        TYPES={TYPES}
+        editingProject={editingProject}
       />
     </div>
   );

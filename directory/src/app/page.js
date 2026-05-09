@@ -1,3 +1,5 @@
+// src/app/dashboard/page.jsx
+
 "use client";
 
 import { useState, useEffect } from "react";
@@ -5,7 +7,6 @@ import { useState, useEffect } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 
 import { Card } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 
 import {
   Briefcase,
@@ -29,23 +30,8 @@ import {
   AlertsPanel,
 } from "@/components/dashboard/MonitoringPanels";
 
-const STAGE_LIST = [
-  "Brief",
-  "Pitch",
-  "Site Reki",
-  "Scope",
-  "Time & Cost",
-  "BOQ",
-  "Design",
-  "Execution",
-  "Vendor",
-  "Inventory",
-  "Quality",
-  "Handover",
-];
-
 export default function ArchitectDashboard() {
-  const { api } = useAuth();
+  const { token } = useAuth();
 
   const [kpis, setKpis] = useState(null);
   const [pipeline, setPipeline] = useState([]);
@@ -64,32 +50,51 @@ export default function ArchitectDashboard() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetchAll();
-  }, []);
+    if (token) {
+      fetchAll();
+    }
+  }, [token]);
+
+  const fetchData = async (url) => {
+    const res = await fetch(url, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json",
+      },
+    });
+
+    if (!res.ok) {
+      throw new Error(`Failed to fetch ${url}`);
+    }
+
+    return res.json();
+  };
 
   const fetchAll = async () => {
     try {
+      setLoading(true);
+
       const [k, p, proj, act, apr, doc, sp, cc, al] = await Promise.all([
-        api.get("/dashboard/kpis"),
-        api.get("/dashboard/pipeline"),
-        api.get("/dashboard/projects"),
-        api.get("/dashboard/priority-actions"),
-        api.get("/dashboard/approvals"),
-        api.get("/dashboard/documents"),
-        api.get("/dashboard/site-progress"),
-        api.get("/dashboard/client-comms"),
-        api.get("/dashboard/alerts"),
+        fetchData("/dashboard/kpis"),
+        fetchData("/dashboard/pipeline"),
+        fetchData("/dashboard/projects"),
+        fetchData("/dashboard/priority-actions"),
+        fetchData("/dashboard/approvals"),
+        fetchData("/dashboard/documents"),
+        fetchData("/dashboard/site-progress"),
+        fetchData("/dashboard/client-comms"),
+        fetchData("/dashboard/alerts"),
       ]);
 
-      setKpis(k.data);
-      setPipeline(p.data);
-      setProjects(proj.data);
-      setActions(act.data);
-      setApprovals(apr.data);
-      setDocuments(doc.data);
-      setSiteProgress(sp.data);
-      setClientComms(cc.data);
-      setAlerts(al.data);
+      setKpis(k);
+      setPipeline(p);
+      setProjects(proj);
+      setActions(act);
+      setApprovals(apr);
+      setDocuments(doc);
+      setSiteProgress(sp);
+      setClientComms(cc);
+      setAlerts(al);
     } catch (err) {
       console.error("Dashboard fetch error:", err);
     } finally {
@@ -115,55 +120,43 @@ export default function ArchitectDashboard() {
       value: kpis?.total_active || 0,
       icon: Briefcase,
       color: "#ef7f1b",
-      testId: "kpi-total-active",
     },
     {
       label: "Pending Approvals",
       value: kpis?.pending_approvals || 0,
       icon: FileCheck2,
       color: "#ef7f1b",
-      testId: "kpi-pending-approvals",
     },
     {
       label: "Under Revision",
       value: kpis?.under_revision || 0,
       icon: PenLine,
       color: "#ef7f1b",
-      testId: "kpi-under-revision",
     },
     {
       label: "Execution Awaiting",
       value: kpis?.exec_awaiting || 0,
       icon: HardHat,
       color: "#ef7f1b",
-      testId: "kpi-exec-awaiting",
     },
     {
       label: "Delay Flags",
       value: kpis?.delay_flags || 0,
       icon: AlertTriangle,
       color: kpis?.delay_flags > 0 ? "#e31d3b" : "#94a3b8",
-      testId: "kpi-delay-flags",
     },
     {
       label: "Handover Ready",
       value: kpis?.handover_ready || 0,
       icon: CheckCircle2,
       color: "#22c55e",
-      testId: "kpi-handover-ready",
     },
   ];
 
   return (
-    <div
-      className="p-4 md:p-6 lg:p-8 space-y-6"
-      data-testid="architect-dashboard"
-    >
+    <div className="p-4 md:p-6 lg:p-8 space-y-6">
       {/* KPI Cards */}
-      <div
-        className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 md:gap-4"
-        data-testid="kpi-cards"
-      >
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 md:gap-4">
         {kpiCards.map((kpi, i) => {
           const Icon = kpi.icon;
 
@@ -176,7 +169,6 @@ export default function ArchitectDashboard() {
                 animationDelay: `${i * 80}ms`,
                 animationFillMode: "both",
               }}
-              data-testid={kpi.testId}
             >
               <div className="flex items-start justify-between">
                 <div>
@@ -200,7 +192,7 @@ export default function ArchitectDashboard() {
       </div>
 
       {/* Project Pipeline */}
-      <Card className="p-5 md:p-6" data-testid="project-pipeline">
+      <Card className="p-5 md:p-6">
         <h2 className="mb-5 text-sm font-bold uppercase tracking-wider text-black">
           Project Pipeline
         </h2>

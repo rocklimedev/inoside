@@ -485,7 +485,7 @@ function InventoryWorkspace({ projectId, user }) {
       {/* ====================================================== */}
 
       <Dialog open={showAdd} onOpenChange={setShowAdd}>
-        <DialogContent className="max-w-xl">
+        <DialogContent className="max-w-xl bg-white">
           <DialogHeader>
             <DialogTitle>Add Inventory Entry</DialogTitle>
           </DialogHeader>
@@ -621,16 +621,13 @@ function AddInventoryForm({
         date_added: new Date(),
 
         in: form.transaction_type === "IN" ? form.in : null,
-
         out: form.transaction_type === "OUT" ? projectName : null,
       };
 
       await createInventory(payload).unwrap();
-
       onSuccess();
     } catch (err) {
       console.log(err);
-
       toast.error("Failed to save inventory");
     } finally {
       setSaving(false);
@@ -638,13 +635,14 @@ function AddInventoryForm({
   };
 
   return (
-    <div className="space-y-4 py-2">
+    <div className="space-y-4 py-2 bg-white rounded-xl p-6 -mx-1 border">
+      {" "}
+      {/* ← Updated here */}
       <div className="grid grid-cols-2 gap-3">
         <div>
           <Label className="text-[10px] uppercase tracking-wider text-gray-400 font-bold">
             Item Name
           </Label>
-
           <Input
             value={form.item_name}
             onChange={(e) => u("item_name", e.target.value)}
@@ -656,7 +654,6 @@ function AddInventoryForm({
           <Label className="text-[10px] uppercase tracking-wider text-gray-400 font-bold">
             Quantity
           </Label>
-
           <Input
             type="number"
             value={form.quantity}
@@ -665,13 +662,11 @@ function AddInventoryForm({
           />
         </div>
       </div>
-
       <div className="grid grid-cols-2 gap-3">
         <div>
           <Label className="text-[10px] uppercase tracking-wider text-gray-400 font-bold">
             Transaction Type
           </Label>
-
           <Select
             value={form.transaction_type}
             onValueChange={(v) => u("transaction_type", v)}
@@ -679,7 +674,6 @@ function AddInventoryForm({
             <SelectTrigger className="mt-1">
               <SelectValue />
             </SelectTrigger>
-
             <SelectContent>
               {TRANSACTION_TYPES.map((t) => (
                 <SelectItem key={t} value={t}>
@@ -694,7 +688,6 @@ function AddInventoryForm({
           <Label className="text-[10px] uppercase tracking-wider text-gray-400 font-bold">
             Receiver Name
           </Label>
-
           <Input
             value={form.receiver_name}
             onChange={(e) => u("receiver_name", e.target.value)}
@@ -702,13 +695,11 @@ function AddInventoryForm({
           />
         </div>
       </div>
-
       {form.transaction_type === "IN" && (
         <div>
           <Label className="text-[10px] uppercase tracking-wider text-gray-400 font-bold">
             Vendor / Source
           </Label>
-
           <Input
             value={form.in}
             onChange={(e) => u("in", e.target.value)}
@@ -716,20 +707,17 @@ function AddInventoryForm({
           />
         </div>
       )}
-
       <div>
         <Label className="text-[10px] uppercase tracking-wider text-gray-400 font-bold">
           Remarks
         </Label>
-
         <Input
           value={form.remarks}
           onChange={(e) => u("remarks", e.target.value)}
           className="mt-1"
         />
       </div>
-
-      <div className="flex justify-end">
+      <div className="flex justify-end pt-4">
         <Button
           disabled={saving}
           onClick={handleSubmit}

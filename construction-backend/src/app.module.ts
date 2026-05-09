@@ -1,39 +1,45 @@
 import { Module } from '@nestjs/common';
-import { TypeOrmModule } from '@nestjs/typeorm';
-import { ConfigModule } from '@nestjs/config';
+import { ConfigModule, ConfigService } from '@nestjs/config';
+import { SequelizeModule } from '@nestjs/sequelize';
 
-import { AuthModule } from './auth/auth.module';
-import { UsersModule } from './users/users.module';
-import { RbacModule } from './rbac/rbac.module';
-import { ProjectsModule } from './projects/projects.module';
-import { AttachmentsModule } from './attachments/attachments.module';
-import { BoqModule } from './boq/boq.module'; // ← Added
-import { VendorsModule } from './vendors/vendors.module';
-import { ProjectProgressModule } from './project-progress/project-progress.module';
-import { ClientsModule } from './clients/client.module';
-import { SitesModule } from './sites/sites.module';
+// Modules
+import { AuthModule } from './modules/auth/auth.module';
+import { UsersModule } from './modules/users/users.module';
+import { RbacModule } from './modules/rbac/rbac.module';
+import { ProjectsModule } from './modules/projects/projects.module';
+
+import { BoqModule } from './modules/boq/boq.module';
+import { VendorsModule } from './modules/vendors/vendors.module';
+import { ClientsModule } from './modules/clients/client.module';
+import { SitesModule } from './modules/sites/sites.module';
+
+// Database Config
+import databaseConfig from './config/database.config';
+
 @Module({
   imports: [
-    ConfigModule.forRoot({ isGlobal: true }),
-
-    TypeOrmModule.forRoot({
-      type: 'postgres',
-      url: process.env.DATABASE_URL,
-      autoLoadEntities: true,
-      synchronize: true,
-      ssl: { rejectUnauthorized: false },
+    // Global Configuration
+    ConfigModule.forRoot({
+      isGlobal: true,
+      envFilePath: `.env.${process.env.NODE_ENV || 'development'}`,
     }),
 
+    // Sequelize Database Connection
+    SequelizeModule.forRootAsync({
+      imports: [ConfigModule],
+      inject: [ConfigService],
+      useFactory: databaseConfig,
+    }),
+
+    // Feature Modules
     AuthModule,
     UsersModule,
     RbacModule,
     ProjectsModule,
-    AttachmentsModule,
-    BoqModule, // ← Added here
-    VendorsModule,
-    ProjectProgressModule,
+    BoqModule,
     ClientsModule,
     SitesModule,
+    VendorsModule,
   ],
 })
 export class AppModule {}

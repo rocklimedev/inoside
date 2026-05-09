@@ -1,19 +1,18 @@
--- ================================================
--- CONSTRUCTION PROJECT MANAGEMENT SYSTEM
--- COMPLETE MySQL 8+ SCHEMA WITH RBAC
--- All 10 modules + Full Role-Based Access Control
--- ================================================
-
 SET NAMES utf8mb4;
 SET FOREIGN_KEY_CHECKS = 0;
 
 -- ================================================
--- 1. RBAC TABLES (NEW - Role Based Access Control)
+-- DATABASE CREATION
 -- ================================================
+CREATE DATABASE IF NOT EXISTS spsyn8lm_construction_db;
+USE spsyn8lm_construction_db;
 
+-- ================================================
+-- 1. RBAC TABLES
+-- ================================================
 CREATE TABLE IF NOT EXISTS roles (
-    id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-    name VARCHAR(50) UNIQUE NOT NULL,                    -- e.g., 'admin', 'architect', etc.
+    id CHAR(36) PRIMARY KEY,
+    name VARCHAR(50) UNIQUE NOT NULL,
     display_name VARCHAR(100) NOT NULL,
     description TEXT,
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
@@ -21,18 +20,18 @@ CREATE TABLE IF NOT EXISTS roles (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 CREATE TABLE IF NOT EXISTS permissions (
-    id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-    name VARCHAR(100) UNIQUE NOT NULL,                   -- e.g., 'project.create', 'boq.view', 'drawing.approve'
-    module VARCHAR(50) NOT NULL,                         -- e.g., 'projects', 'brief', 'boq', 'drawings', 'inventory'
-    action VARCHAR(50) NOT NULL,                         -- create, view, edit, delete, approve, manage
+    id CHAR(36) PRIMARY KEY,
+    name VARCHAR(100) UNIQUE NOT NULL,
+    module VARCHAR(50) NOT NULL,
+    action VARCHAR(50) NOT NULL,
     description TEXT,
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 CREATE TABLE IF NOT EXISTS role_permissions (
-    id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-    role_id BIGINT UNSIGNED NOT NULL,
-    permission_id BIGINT UNSIGNED NOT NULL,
+    id CHAR(36) PRIMARY KEY,
+    role_id CHAR(36) NOT NULL,
+    permission_id CHAR(36) NOT NULL,
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     UNIQUE KEY unique_role_permission (role_id, permission_id),
     FOREIGN KEY (role_id) REFERENCES roles(id) ON DELETE CASCADE,
@@ -40,16 +39,15 @@ CREATE TABLE IF NOT EXISTS role_permissions (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 -- ================================================
--- 2. CORE / MASTER TABLES (Updated with RBAC)
+-- 2. CORE TABLES
 -- ================================================
-
 CREATE TABLE IF NOT EXISTS users (
-    id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-    role_id BIGINT UNSIGNED NOT NULL,                    -- Changed from ENUM to FK
+    id CHAR(36) PRIMARY KEY,
+    role_id CHAR(36) NOT NULL,
     name VARCHAR(255) NOT NULL,
     email VARCHAR(255) UNIQUE NOT NULL,
     phone VARCHAR(50),
-    password_hash VARCHAR(255) NOT NULL,                 -- Added for authentication
+    password_hash VARCHAR(255) NOT NULL,
     is_active BOOLEAN DEFAULT TRUE,
     last_login DATETIME NULL,
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
@@ -58,7 +56,7 @@ CREATE TABLE IF NOT EXISTS users (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 CREATE TABLE IF NOT EXISTS clients (
-    id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    id CHAR(36) PRIMARY KEY,
     name VARCHAR(255) NOT NULL,
     contact_number VARCHAR(50) NOT NULL,
     email VARCHAR(255) UNIQUE,
@@ -71,24 +69,23 @@ CREATE TABLE IF NOT EXISTS clients (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 CREATE TABLE IF NOT EXISTS sites (
-    id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    id CHAR(36) PRIMARY KEY,
     address TEXT NOT NULL,
     city VARCHAR(100) NOT NULL,
     ownership_status ENUM('Owned', 'Rented', 'Under Process'),
-    access_available BOOLEAN,
-    existing_structure BOOLEAN,
+    access_available BOOLEAN DEFAULT TRUE,
+    existing_structure BOOLEAN DEFAULT FALSE,
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 -- ================================================
--- 3. CENTRAL PROJECT TABLE
+-- 3. PROJECTS (Central Table)
 -- ================================================
-
 CREATE TABLE IF NOT EXISTS projects (
-    id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-    client_id BIGINT UNSIGNED NOT NULL,
-    site_id BIGINT UNSIGNED,
+    id CHAR(36) PRIMARY KEY,
+    client_id CHAR(36) NOT NULL,
+    site_id CHAR(36) NULL,
     name VARCHAR(255) NOT NULL,
     project_type ENUM('New Construction', 'Renovation', 'Interior Fit-out') NOT NULL,
     service_type ENUM('Construction', 'Interior', 'Renovation'),
@@ -98,13 +95,11 @@ CREATE TABLE IF NOT EXISTS projects (
     budget_range VARCHAR(100),
     timeline_expectation ENUM('Immediate', 'Flexible', 'Fixed Date'),
     design_preference VARCHAR(50),
-    status ENUM('brief','pitch','reki_pending','reki_done','scope_done','boq_done',
-                'design','execution','vendor_selection','inventory','quality','handover','completed') 
-        DEFAULT 'brief',
+    status ENUM('brief','pitch','reki_pending','reki_done','scope_done','boq_done','design','execution','vendor_selection','inventory','quality','handover','completed') DEFAULT 'brief',
     current_stage VARCHAR(50),
     progress_percentage DECIMAL(5,2) DEFAULT 0.00,
     token_received BOOLEAN DEFAULT FALSE,
-    created_by BIGINT UNSIGNED,                          -- Who created the project
+    created_by CHAR(36),
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     FOREIGN KEY (client_id) REFERENCES clients(id) ON DELETE CASCADE,
@@ -113,12 +108,85 @@ CREATE TABLE IF NOT EXISTS projects (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 -- ================================================
--- 4. ALL OTHER MODULE TABLES (Same as your original with minor improvements)
+-- 4. ADVANCED BOQ SYSTEM
 -- ================================================
+CREATE TABLE IF NOT EXISTS units (
+    id CHAR(36) PRIMARY KEY,
+    name VARCHAR(50) NOT NULL,
+    short_name VARCHAR(20) NOT NULL UNIQUE,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
+CREATE TABLE IF NOT EXISTS boq_categories (
+    id CHAR(36) PRIMARY KEY,
+    project_id CHAR(36) NOT NULL,
+    name VARCHAR(255) NOT NULL,
+    description TEXT,
+    sort_order INT DEFAULT 0,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE IF NOT EXISTS boqs (
+    id CHAR(36) PRIMARY KEY,
+    project_id CHAR(36) NOT NULL,
+    boq_category_id CHAR(36) NOT NULL,
+    title VARCHAR(255) NOT NULL,
+    code VARCHAR(100),
+    revision_no VARCHAR(50) DEFAULT 'Rev-01',
+    status ENUM('draft', 'submitted', 'approved', 'rejected', 'revised') DEFAULT 'draft',
+    notes TEXT,
+    subtotal DECIMAL(16,2) DEFAULT 0,
+    tax_amount DECIMAL(16,2) DEFAULT 0,
+    grand_total DECIMAL(16,2) DEFAULT 0,
+    prepared_by CHAR(36),
+    approved_by CHAR(36),
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE,
+    FOREIGN KEY (boq_category_id) REFERENCES boq_categories(id) ON DELETE CASCADE,
+    FOREIGN KEY (prepared_by) REFERENCES users(id),
+    FOREIGN KEY (approved_by) REFERENCES users(id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE IF NOT EXISTS boq_sections (
+    id CHAR(36) PRIMARY KEY,
+    boq_id CHAR(36) NOT NULL,
+    title VARCHAR(255) NOT NULL,
+    description TEXT,
+    sort_order INT DEFAULT 0,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    FOREIGN KEY (boq_id) REFERENCES boqs(id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE IF NOT EXISTS boq_items (
+    id CHAR(36) PRIMARY KEY,
+    boq_id CHAR(36) NOT NULL,
+    section_id CHAR(36) NOT NULL,
+    unit_id CHAR(36) NULL,
+    sno VARCHAR(50),
+    item_name TEXT NOT NULL,
+    description TEXT,
+    qty DECIMAL(14,2) DEFAULT 0,
+    rate DECIMAL(14,2) DEFAULT 0,
+    amount DECIMAL(16,2) GENERATED ALWAYS AS (qty * rate) STORED,
+    remarks TEXT,
+    sort_order INT DEFAULT 0,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    FOREIGN KEY (boq_id) REFERENCES boqs(id) ON DELETE CASCADE,
+    FOREIGN KEY (section_id) REFERENCES boq_sections(id) ON DELETE CASCADE,
+    FOREIGN KEY (unit_id) REFERENCES units(id) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- ================================================
+-- 5. ALL OTHER MODULE TABLES
+-- ================================================
 CREATE TABLE IF NOT EXISTS project_brief (
-    id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-    project_id BIGINT UNSIGNED UNIQUE NOT NULL,
+    id CHAR(36) PRIMARY KEY,
+    project_id CHAR(36) UNIQUE NOT NULL,
     rooms_spaces_required JSON,
     parking_required BOOLEAN,
     first_construction_project BOOLEAN,
@@ -132,8 +200,8 @@ CREATE TABLE IF NOT EXISTS project_brief (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 CREATE TABLE IF NOT EXISTS project_pitch (
-    id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-    project_id BIGINT UNSIGNED UNIQUE NOT NULL,
+    id CHAR(36) PRIMARY KEY,
+    project_id CHAR(36) UNIQUE NOT NULL,
     preferred_design_style VARCHAR(100),
     color_tone ENUM('Light','Dark','Mixed','Not Sure'),
     luxury_level ENUM('Low','Medium','High'),
@@ -151,8 +219,8 @@ CREATE TABLE IF NOT EXISTS project_pitch (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 CREATE TABLE IF NOT EXISTS pitch_references (
-    id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-    project_id BIGINT UNSIGNED NOT NULL,
+    id CHAR(36) PRIMARY KEY,
+    project_id CHAR(36) NOT NULL,
     reference_type ENUM('image','link','portfolio'),
     url TEXT,
     description TEXT,
@@ -161,9 +229,9 @@ CREATE TABLE IF NOT EXISTS pitch_references (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 CREATE TABLE IF NOT EXISTS reki_reports (
-    id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-    project_id BIGINT UNSIGNED UNIQUE NOT NULL,
-    supervisor_id BIGINT UNSIGNED,
+    id CHAR(36) PRIMARY KEY,
+    project_id CHAR(36) UNIQUE NOT NULL,
+    supervisor_id CHAR(36),
     visit_date DATE NOT NULL,
     client_present BOOLEAN,
     road_access BOOLEAN,
@@ -213,16 +281,16 @@ CREATE TABLE IF NOT EXISTS reki_reports (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 CREATE TABLE IF NOT EXISTS reki_photos (
-    id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-    reki_report_id BIGINT UNSIGNED NOT NULL,
+    id CHAR(36) PRIMARY KEY,
+    reki_report_id CHAR(36) NOT NULL,
     photo_type VARCHAR(50),
     photo_url VARCHAR(500) NOT NULL,
     FOREIGN KEY (reki_report_id) REFERENCES reki_reports(id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 CREATE TABLE IF NOT EXISTS scope_of_work (
-    id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-    project_id BIGINT UNSIGNED UNIQUE NOT NULL,
+    id CHAR(36) PRIMARY KEY,
+    project_id CHAR(36) UNIQUE NOT NULL,
     scope_summary TEXT,
     civil_works JSON,
     mep_works JSON,
@@ -236,8 +304,8 @@ CREATE TABLE IF NOT EXISTS scope_of_work (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 CREATE TABLE IF NOT EXISTS project_cost_estimates (
-    id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-    project_id BIGINT UNSIGNED NOT NULL,
+    id CHAR(36) PRIMARY KEY,
+    project_id CHAR(36) NOT NULL,
     estimate_type ENUM('Consultation','Turnkey','Constructional'),
     consultation_fee DECIMAL(12,2),
     tentative_total_cost DECIMAL(15,2),
@@ -250,55 +318,27 @@ CREATE TABLE IF NOT EXISTS project_cost_estimates (
     FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
-CREATE TABLE IF NOT EXISTS boq (
-    id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-    project_id BIGINT UNSIGNED NOT NULL,
-    version INT DEFAULT 1,
-    prepared_by BIGINT UNSIGNED,
-    prepared_date DATE NOT NULL,
-    total_amount DECIMAL(15,2),
-    boq_pdf_url VARCHAR(500),
-    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE,
-    FOREIGN KEY (prepared_by) REFERENCES users(id)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
-
-CREATE TABLE IF NOT EXISTS boq_items (
-    id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-    boq_id BIGINT UNSIGNED NOT NULL,
-    category VARCHAR(100) NOT NULL,
-    item_description TEXT NOT NULL,
-    quantity DECIMAL(12,2),
-    unit VARCHAR(30),
-    rate DECIMAL(12,2),
-    amount DECIMAL(15,2),
-    material_spec TEXT,
-    remarks TEXT,
-    FOREIGN KEY (boq_id) REFERENCES boq(id) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
-
 CREATE TABLE IF NOT EXISTS project_drawings (
-    id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-    project_id BIGINT UNSIGNED NOT NULL,
+    id CHAR(36) PRIMARY KEY,
+    project_id CHAR(36) NOT NULL,
     drawing_type ENUM('Design','Execution','Technical','Construction','Working'),
     version INT DEFAULT 1,
     area_floor VARCHAR(100),
     file_url VARCHAR(500) NOT NULL,
-    uploaded_by BIGINT UNSIGNED,
+    uploaded_by CHAR(36),
     uploaded_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     approved BOOLEAN DEFAULT FALSE,
     approval_date DATETIME,
-    approved_by BIGINT UNSIGNED,
+    approved_by CHAR(36),
     FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE,
     FOREIGN KEY (uploaded_by) REFERENCES users(id),
     FOREIGN KEY (approved_by) REFERENCES users(id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 CREATE TABLE IF NOT EXISTS drawing_approval_logs (
-    id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-    drawing_id BIGINT UNSIGNED NOT NULL,
-    client_id BIGINT UNSIGNED,
+    id CHAR(36) PRIMARY KEY,
+    drawing_id CHAR(36) NOT NULL,
+    client_id CHAR(36),
     approved BOOLEAN,
     remarks TEXT,
     revision_requested BOOLEAN,
@@ -308,7 +348,7 @@ CREATE TABLE IF NOT EXISTS drawing_approval_logs (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 CREATE TABLE IF NOT EXISTS vendors (
-    id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    id CHAR(36) PRIMARY KEY,
     name VARCHAR(255) NOT NULL,
     trade_type VARCHAR(100),
     contact_details TEXT,
@@ -316,9 +356,9 @@ CREATE TABLE IF NOT EXISTS vendors (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 CREATE TABLE IF NOT EXISTS project_vendors (
-    id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-    project_id BIGINT UNSIGNED NOT NULL,
-    vendor_id BIGINT UNSIGNED,
+    id CHAR(36) PRIMARY KEY,
+    project_id CHAR(36) NOT NULL,
+    vendor_id CHAR(36),
     selected BOOLEAN DEFAULT FALSE,
     selection_reason TEXT,
     approved_estimate_value DECIMAL(15,2),
@@ -330,22 +370,23 @@ CREATE TABLE IF NOT EXISTS project_vendors (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 CREATE TABLE IF NOT EXISTS materials (
-    id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    id CHAR(36) PRIMARY KEY,
     name VARCHAR(255) NOT NULL,
-    category VARCHAR(100)
+    category VARCHAR(100),
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 CREATE TABLE IF NOT EXISTS inventory_requests (
-    id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-    project_id BIGINT UNSIGNED NOT NULL,
-    material_id BIGINT UNSIGNED,
+    id CHAR(36) PRIMARY KEY,
+    project_id CHAR(36) NOT NULL,
+    material_id CHAR(36),
     quantity_required DECIMAL(12,2),
     required_date DATE,
-    vendor_id BIGINT UNSIGNED,
+    vendor_id CHAR(36),
     source_type ENUM('Vendor','Warehouse'),
     status ENUM('requested','approved','dispatched','delivered') DEFAULT 'requested',
-    requested_by BIGINT UNSIGNED,
-    approved_by BIGINT UNSIGNED,
+    requested_by CHAR(36),
+    approved_by CHAR(36),
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE,
     FOREIGN KEY (material_id) REFERENCES materials(id),
@@ -355,8 +396,8 @@ CREATE TABLE IF NOT EXISTS inventory_requests (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 CREATE TABLE IF NOT EXISTS inventory_dispatches (
-    id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-    request_id BIGINT UNSIGNED NOT NULL,
+    id CHAR(36) PRIMARY KEY,
+    request_id CHAR(36) NOT NULL,
     dispatch_date DATETIME,
     dispatch_quantity DECIMAL(12,2),
     vehicle_challan VARCHAR(100),
@@ -368,10 +409,10 @@ CREATE TABLE IF NOT EXISTS inventory_dispatches (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 CREATE TABLE IF NOT EXISTS daily_progress_reports (
-    id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-    project_id BIGINT UNSIGNED NOT NULL,
+    id CHAR(36) PRIMARY KEY,
+    project_id CHAR(36) NOT NULL,
     report_date DATE NOT NULL,
-    supervisor_id BIGINT UNSIGNED,
+    supervisor_id CHAR(36),
     current_stage VARCHAR(100),
     work_executed TEXT,
     manpower_count INT,
@@ -384,36 +425,36 @@ CREATE TABLE IF NOT EXISTS daily_progress_reports (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 CREATE TABLE IF NOT EXISTS quality_checks (
-    id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-    project_id BIGINT UNSIGNED NOT NULL,
+    id CHAR(36) PRIMARY KEY,
+    project_id CHAR(36) NOT NULL,
     stage_name VARCHAR(100),
     quality_met BOOLEAN,
     deviations BOOLEAN,
     corrective_action_required BOOLEAN,
     supervisor_remarks TEXT,
     checked_date DATE,
-    checked_by BIGINT UNSIGNED,
+    checked_by CHAR(36),
     FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE,
     FOREIGN KEY (checked_by) REFERENCES users(id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 CREATE TABLE IF NOT EXISTS issue_logs (
-    id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-    project_id BIGINT UNSIGNED NOT NULL,
+    id CHAR(36) PRIMARY KEY,
+    project_id CHAR(36) NOT NULL,
     issue_description TEXT,
     responsible_party VARCHAR(100),
     target_resolution_date DATE,
     status ENUM('Open','Closed') DEFAULT 'Open',
     before_photo_url VARCHAR(500),
     after_photo_url VARCHAR(500),
-    reported_by BIGINT UNSIGNED,
+    reported_by CHAR(36),
     FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE,
     FOREIGN KEY (reported_by) REFERENCES users(id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 CREATE TABLE IF NOT EXISTS handovers (
-    id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-    project_id BIGINT UNSIGNED UNIQUE NOT NULL,
+    id CHAR(36) PRIMARY KEY,
+    project_id CHAR(36) UNIQUE NOT NULL,
     handover_date DATETIME,
     planned_vs_actual_timeline TEXT,
     completion_confirmation BOOLEAN DEFAULT TRUE,
@@ -429,13 +470,13 @@ CREATE TABLE IF NOT EXISTS handovers (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 CREATE TABLE IF NOT EXISTS project_documents (
-    id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-    project_id BIGINT UNSIGNED NOT NULL,
+    id CHAR(36) PRIMARY KEY,
+    project_id CHAR(36) NOT NULL,
     module_name VARCHAR(50),
     document_type VARCHAR(100),
     file_url VARCHAR(500) NOT NULL,
     version INT DEFAULT 1,
-    uploaded_by BIGINT UNSIGNED,
+    uploaded_by CHAR(36),
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE,
     FOREIGN KEY (uploaded_by) REFERENCES users(id)
@@ -444,15 +485,26 @@ CREATE TABLE IF NOT EXISTS project_documents (
 -- ================================================
 -- INDEXES
 -- ================================================
-
 CREATE INDEX idx_projects_client ON projects(client_id);
 CREATE INDEX idx_projects_status ON projects(status);
 CREATE INDEX idx_projects_created_by ON projects(created_by);
+CREATE INDEX idx_boq_categories_project ON boq_categories(project_id);
+CREATE INDEX idx_boqs_project ON boqs(project_id);
+CREATE INDEX idx_boq_sections_boq ON boq_sections(boq_id);
+CREATE INDEX idx_boq_items_boq ON boq_items(boq_id);
 CREATE INDEX idx_reki_project ON reki_reports(project_id);
-CREATE INDEX idx_boq_project ON boq(project_id);
 CREATE INDEX idx_drawings_project ON project_drawings(project_id);
 CREATE INDEX idx_inventory_project ON inventory_requests(project_id);
-CREATE INDEX idx_role_permissions_role ON role_permissions(role_id);
-CREATE INDEX idx_role_permissions_perm ON role_permissions(permission_id);
+
+-- ================================================
+-- SAMPLE DATA
+-- ================================================
+INSERT IGNORE INTO units (name, short_name) VALUES
+('Number', 'Nos'), ('Square Feet', 'Sqft'), ('Square Meter', 'Sqm'),
+('Running Feet', 'Rft'), ('Meter', 'M'), ('Kilogram', 'Kg'),
+('Litre', 'Ltr'), ('Piece', 'Pcs'), ('Set', 'Set'), ('Hour', 'Hr');
 
 SET FOREIGN_KEY_CHECKS = 1;
+
+-- Success Message
+SELECT '✅ FULL CONSTRUCTION PROJECT MANAGEMENT SYSTEM SCHEMA CREATED SUCCESSFULLY (with UUIDs)' AS status;
