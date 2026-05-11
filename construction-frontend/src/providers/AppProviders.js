@@ -1,0 +1,12 @@
+"use client";
+
+import ReduxProvider from "./ReduxProvider";
+import { AuthProvider } from "@/context/AuthContext";
+
+export default function AppProviders({ children }) {
+  return (
+    <ReduxProvider>
+      <AuthProvider>{children}</AuthProvider>
+    </ReduxProvider>
+  );
+}

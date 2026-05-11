@@ -1,62 +1,106 @@
-import { createContext, useContext, useState, useEffect, useMemo } from 'react';
-import axios from 'axios';
+import React, { createContext, useContext, useEffect, useState } from "react";
+import {
+  useLoginMutation,
+  useRegisterMutation,
+  useProfileQuery,
+} from "@/store/api/authApi";
 
-const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 const AuthContext = createContext(null);
 
-export function AuthProvider({ children }) {
+export const AuthProvider = ({ children }) => {
+  const [token, setToken] = useState(null);
   const [user, setUser] = useState(null);
-  const [token, setToken] = useState(() => localStorage.getItem('buildcon_token'));
-  const [loading, setLoading] = useState(true);
 
-  const api = useMemo(() => {
-    const instance = axios.create({ baseURL: `${BACKEND_URL}/api` });
-    instance.interceptors.request.use(config => {
-      const t = localStorage.getItem('buildcon_token');
-      if (t) config.headers.Authorization = `Bearer ${t}`;
-      return config;
-    });
-    return instance;
-  }, []);
+  const [loginMutation] = useLoginMutation();
+  const [registerMutation] = useRegisterMutation();
 
+  // Fetch profile only if token exists
+  const {
+    data: profileData,
+    refetch: refetchProfile,
+    isFetching: profileLoading,
+  } = useProfileQuery(undefined, {
+    skip: !token,
+  });
+
+  // Load token from localStorage on app start
   useEffect(() => {
-    if (token) {
-      api.get('/auth/me')
-        .then(res => setUser(res.data))
-        .catch(() => {
-          localStorage.removeItem('buildcon_token');
-          setToken(null);
-        })
-        .finally(() => setLoading(false));
-    } else {
-      setLoading(false);
+    const savedToken = localStorage.getItem("access_token");
+    if (savedToken) {
+      setToken(savedToken);
     }
   }, []);
 
-  const login = async (email, password, role) => {
-    const res = await api.post('/auth/login', { email, password, role });
-    const { token: t, user: u } = res.data;
-    localStorage.setItem('buildcon_token', t);
-    setToken(t);
-    setUser(u);
-    return u;
+  // Sync profile -> user
+  useEffect(() => {
+    if (profileData?.user) {
+      setUser(profileData.user);
+    }
+  }, [profileData]);
+
+  // LOGIN
+  const login = async (credentials) => {
+    try {
+      const res = await loginMutation(credentials).unwrap();
+
+      const accessToken = res.access_token;
+
+      setToken(accessToken);
+      localStorage.setItem("access_token", accessToken);
+
+      setUser(res.user);
+
+      return res;
+    } catch (err) {
+      throw err?.data?.message || "Login failed";
+    }
   };
 
+  // REGISTER
+  const register = async (data) => {
+    try {
+      const res = await registerMutation(data).unwrap();
+      return res;
+    } catch (err) {
+      throw err?.data?.message || "Registration failed";
+    }
+  };
+
+  // LOGOUT
   const logout = () => {
-    localStorage.removeItem('buildcon_token');
     setToken(null);
     setUser(null);
+    localStorage.removeItem("access_token");
   };
 
-  return (
-    <AuthContext.Provider value={{ user, token, login, logout, api, loading }}>
-      {children}
-    </AuthContext.Provider>
-  );
-}
+  // REFRESH PROFILE
+  const refreshUser = async () => {
+    if (token) {
+      await refetchProfile();
+    }
+  };
 
+  const value = {
+    token,
+    user,
+    login,
+    register,
+    logout,
+    refreshUser,
+    isAuthenticated: !!token,
+    profileLoading,
+  };
+
+  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
+};
+
+// Hook
 export const useAuth = () => {
-  const ctx = useContext(AuthContext);
-  if (!ctx) throw new Error('useAuth must be used within AuthProvider');
-  return ctx;
+  const context = useContext(AuthContext);
+
+  if (!context) {
+    throw new Error("useAuth must be used within AuthProvider");
+  }
+
+  return context;
 };
