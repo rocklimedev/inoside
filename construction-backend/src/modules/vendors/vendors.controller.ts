@@ -1,3 +1,5 @@
+// vendors.controller.ts
+
 import {
   Controller,
   Get,
@@ -7,12 +9,14 @@ import {
   Param,
   Delete,
   UseGuards,
-  ParseIntPipe,
 } from '@nestjs/common';
+
 import { VendorsService } from './vendors.service';
+
 import { CreateVendorDto } from './dto/create-vendor.dto';
 import { UpdateVendorDto } from './dto/update-vendor.dto';
 import { AssignVendorDto } from './dto/assign-vendor.dto';
+
 import { JwtAuthGuard } from '@/common/guards/jwt-auth.guard';
 import { RolesGuard } from '@/common/guards/roles.guard';
 import { Roles } from '@/common/decorators/roles.decorator';
@@ -22,7 +26,8 @@ import { Roles } from '@/common/decorators/roles.decorator';
 export class VendorsController {
   constructor(private readonly vendorsService: VendorsService) {}
 
-  // Master Vendors
+  // ====================== Vendors ======================
+
   @Post()
   @UseGuards(RolesGuard)
   @Roles('admin', 'project_manager')
@@ -36,21 +41,40 @@ export class VendorsController {
   }
 
   @Get(':id')
-  findOne(@Param('id', ParseIntPipe) id: number) {
+  findOne(@Param('id') id: string) {
     return this.vendorsService.findVendorById(id);
   }
 
   @Patch(':id')
   @UseGuards(RolesGuard)
   @Roles('admin', 'project_manager')
-  update(
-    @Param('id', ParseIntPipe) id: number,
-    @Body() updateVendorDto: UpdateVendorDto,
-  ) {
+  update(@Param('id') id: string, @Body() updateVendorDto: UpdateVendorDto) {
     return this.vendorsService.updateVendor(id, updateVendorDto);
   }
 
-  // Project Vendors
+  @Delete(':id')
+  @UseGuards(RolesGuard)
+  @Roles('admin')
+  remove(@Param('id') id: string) {
+    return this.vendorsService.deleteVendor(id);
+  }
+
+  // ====================== Vendor Types ======================
+
+  @Post('types')
+  @UseGuards(RolesGuard)
+  @Roles('admin', 'project_manager')
+  createVendorType(@Body('name') name: string) {
+    return this.vendorsService.createVendorType(name);
+  }
+
+  @Get('types/all')
+  getVendorTypes() {
+    return this.vendorsService.getVendorTypes();
+  }
+
+  // ====================== Project Vendors ======================
+
   @Post('assign')
   @UseGuards(RolesGuard)
   @Roles('admin', 'project_manager')
@@ -59,7 +83,24 @@ export class VendorsController {
   }
 
   @Get('project/:projectId')
-  getByProject(@Param('projectId', ParseIntPipe) projectId: number) {
+  getByProject(@Param('projectId') projectId: string) {
     return this.vendorsService.getVendorsByProject(projectId);
+  }
+
+  @Patch('project-assignment/:id')
+  @UseGuards(RolesGuard)
+  @Roles('admin', 'project_manager')
+  updateProjectVendor(
+    @Param('id') id: string,
+    @Body() updateData: Partial<AssignVendorDto>,
+  ) {
+    return this.vendorsService.updateProjectVendor(id, updateData);
+  }
+
+  @Delete('project-assignment/:id')
+  @UseGuards(RolesGuard)
+  @Roles('admin', 'project_manager')
+  removeVendorFromProject(@Param('id') id: string) {
+    return this.vendorsService.removeVendorFromProject(id);
   }
 }

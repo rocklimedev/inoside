@@ -13,9 +13,11 @@ export class CreateBoqItemDto {
   @IsUUID()
   boq_id!: string;
 
+  // ❌ REMOVE section_id (no longer needed)
+
   @IsNotEmpty()
   @IsUUID()
-  section_id!: string;
+  subheading_id!: string; // ✅ NEW REQUIRED FIELD
 
   @IsOptional()
   @IsUUID()

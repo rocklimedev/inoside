@@ -1,9 +1,8 @@
-// src/store/api/usersApi.ts
-
 import { baseApi } from "./baseApi";
 
 export const usersApi = baseApi.injectEndpoints({
   endpoints: (builder) => ({
+    // ================= CREATE USER =================
     createUser: builder.mutation({
       query: (body) => ({
         url: "/users",
@@ -13,18 +12,21 @@ export const usersApi = baseApi.injectEndpoints({
       invalidatesTags: ["Users"],
     }),
 
+    // ================= GET ALL USERS =================
     getUsers: builder.query({
       query: () => "/users",
       providesTags: ["Users"],
     }),
 
+    // ================= GET ONE USER =================
     getUserById: builder.query({
       query: (id) => `/users/${id}`,
       providesTags: ["Users"],
     }),
 
+    // ================= UPDATE USER =================
     updateUser: builder.mutation({
-      query: ({ id, body }) => ({
+      query: ({ id, ...body }) => ({
         url: `/users/${id}`,
         method: "PATCH",
         body,
@@ -32,6 +34,7 @@ export const usersApi = baseApi.injectEndpoints({
       invalidatesTags: ["Users"],
     }),
 
+    // ================= DELETE USER =================
     deleteUser: builder.mutation({
       query: (id) => ({
         url: `/users/${id}`,
@@ -40,6 +43,7 @@ export const usersApi = baseApi.injectEndpoints({
       invalidatesTags: ["Users"],
     }),
 
+    // ================= TOGGLE ACTIVE =================
     toggleUserActive: builder.mutation({
       query: (id) => ({
         url: `/users/${id}/toggle-active`,
@@ -48,6 +52,8 @@ export const usersApi = baseApi.injectEndpoints({
       invalidatesTags: ["Users"],
     }),
   }),
+
+  overrideExisting: false,
 });
 
 export const {

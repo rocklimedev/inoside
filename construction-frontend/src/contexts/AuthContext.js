@@ -1,9 +1,12 @@
+"use client";
+
 import React, { createContext, useContext, useEffect, useState } from "react";
+
 import {
   useLoginMutation,
   useRegisterMutation,
-  useProfileQuery,
-} from "@/store/api/authApi";
+  useGetProfileQuery,
+} from "@/api/authApi";
 
 const AuthContext = createContext(null);
 
@@ -14,31 +17,28 @@ export const AuthProvider = ({ children }) => {
   const [loginMutation] = useLoginMutation();
   const [registerMutation] = useRegisterMutation();
 
-  // Fetch profile only if token exists
   const {
     data: profileData,
     refetch: refetchProfile,
     isFetching: profileLoading,
-  } = useProfileQuery(undefined, {
+  } = useGetProfileQuery(undefined, {
     skip: !token,
   });
 
-  // Load token from localStorage on app start
   useEffect(() => {
     const savedToken = localStorage.getItem("access_token");
+
     if (savedToken) {
       setToken(savedToken);
     }
   }, []);
 
-  // Sync profile -> user
   useEffect(() => {
     if (profileData?.user) {
       setUser(profileData.user);
     }
   }, [profileData]);
 
-  // LOGIN
   const login = async (credentials) => {
     try {
       const res = await loginMutation(credentials).unwrap();
@@ -56,7 +56,6 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  // REGISTER
   const register = async (data) => {
     try {
       const res = await registerMutation(data).unwrap();
@@ -66,14 +65,13 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  // LOGOUT
   const logout = () => {
     setToken(null);
     setUser(null);
+
     localStorage.removeItem("access_token");
   };
 
-  // REFRESH PROFILE
   const refreshUser = async () => {
     if (token) {
       await refetchProfile();
@@ -94,7 +92,6 @@ export const AuthProvider = ({ children }) => {
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 };
 
-// Hook
 export const useAuth = () => {
   const context = useContext(AuthContext);
 

@@ -22,6 +22,8 @@ import { Boq } from './boq.model';
 @Table({
   tableName: 'boq_categories',
   timestamps: true,
+  createdAt: 'created_at',
+  updatedAt: 'updated_at',
 })
 export class BoqCategory extends Model<
   InferAttributes<BoqCategory>,

@@ -15,13 +15,15 @@ import type {
   CreationOptional,
   NonAttribute,
 } from 'sequelize';
-
+import { BoqSubHeading } from './boq-subheading.model';
 import { Boq } from './boq.model';
 import { BoqItem } from './boq-item.model';
 
 @Table({
   tableName: 'boq_sections',
   timestamps: true,
+  createdAt: 'created_at',
+  updatedAt: 'updated_at',
 })
 export class BoqSection extends Model<
   InferAttributes<BoqSection>,
@@ -60,10 +62,8 @@ export class BoqSection extends Model<
   declare sort_order: CreationOptional<number>;
 
   // ================= RELATIONS =================
-
+  @HasMany(() => BoqSubHeading)
+  declare subheadings?: NonAttribute<BoqSubHeading[]>;
   @BelongsTo(() => Boq)
   declare boq?: NonAttribute<Boq>;
-
-  @HasMany(() => BoqItem)
-  declare items?: NonAttribute<BoqItem[]>;
 }

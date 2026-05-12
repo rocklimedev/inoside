@@ -23,6 +23,20 @@ import { Roles } from '@/common/decorators/roles.decorator';
 export class BoqController {
   constructor(private readonly boqService: BoqService) {}
 
+  // ====================== BOQ CATEGORY ======================
+
+  @Get('categories')
+  findCategories(@Query('projectId') projectId?: string) {
+    return this.boqService.findAllCategories(projectId);
+  }
+
+  @Post('categories')
+  @UseGuards(RolesGuard)
+  @Roles('admin', 'estimator', 'project_manager')
+  createCategory(@Body() body: any) {
+    return this.boqService.createCategory(body);
+  }
+
   // ====================== BOQ ======================
 
   @Post()
@@ -54,6 +68,18 @@ export class BoqController {
     return this.boqService.findSectionsByBoq(boqId);
   }
 
+  // ====================== SUB HEADINGS (NEW) ======================
+
+  @Post('subheadings')
+  createSubHeading(@Body() body: any) {
+    return this.boqService.createSubHeading(body);
+  }
+
+  @Get('sections/:sectionId/subheadings')
+  getSubHeadings(@Param('sectionId') sectionId: string) {
+    return this.boqService.findSubHeadingsBySection(sectionId);
+  }
+
   // ====================== ITEMS ======================
 
   @Post('items')
@@ -64,6 +90,12 @@ export class BoqController {
   @Patch('items/:id')
   updateItem(@Param('id') id: string, @Body() dto: Partial<CreateBoqItemDto>) {
     return this.boqService.updateItem(id, dto);
+  }
+
+  // optional (recommended)
+  @Post('items/:id/delete')
+  deleteItem(@Param('id') id: string) {
+    return this.boqService.deleteItem(id);
   }
 
   // ====================== CALCULATIONS ======================

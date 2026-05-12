@@ -20,6 +20,8 @@ import { Role } from '../../rbac/models/role.model';
 @Table({
   tableName: 'users',
   timestamps: true,
+  createdAt: 'created_at',
+  updatedAt: 'updated_at',
 })
 export class User extends Model<
   InferAttributes<User>,

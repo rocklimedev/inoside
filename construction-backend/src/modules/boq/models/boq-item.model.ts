@@ -14,7 +14,7 @@ import type {
   CreationOptional,
   NonAttribute,
 } from 'sequelize';
-
+import { BoqSubHeading } from './boq-subheading.model';
 import { Boq } from './boq.model';
 import { BoqSection } from './boq-section.model';
 import { Unit } from './unit.model';
@@ -22,6 +22,8 @@ import { Unit } from './unit.model';
 @Table({
   tableName: 'boq_items',
   timestamps: true,
+  createdAt: 'created_at',
+  updatedAt: 'updated_at',
 })
 export class BoqItem extends Model<
   InferAttributes<BoqItem>,
@@ -41,13 +43,12 @@ export class BoqItem extends Model<
   })
   declare boq_id: string;
 
-  @ForeignKey(() => BoqSection)
+  @ForeignKey(() => BoqSubHeading)
   @Column({
     type: DataType.UUID,
     allowNull: false,
   })
-  declare section_id: string;
-
+  declare subheading_id: string;
   @ForeignKey(() => Unit)
   @Column({
     type: DataType.UUID,
@@ -108,9 +109,8 @@ export class BoqItem extends Model<
   @BelongsTo(() => Boq)
   declare boq?: NonAttribute<Boq>;
 
-  @BelongsTo(() => BoqSection)
-  declare section?: NonAttribute<BoqSection>;
-
+  @BelongsTo(() => BoqSubHeading)
+  declare subheading?: NonAttribute<BoqSubHeading>;
   @BelongsTo(() => Unit)
   declare unit?: NonAttribute<Unit>;
 }

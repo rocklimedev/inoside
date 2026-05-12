@@ -20,6 +20,8 @@ import { RolePermission } from './role-permission.model';
 @Table({
   tableName: 'permissions',
   timestamps: true,
+  createdAt: 'created_at',
+  updatedAt: false, // 👈 IMPORTANT
 })
 export class Permission extends Model<
   InferAttributes<Permission>,

@@ -1,9 +1,8 @@
-// src/store/api/sitesApi.ts
-
 import { baseApi } from "./baseApi";
 
 export const sitesApi = baseApi.injectEndpoints({
   endpoints: (builder) => ({
+    // ================= CREATE =================
     createSite: builder.mutation({
       query: (body) => ({
         url: "/sites",
@@ -13,18 +12,21 @@ export const sitesApi = baseApi.injectEndpoints({
       invalidatesTags: ["Sites"],
     }),
 
+    // ================= GET ALL =================
     getSites: builder.query({
       query: () => "/sites",
       providesTags: ["Sites"],
     }),
 
+    // ================= GET ONE =================
     getSiteById: builder.query({
       query: (id) => `/sites/${id}`,
       providesTags: ["Sites"],
     }),
 
+    // ================= UPDATE =================
     updateSite: builder.mutation({
-      query: ({ id, body }) => ({
+      query: ({ id, ...body }) => ({
         url: `/sites/${id}`,
         method: "PATCH",
         body,
@@ -32,6 +34,7 @@ export const sitesApi = baseApi.injectEndpoints({
       invalidatesTags: ["Sites"],
     }),
 
+    // ================= DELETE =================
     deleteSite: builder.mutation({
       query: (id) => ({
         url: `/sites/${id}`,
@@ -40,6 +43,8 @@ export const sitesApi = baseApi.injectEndpoints({
       invalidatesTags: ["Sites"],
     }),
   }),
+
+  overrideExisting: false,
 });
 
 export const {

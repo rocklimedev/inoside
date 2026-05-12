@@ -19,6 +19,8 @@ import { Project } from '../../projects/models/project.model';
 @Table({
   tableName: 'clients',
   timestamps: true,
+  createdAt: 'created_at',
+  updatedAt: 'updated_at',
 })
 export class Client extends Model<
   InferAttributes<Client>,
@@ -75,6 +77,20 @@ export class Client extends Model<
     allowNull: true,
   })
   declare representative_comment: CreationOptional<string | null>;
+
+  // ================= TIMESTAMPS =================
+
+  @Column({
+    type: DataType.DATE,
+    allowNull: false,
+  })
+  declare created_at: CreationOptional<Date>;
+
+  @Column({
+    type: DataType.DATE,
+    allowNull: false,
+  })
+  declare updated_at: CreationOptional<Date>;
 
   // ================= RELATIONS =================
 

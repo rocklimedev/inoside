@@ -19,6 +19,8 @@ import { BoqItem } from './boq-item.model';
 @Table({
   tableName: 'units',
   timestamps: true,
+  createdAt: 'created_at',
+  updatedAt: 'updated_at',
 })
 export class Unit extends Model<
   InferAttributes<Unit>,

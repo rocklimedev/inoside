@@ -6,7 +6,6 @@ import {
 } from '@nestjs/common';
 
 import { InjectModel } from '@nestjs/sequelize';
-
 import { User } from './models/user.model';
 import { Role } from '../rbac/models/role.model';
 
@@ -15,11 +14,16 @@ import * as bcrypt from 'bcryptjs';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 
+// ================= CENTRAL MESSAGES =================
+
+import { USER_MESSAGES } from '@/common/messages/user.messages';
+
 @Injectable()
 export class UsersService {
   constructor(
     @InjectModel(User)
     private userModel: typeof User,
+
     @InjectModel(Role)
     private roleModel: typeof Role,
   ) {}
@@ -34,13 +38,13 @@ export class UsersService {
     });
 
     if (existingUser) {
-      throw new ConflictException('User with this email already exists');
+      throw new ConflictException(USER_MESSAGES.EMAIL_EXISTS);
     }
 
     const role = await this.roleModel.findByPk(role_id);
 
     if (!role) {
-      throw new BadRequestException('Invalid role_id');
+      throw new BadRequestException(USER_MESSAGES.INVALID_ROLE);
     }
 
     const password_hash = await bcrypt.hash(password, 10);
@@ -54,7 +58,10 @@ export class UsersService {
 
     const { password_hash: _, ...result } = user.toJSON();
 
-    return result;
+    return {
+      message: USER_MESSAGES.CREATED,
+      data: result,
+    };
   }
 
   // ================= READ ALL =================
@@ -86,7 +93,7 @@ export class UsersService {
     });
 
     if (!user) {
-      throw new NotFoundException(`User with ID ${id} not found`);
+      throw new NotFoundException(USER_MESSAGES.NOT_FOUND(id));
     }
 
     return user;
@@ -112,7 +119,7 @@ export class UsersService {
       });
 
       if (existing && existing.id !== id) {
-        throw new ConflictException('Email already in use');
+        throw new ConflictException(USER_MESSAGES.EMAIL_IN_USE);
       }
     }
 
@@ -120,13 +127,16 @@ export class UsersService {
       const role = await this.roleModel.findByPk(updateUserDto.role_id);
 
       if (!role) {
-        throw new BadRequestException('Invalid role_id');
+        throw new BadRequestException(USER_MESSAGES.INVALID_ROLE);
       }
     }
 
     await user.update(updateUserDto);
 
-    return this.findOne(id);
+    return {
+      message: USER_MESSAGES.UPDATED,
+      data: await this.findOne(id),
+    };
   }
 
   // ================= DELETE =================
@@ -137,7 +147,7 @@ export class UsersService {
     await user.destroy();
 
     return {
-      message: 'User deleted successfully',
+      message: USER_MESSAGES.DELETED,
     };
   }
 
@@ -150,6 +160,9 @@ export class UsersService {
       is_active: !user.is_active,
     });
 
-    return this.findOne(id);
+    return {
+      message: USER_MESSAGES.TOGGLED,
+      data: await this.findOne(id),
+    };
   }
 }

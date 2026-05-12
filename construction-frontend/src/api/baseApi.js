@@ -1,25 +1,35 @@
-// src/store/api/baseApi.ts
-
 import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
+
+const baseQuery = fetchBaseQuery({
+  baseUrl: "/api", // change to your backend URL
+
+  prepareHeaders: (headers) => {
+    const token = localStorage.getItem("access_token");
+
+    if (token) {
+      headers.set("authorization", `Bearer ${token}`);
+    }
+
+    headers.set("Content-Type", "application/json");
+
+    return headers;
+  },
+});
 
 export const baseApi = createApi({
   reducerPath: "api",
-  baseQuery: fetchBaseQuery({
-    baseUrl: "http://localhost:3000/api",
-    prepareHeaders: (headers) => {
-      const token = localStorage.getItem("token");
-
-      if (token) {
-        headers.set("Authorization", `Bearer ${token}`);
-      }
-
-      headers.set("Content-Type", "application/json");
-
-      return headers;
-    },
-  }),
-
-  tagTypes: ["Auth", "Users", "Projects", "Boq", "Clients", "Sites", "Vendors"],
-
+  baseQuery,
+  tagTypes: [
+    "Users",
+    "User",
+    "Clients",
+    "Projects",
+    "Boq",
+    "Sites",
+    "Vendors",
+    "Roles",
+    "Permissions",
+    "Auth",
+  ],
   endpoints: () => ({}),
 });

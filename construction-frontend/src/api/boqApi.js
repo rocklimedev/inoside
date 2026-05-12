@@ -1,9 +1,9 @@
-// src/store/api/boqApi.ts
-
 import { baseApi } from "./baseApi";
 
 export const boqApi = baseApi.injectEndpoints({
   endpoints: (builder) => ({
+    // ================= BOQ =================
+
     createBoq: builder.mutation({
       query: (body) => ({
         url: "/boq",
@@ -14,7 +14,10 @@ export const boqApi = baseApi.injectEndpoints({
     }),
 
     getBoqs: builder.query({
-      query: () => "/boq",
+      query: (projectId) => ({
+        url: "/boq",
+        params: projectId ? { projectId } : undefined,
+      }),
       providesTags: ["Boq"],
     }),
 
@@ -22,6 +25,8 @@ export const boqApi = baseApi.injectEndpoints({
       query: (id) => `/boq/${id}`,
       providesTags: ["Boq"],
     }),
+
+    // ================= SECTIONS =================
 
     createSection: builder.mutation({
       query: (body) => ({
@@ -32,10 +37,12 @@ export const boqApi = baseApi.injectEndpoints({
       invalidatesTags: ["Boq"],
     }),
 
-    getSections: builder.query({
+    getSectionsByBoq: builder.query({
       query: (boqId) => `/boq/${boqId}/sections`,
       providesTags: ["Boq"],
     }),
+
+    // ================= ITEMS =================
 
     createItem: builder.mutation({
       query: (body) => ({
@@ -47,7 +54,7 @@ export const boqApi = baseApi.injectEndpoints({
     }),
 
     updateItem: builder.mutation({
-      query: ({ id, body }) => ({
+      query: ({ id, ...body }) => ({
         url: `/boq/items/${id}`,
         method: "PATCH",
         body,
@@ -55,22 +62,29 @@ export const boqApi = baseApi.injectEndpoints({
       invalidatesTags: ["Boq"],
     }),
 
-    calculateBoq: builder.mutation({
+    // ================= CALCULATIONS =================
+
+    calculateBoqTotal: builder.mutation({
       query: (id) => ({
         url: `/boq/${id}/calculate`,
         method: "POST",
       }),
+      invalidatesTags: ["Boq"],
     }),
   }),
+  overrideExisting: false,
 });
 
 export const {
   useCreateBoqMutation,
   useGetBoqsQuery,
   useGetBoqByIdQuery,
+
   useCreateSectionMutation,
-  useGetSectionsQuery,
+  useGetSectionsByBoqQuery,
+
   useCreateItemMutation,
   useUpdateItemMutation,
-  useCalculateBoqMutation,
+
+  useCalculateBoqTotalMutation,
 } = boqApi;

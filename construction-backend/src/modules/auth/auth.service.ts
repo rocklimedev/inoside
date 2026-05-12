@@ -6,9 +6,7 @@ import {
 } from '@nestjs/common';
 
 import { InjectModel } from '@nestjs/sequelize';
-
 import * as bcrypt from 'bcryptjs';
-
 import { JwtService } from '@nestjs/jwt';
 
 import { User } from '../users/models/user.model';
@@ -19,7 +17,7 @@ import { CreateUserDto } from '../users/dto/create-user.dto';
 import { LoginDto } from './dto/login.dto';
 
 export interface AuthUserResponse {
-  id: number;
+  id: string;
   name: string;
   email: string;
   role: Role | null;
@@ -42,10 +40,10 @@ export class AuthService {
     private readonly jwtService: JwtService,
   ) {}
 
+  // ================= REGISTER =================
   async register(createUserDto: CreateUserDto): Promise<AuthUserResponse> {
     const { email, password, role_id, ...rest } = createUserDto;
 
-    // Check existing user
     const existingUser = await this.userModel.findOne({
       where: { email },
     });
@@ -54,35 +52,25 @@ export class AuthService {
       throw new ConflictException('User with this email already exists');
     }
 
-    // Validate role
     const role = await this.roleModel.findByPk(role_id);
 
     if (!role) {
       throw new BadRequestException('Invalid role_id provided');
     }
 
-    // Hash password
-    const salt = await bcrypt.genSalt(10);
+    const password_hash = await bcrypt.hash(password, 10);
 
-    const password_hash = await bcrypt.hash(password, salt);
-
-    // Create user
     const user = await this.userModel.create({
       name: rest.name,
       phone: rest.phone,
-      is_active: rest.is_active,
+      is_active: rest.is_active ?? true,
       email,
       role_id,
       password_hash,
     });
 
-    // Reload user with role
     const createdUser = await this.userModel.findByPk(user.id, {
-      include: [
-        {
-          model: Role,
-        },
-      ],
+      include: [{ model: Role }],
     });
 
     if (!createdUser) {
@@ -90,13 +78,14 @@ export class AuthService {
     }
 
     return {
-      id: Number(createdUser.id),
+      id: createdUser.id,
       name: createdUser.name,
       email: createdUser.email,
       role: createdUser.role ?? null,
     };
   }
 
+  // ================= LOGIN =================
   async login(loginDto: LoginDto): Promise<LoginResponse> {
     const { email, password } = loginDto;
 
@@ -105,7 +94,6 @@ export class AuthService {
         email,
         is_active: true,
       },
-
       include: [
         {
           model: Role,
@@ -118,19 +106,18 @@ export class AuthService {
       throw new UnauthorizedException('Invalid credentials');
     }
 
-    // Validate password
     const isPasswordValid = await bcrypt.compare(password, user.password_hash);
 
     if (!isPasswordValid) {
       throw new UnauthorizedException('Invalid credentials');
     }
 
-    // Update last login
+    // update last login
     await user.update({
       last_login: new Date(),
     });
 
-    // Load permissions
+    // ================= PERMISSIONS =================
     const permissions = await Permission.findAll({
       include: [
         {
@@ -138,7 +125,6 @@ export class AuthService {
           where: {
             id: user.role_id,
           },
-
           through: {
             attributes: [],
           },
@@ -146,22 +132,21 @@ export class AuthService {
       ],
     });
 
+    // ================= JWT PAYLOAD (FIXED) =================
     const payload = {
-      sub: Number(user.id),
+      sub: user.id, // ✅ UUID string (FIXED)
       email: user.email,
       name: user.name,
       role: user.role?.name ?? null,
-
-      permissions: permissions.map((permission) => permission.name),
+      permissions: permissions.map((p) => p.name),
     };
 
     const access_token = this.jwtService.sign(payload);
 
     return {
       access_token,
-
       user: {
-        id: Number(user.id),
+        id: user.id, // ✅ FIXED (NO Number())
         name: user.name,
         email: user.email,
         role: user.role ?? null,
@@ -169,13 +154,10 @@ export class AuthService {
     };
   }
 
-  async validateUser(userId: number): Promise<User> {
+  // ================= VALIDATE USER =================
+  async validateUser(userId: string): Promise<User> {
     const user = await this.userModel.findByPk(userId, {
-      include: [
-        {
-          model: Role,
-        },
-      ],
+      include: [{ model: Role }],
     });
 
     if (!user || !user.is_active) {

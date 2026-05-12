@@ -22,6 +22,8 @@ import { User } from '../../users/models/user.model';
 @Table({
   tableName: 'projects',
   timestamps: true,
+  createdAt: 'created_at',
+  updatedAt: 'updated_at',
 })
 export class Project extends Model<
   InferAttributes<Project>,

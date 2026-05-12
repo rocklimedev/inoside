@@ -1,32 +1,41 @@
-// src/store/api/authApi.ts
-
 import { baseApi } from "./baseApi";
-
 export const authApi = baseApi.injectEndpoints({
   endpoints: (builder) => ({
+    // REGISTER
     register: builder.mutation({
-      query: (body) => ({
+      query: (userData) => ({
         url: "/auth/register",
         method: "POST",
-        body,
+        body: userData,
       }),
     }),
 
+    // LOGIN
     login: builder.mutation({
-      query: (body) => ({
+      query: (credentials) => ({
         url: "/auth/login",
         method: "POST",
-        body,
+        body: credentials,
       }),
-      invalidatesTags: ["Auth"],
+      async onQueryStarted(_, { queryFulfilled }) {
+        try {
+          const { data } = await queryFulfilled;
+          // assuming backend returns { accessToken }
+          localStorage.setItem("token", data.accessToken);
+        } catch (err) {
+          console.error("Login failed", err);
+        }
+      },
     }),
 
-    profile: builder.query({
+    // PROFILE (protected)
+    getProfile: builder.query({
       query: () => "/auth/profile",
-      providesTags: ["Auth"],
+      providesTags: ["User"],
     }),
 
-    adminOnly: builder.query({
+    // ADMIN ONLY
+    getAdminContent: builder.query({
       query: () => "/auth/admin-only",
     }),
   }),
@@ -35,6 +44,6 @@ export const authApi = baseApi.injectEndpoints({
 export const {
   useRegisterMutation,
   useLoginMutation,
-  useProfileQuery,
-  useAdminOnlyQuery,
+  useGetProfileQuery,
+  useGetAdminContentQuery,
 } = authApi;

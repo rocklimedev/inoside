@@ -1,4 +1,6 @@
-import { useState, useEffect, useMemo } from "react";
+"use client";
+
+import { useState, useMemo } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -40,21 +42,31 @@ import {
   MessageSquare,
   ArrowUpRight,
   FolderOpen,
-  User,
   Download,
   Loader2,
   Trash2,
 } from "lucide-react";
 
+// RTK Query Imports
+import {
+  useGetClientsQuery,
+  useCreateClientMutation,
+  useDeleteClientMutation,
+} from "@/api/clientsApi"; // Adjust path if needed
+
 export default function ClientsPage() {
-  const { api } = useAuth();
-  const [clients, setClients] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const { api } = useAuth(); // Keep if still needed elsewhere
+
+  // RTK Query Hooks
+  const { data: clients = [], isLoading, isError } = useGetClientsQuery();
+  const [createClient, { isLoading: isCreating }] = useCreateClientMutation();
+  const [deleteClient] = useDeleteClientMutation();
+
   const [viewMode, setViewMode] = useState("grid");
   const [search, setSearch] = useState("");
   const [selectedClient, setSelectedClient] = useState(null);
   const [showAddClient, setShowAddClient] = useState(false);
-  const [saving, setSaving] = useState(false);
+
   const [form, setForm] = useState({
     name: "",
     phone: "",
@@ -66,21 +78,6 @@ export default function ClientsPage() {
     material_preference: "",
     special_requirements: "",
   });
-
-  useEffect(() => {
-    fetchClients();
-  }, []);
-
-  const fetchClients = async () => {
-    try {
-      const res = await api.get("/clients");
-      setClients(res.data);
-    } catch (err) {
-      console.error(err);
-    } finally {
-      setLoading(false);
-    }
-  };
 
   const filtered = useMemo(() => {
     if (!search) return clients;
@@ -99,10 +96,9 @@ export default function ClientsPage() {
       toast.error("Client name is required");
       return;
     }
-    setSaving(true);
+
     try {
-      const res = await api.post("/clients", form);
-      setClients((prev) => [...prev, res.data]);
+      await createClient(form).unwrap();
       setShowAddClient(false);
       setForm({
         name: "",
@@ -115,31 +111,42 @@ export default function ClientsPage() {
         material_preference: "",
         special_requirements: "",
       });
-      toast.success("Client added");
+      toast.success("Client added successfully");
     } catch (err) {
       toast.error("Failed to add client");
-    } finally {
-      setSaving(false);
+      console.error(err);
     }
   };
 
   const handleDelete = async (cid) => {
+    if (!cid) return;
+
     try {
-      await api.delete(`/clients/${cid}`);
-      setClients((prev) => prev.filter((c) => c.id !== cid));
+      await deleteClient(cid).unwrap();
       setSelectedClient(null);
-      toast.success("Client deleted");
+      toast.success("Client deleted successfully");
     } catch (err) {
-      toast.error("Failed to delete");
+      toast.error("Failed to delete client");
+      console.error(err);
     }
   };
 
-  if (loading)
+  // Loading State
+  if (isLoading) {
     return (
       <div className="flex items-center justify-center h-full min-h-[60vh]">
         <div className="animate-spin w-8 h-8 border-2 border-[#ef7f1b] border-t-transparent rounded-full" />
       </div>
     );
+  }
+
+  if (isError) {
+    return (
+      <div className="flex items-center justify-center h-full min-h-[60vh] text-red-500">
+        Failed to load clients. Please try again later.
+      </div>
+    );
+  }
 
   return (
     <div className="flex flex-col h-full" data-testid="clients-page">
@@ -152,6 +159,7 @@ export default function ClientsPage() {
           >
             Clients
           </h1>
+
           <div className="flex items-center gap-2 flex-1 max-w-md">
             <div className="flex items-center gap-2 bg-gray-50 rounded-lg px-3 py-2 flex-1 border border-transparent focus-within:border-[#ef7f1b]/30">
               <Search className="w-4 h-4 text-gray-400" />
@@ -165,6 +173,7 @@ export default function ClientsPage() {
               />
             </div>
           </div>
+
           <div className="flex items-center gap-2">
             <div className="flex border rounded-lg overflow-hidden">
               {[
@@ -175,15 +184,21 @@ export default function ClientsPage() {
                   key={v.mode}
                   onClick={() => setViewMode(v.mode)}
                   data-testid={`client-view-${v.mode}`}
-                  className={`p-2 transition-colors ${viewMode === v.mode ? "bg-[#ef7f1b] text-white" : "text-gray-400 hover:bg-gray-50"}`}
+                  className={`p-2 transition-colors ${
+                    viewMode === v.mode
+                      ? "bg-[#ef7f1b] text-white"
+                      : "text-gray-400 hover:bg-gray-50"
+                  }`}
                 >
                   <v.icon className="w-4 h-4" />
                 </button>
               ))}
             </div>
+
             <Button variant="outline" size="sm">
               <Download className="w-4 h-4 mr-1" /> Export
             </Button>
+
             <Button
               onClick={() => setShowAddClient(true)}
               className="bg-[#ef7f1b] hover:bg-[#d66e15] text-white"
@@ -194,6 +209,7 @@ export default function ClientsPage() {
             </Button>
           </div>
         </div>
+
         <p className="text-xs text-gray-400 mt-2">
           {filtered.length} client{filtered.length !== 1 ? "s" : ""}
         </p>
@@ -215,6 +231,7 @@ export default function ClientsPage() {
                   onClick={() => setSelectedClient(c)}
                   data-testid={`client-card-${i}`}
                 >
+                  {/* Grid Card Content - Same as before */}
                   <div className="flex items-start justify-between mb-3">
                     <div className="w-10 h-10 rounded-full bg-[#ef7f1b] text-white flex items-center justify-center text-sm font-bold shrink-0">
                       {c.name?.charAt(0)}
@@ -225,20 +242,17 @@ export default function ClientsPage() {
                   <div className="mt-2 space-y-1 text-[11px] text-gray-400">
                     {c.phone && (
                       <div className="flex items-center gap-1.5">
-                        <Phone className="w-3 h-3" />
-                        {c.phone}
+                        <Phone className="w-3 h-3" /> {c.phone}
                       </div>
                     )}
                     {c.email && (
                       <div className="flex items-center gap-1.5">
-                        <Mail className="w-3 h-3" />
-                        {c.email}
+                        <Mail className="w-3 h-3" /> {c.email}
                       </div>
                     )}
                     {c.location && (
                       <div className="flex items-center gap-1.5">
-                        <MapPin className="w-3 h-3" />
-                        {c.location}
+                        <MapPin className="w-3 h-3" /> {c.location}
                       </div>
                     )}
                   </div>
@@ -258,6 +272,7 @@ export default function ClientsPage() {
               ))}
             </div>
           ) : (
+            // List View (unchanged)
             <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
               <div className="grid grid-cols-7 gap-2 px-4 py-3 bg-gray-50 text-[10px] font-bold uppercase tracking-wider text-gray-400 border-b">
                 <span className="col-span-2">Client</span>
@@ -274,6 +289,7 @@ export default function ClientsPage() {
                   data-testid={`client-row-${i}`}
                   className="grid grid-cols-7 gap-2 px-4 py-3 border-b border-gray-100 hover:bg-orange-50/30 cursor-pointer transition-colors items-center text-sm"
                 >
+                  {/* List row content - same as your original */}
                   <div className="col-span-2 flex items-center gap-3">
                     <div className="w-8 h-8 rounded-full bg-[#ef7f1b] text-white flex items-center justify-center text-xs font-bold shrink-0">
                       {c.name?.charAt(0)}
@@ -312,6 +328,7 @@ export default function ClientsPage() {
             <DialogTitle className="text-lg font-bold">Add Client</DialogTitle>
           </DialogHeader>
           <div className="space-y-4 py-2">
+            {/* Form fields (same as before) */}
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <Label className="text-xs font-bold uppercase tracking-wider text-gray-500">
@@ -340,6 +357,10 @@ export default function ClientsPage() {
                 />
               </div>
             </div>
+
+            {/* Rest of form fields remain the same... */}
+            {/* (Email, Location, Communication Preference, Budget, Design Style, Special Requirements) */}
+
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <Label className="text-xs font-bold uppercase tracking-wider text-gray-500">
@@ -367,6 +388,7 @@ export default function ClientsPage() {
                 />
               </div>
             </div>
+
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <Label className="text-xs font-bold uppercase tracking-wider text-gray-500">
@@ -404,6 +426,7 @@ export default function ClientsPage() {
                 />
               </div>
             </div>
+
             <div>
               <Label className="text-xs font-bold uppercase tracking-wider text-gray-500">
                 Design Style Preference
@@ -417,6 +440,7 @@ export default function ClientsPage() {
                 placeholder="e.g. Contemporary, Minimalist"
               />
             </div>
+
             <div>
               <Label className="text-xs font-bold uppercase tracking-wider text-gray-500">
                 Special Requirements
@@ -430,21 +454,22 @@ export default function ClientsPage() {
                   }))
                 }
                 className="mt-1"
-                rows={2}
+                rows={3}
               />
             </div>
           </div>
+
           <DialogFooter>
             <Button variant="outline" onClick={() => setShowAddClient(false)}>
               Cancel
             </Button>
             <Button
               onClick={handleCreate}
-              disabled={saving}
+              disabled={isCreating}
               className="bg-[#ef7f1b] hover:bg-[#d66e15] text-white"
               data-testid="ac-submit"
             >
-              {saving ? (
+              {isCreating ? (
                 <Loader2 className="w-4 h-4 animate-spin" />
               ) : (
                 "Add Client"
@@ -454,7 +479,7 @@ export default function ClientsPage() {
         </DialogContent>
       </Dialog>
 
-      {/* Client Profile Sheet */}
+      {/* Client Profile Sheet - Same as before */}
       <Sheet
         open={!!selectedClient}
         onOpenChange={() => setSelectedClient(null)}
@@ -480,18 +505,20 @@ export default function ClientsPage() {
                   </div>
                 </div>
               </SheetHeader>
+
               <div className="mt-6 space-y-5">
                 <Section title="Contact Information">
+                  {/* Contact info content... */}
                   <div className="space-y-2 text-sm">
                     {selectedClient.phone && (
                       <div className="flex items-center gap-2 text-gray-600">
-                        <Phone className="w-4 h-4 text-gray-400" />
+                        <Phone className="w-4 h-4 text-gray-400" />{" "}
                         {selectedClient.phone}
                       </div>
                     )}
                     {selectedClient.email && (
                       <div className="flex items-center gap-2 text-gray-600">
-                        <Mail className="w-4 h-4 text-gray-400" />
+                        <Mail className="w-4 h-4 text-gray-400" />{" "}
                         {selectedClient.email}
                       </div>
                     )}
@@ -503,8 +530,11 @@ export default function ClientsPage() {
                     )}
                   </div>
                 </Section>
+
                 <Separator />
+
                 <Section title="Preferences">
+                  {/* Preferences content... (same) */}
                   <div className="grid grid-cols-2 gap-3 text-sm">
                     <div>
                       <p className="text-[10px] uppercase tracking-wider text-gray-400 font-bold">
@@ -542,7 +572,9 @@ export default function ClientsPage() {
                     )}
                   </div>
                 </Section>
+
                 <Separator />
+
                 <Section title="Projects">
                   {selectedClient.active_project ? (
                     <div className="p-3 rounded-lg border border-gray-100">
@@ -559,8 +591,10 @@ export default function ClientsPage() {
                     <p className="text-xs text-gray-400">No active projects</p>
                   )}
                 </Section>
+
                 <Separator />
-                <div className="flex gap-2">
+
+                <div className="flex gap-2 pt-2">
                   <Button variant="outline" size="sm" className="flex-1">
                     <FolderOpen className="w-3.5 h-3.5 mr-1" /> View Projects
                   </Button>

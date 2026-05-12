@@ -1,3 +1,5 @@
+// dto/assign-vendor.dto.ts
+
 import {
   IsNotEmpty,
   IsOptional,
@@ -5,7 +7,16 @@ import {
   IsString,
   IsUUID,
   IsNumber,
+  IsArray,
+  ValidateNested,
 } from 'class-validator';
+
+import { Type } from 'class-transformer';
+
+class VendorTypeDto {
+  @IsUUID()
+  type_id!: string;
+}
 
 export class AssignVendorDto {
   @IsNotEmpty()
@@ -35,4 +46,11 @@ export class AssignVendorDto {
   @IsOptional()
   @IsString()
   final_estimate_url?: string;
+
+  // Optional vendor type mapping
+  @IsOptional()
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => VendorTypeDto)
+  vendor_types?: VendorTypeDto[];
 }

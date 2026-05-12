@@ -1,11 +1,12 @@
-import React, { useState, useEffect } from "react";
+"use client";
+
+import React, { useMemo, useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
+
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
 import {
   Select,
   SelectTrigger,
@@ -13,21 +14,18 @@ import {
   SelectItem,
   SelectValue,
 } from "@/components/ui/select";
+
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
-  DialogFooter,
 } from "@/components/ui/dialog";
+
 import { ScrollArea } from "@/components/ui/scroll-area";
-import {
-  Sheet,
-  SheetContent,
-  SheetHeader,
-  SheetTitle,
-} from "@/components/ui/sheet";
+import { Sheet, SheetContent } from "@/components/ui/sheet";
 import { toast } from "sonner";
+
 import {
   Plus,
   Search,
@@ -35,255 +33,276 @@ import {
   List,
   Star,
   MapPin,
-  Phone,
-  Mail,
-  Briefcase,
-  ArrowLeft,
-  Loader2,
-  Trash2,
-  Edit3,
-  Filter,
-  X,
-  DollarSign,
-  Clock,
   Building2,
-  Award,
   ChevronRight,
+  Filter,
 } from "lucide-react";
 
-const TRADE_TYPES = [
-  "Civil",
-  "Electrical",
-  "Plumbing",
-  "Furniture",
-  "Fixtures",
-  "Painting",
-  "HVAC",
-  "Flooring",
-  "Landscaping",
-  "Interior",
-  "Structural",
-  "Other",
-];
-const BUDGET_SEGMENTS = ["Economy", "Mid-Range", "Premium", "Luxury"];
-const PRICE_RANGES = ["Low", "Mid", "High", "Premium"];
+// RTK Query - Updated to vendorsApi
+import {
+  useGetVendorsQuery,
+  useDeleteVendorMutation, // ← Add this if you implement it
+  // useGetVendorTypesQuery,                 // ← Uncomment if you add this endpoint
+} from "@/api/vendorsApi";
 
-const ratingStars = (r) => {
-  const stars = [];
-  for (let i = 0; i < 5; i++)
-    stars.push(
-      <Star
-        key={i}
-        className={`w-3 h-3 ${i < r ? "fill-[#ef7f1b] text-[#ef7f1b]" : "text-gray-200"}`}
-      />,
-    );
-  return <div className="flex gap-0.5">{stars}</div>;
+import AddVendorForm from "@/components/vendors/AddVendorForm";
+import VendorProfile from "@/components/vendors/VendorProfile";
+
+const ratingStars = (rating = 0) => {
+  return (
+    <div className="flex items-center gap-0.5">
+      {[...Array(5)].map((_, i) => (
+        <Star
+          key={i}
+          className={`h-3 w-3 transition-all ${
+            i < Math.floor(rating)
+              ? "fill-[#ef7f1b] text-[#ef7f1b]"
+              : "text-gray-200"
+          }`}
+        />
+      ))}
+    </div>
+  );
 };
 
 export default function VendorsPage() {
-  const { api, user } = useAuth();
-  const [vendors, setVendors] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const { user } = useAuth();
+
   const [search, setSearch] = useState("");
   const [viewMode, setViewMode] = useState("grid");
   const [showAdd, setShowAdd] = useState(false);
   const [activeVendor, setActiveVendor] = useState(null);
   const [filterTrade, setFilterTrade] = useState("all");
-  const [filterBudget, setFilterBudget] = useState("all");
+
   const isClient = user?.role === "Client";
 
-  useEffect(() => {
-    fetchVendors();
-  }, []);
-  const fetchVendors = async () => {
-    try {
-      const r = await api.get("/vendors");
-      setVendors(r.data);
-    } catch (e) {
-      console.error(e);
-    } finally {
-      setLoading(false);
-    }
-  };
+  // Queries - Updated
+  const { data: vendors = [], isLoading: vendorsLoading } =
+    useGetVendorsQuery();
+
+  // const { data: vendorTypes = [] } = useGetVendorTypesQuery(); // if needed
+
+  const [deleteVendor] = useDeleteVendorMutation(); // ← Updated
+
+  const tradeOptions = useMemo(() => {
+    const uniqueTrades = Array.from(
+      new Set(vendors.map((v) => v.type_of_business).filter(Boolean)),
+    );
+    return uniqueTrades;
+  }, [vendors]);
+
+  const filtered = useMemo(() => {
+    const term = search.toLowerCase().trim();
+
+    return vendors.filter((v) => {
+      const matchesSearch =
+        !term ||
+        v.name?.toLowerCase().includes(term) ||
+        v.company_name?.toLowerCase().includes(term) ||
+        v.type_of_business?.toLowerCase().includes(term) ||
+        v.notes?.toLowerCase().includes(term);
+
+      const matchesTrade =
+        filterTrade === "all" ||
+        v.type_of_business === filterTrade ||
+        (filterTrade === "other" && !v.type_of_business);
+
+      return matchesSearch && matchesTrade;
+    });
+  }, [vendors, search, filterTrade]);
 
   const handleDelete = async (id) => {
+    if (!window.confirm("Are you sure you want to delete this vendor?")) return;
+
     try {
-      await api.delete(`/vendors/${id}`);
-      setVendors((p) => p.filter((v) => v.id !== id));
-      toast.success("Deleted");
+      await deleteVendor(id).unwrap();
+      toast.success("Vendor deleted successfully");
+      setActiveVendor(null);
     } catch {
-      toast.error("Failed");
+      toast.error("Failed to delete vendor");
     }
   };
 
-  const filtered = vendors.filter((v) => {
-    if (
-      search &&
-      !v.name?.toLowerCase().includes(search.toLowerCase()) &&
-      !v.trade_type?.toLowerCase().includes(search.toLowerCase())
-    )
-      return false;
-    if (filterTrade !== "all" && v.trade_type !== filterTrade) return false;
-    if (filterBudget !== "all" && v.budget_segment !== filterBudget)
-      return false;
-    return true;
-  });
-
-  if (loading)
+  if (vendorsLoading) {
     return (
-      <div className="flex items-center justify-center h-full min-h-[60vh]">
-        <div className="animate-spin w-8 h-8 border-2 border-[#ef7f1b] border-t-transparent rounded-full" />
+      <div className="flex min-h-[60vh] items-center justify-center">
+        <div className="h-10 w-10 animate-spin rounded-full border-2 border-[#ef7f1b] border-t-transparent" />
       </div>
     );
+  }
 
   return (
-    <div className="flex flex-col h-full" data-testid="vendors-page">
-      <div className="p-4 md:px-6 border-b border-gray-200 bg-white">
-        <div className="flex items-center justify-between mb-3">
+    <div
+      className="flex h-full flex-col bg-[#fafafa]"
+      data-testid="vendors-page"
+    >
+      {/* Header */}
+      <div className="animate-fadeIn border-b bg-white px-4 py-4 shadow-sm md:px-6">
+        <div className="mb-4 flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
           <div>
             <h1
-              className="text-xl font-black text-black"
+              className="text-2xl font-black tracking-tight text-black"
               data-testid="vendors-title"
             >
               Vendors
             </h1>
-            <p className="text-xs text-gray-400 mt-1">
-              {vendors.length} vendor{vendors.length !== 1 ? "s" : ""} in
-              database
+            <p className="mt-1 text-xs text-gray-400">
+              {vendors.length} vendor{vendors.length !== 1 ? "s" : ""} found
             </p>
           </div>
+
           <div className="flex items-center gap-2">
-            <div className="flex border border-gray-200 rounded-md overflow-hidden">
+            <div className="flex overflow-hidden rounded-lg border border-gray-200 bg-white">
               <button
                 onClick={() => setViewMode("grid")}
-                className={`p-1.5 ${viewMode === "grid" ? "bg-gray-100" : ""}`}
+                className={`p-2 transition-all ${viewMode === "grid" ? "bg-[#ef7f1b] text-white" : "text-gray-500 hover:bg-gray-50"}`}
               >
-                <Grid3X3 className="w-4 h-4" />
+                <Grid3X3 className="h-4 w-4" />
               </button>
               <button
                 onClick={() => setViewMode("list")}
-                className={`p-1.5 ${viewMode === "list" ? "bg-gray-100" : ""}`}
+                className={`p-2 transition-all ${viewMode === "list" ? "bg-[#ef7f1b] text-white" : "text-gray-500 hover:bg-gray-50"}`}
               >
-                <List className="w-4 h-4" />
+                <List className="h-4 w-4" />
               </button>
             </div>
+
             {!isClient && (
               <Button
                 onClick={() => setShowAdd(true)}
-                className="bg-[#ef7f1b] hover:bg-[#d66e15] text-white"
+                className="bg-[#ef7f1b] text-white hover:bg-[#d66e15]"
                 size="sm"
                 data-testid="add-vendor-btn"
               >
-                <Plus className="w-4 h-4 mr-1" /> Add Vendor
+                <Plus className="mr-1 h-4 w-4" />
+                Add Vendor
               </Button>
             )}
           </div>
         </div>
+
         {/* Filters */}
-        <div className="flex items-center gap-3">
+        <div className="flex flex-col gap-3 md:flex-row">
           <div className="relative flex-1">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
             <Input
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder="Search vendors..."
-              className="pl-10"
+              className="h-10 border-gray-200 pl-10 focus-visible:ring-[#ef7f1b]"
               data-testid="vendor-search"
             />
           </div>
+
           <Select value={filterTrade} onValueChange={setFilterTrade}>
-            <SelectTrigger className="w-36 h-9 text-xs">
-              <Filter className="w-3 h-3 mr-1" />
-              <SelectValue />
+            <SelectTrigger className="h-10 w-full border-gray-200 md:w-52">
+              <div className="flex items-center gap-1">
+                <Filter className="h-3 w-3" />
+                <SelectValue placeholder="All Trades" />
+              </div>
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">All Trades</SelectItem>
-              {TRADE_TYPES.map((t) => (
-                <SelectItem key={t} value={t}>
-                  {t}
+              {tradeOptions.map((trade) => (
+                <SelectItem key={trade} value={trade}>
+                  {trade}
                 </SelectItem>
               ))}
-            </SelectContent>
-          </Select>
-          <Select value={filterBudget} onValueChange={setFilterBudget}>
-            <SelectTrigger className="w-36 h-9 text-xs">
-              <DollarSign className="w-3 h-3 mr-1" />
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All Budgets</SelectItem>
-              {BUDGET_SEGMENTS.map((b) => (
-                <SelectItem key={b} value={b}>
-                  {b}
-                </SelectItem>
-              ))}
+              <SelectItem value="other">Other / Not Specified</SelectItem>
             </SelectContent>
           </Select>
         </div>
       </div>
 
+      {/* Content */}
       <ScrollArea className="flex-1">
         <div className="p-4 md:p-6">
           {filtered.length === 0 ? (
-            <div className="text-center py-16">
-              <Building2 className="w-10 h-10 text-gray-200 mx-auto mb-3" />
-              <p className="text-sm text-gray-400">No vendors found</p>
+            <div className="animate-fadeIn py-20 text-center">
+              <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-orange-50">
+                <Building2 className="h-8 w-8 text-[#ef7f1b]" />
+              </div>
+              <h3 className="text-sm font-semibold text-black">
+                No vendors found
+              </h3>
+              <p className="mt-1 text-xs text-gray-400">
+                Try adjusting your filters or search
+              </p>
             </div>
           ) : viewMode === "grid" ? (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-              {filtered.map((v, i) => (
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
+              {filtered.map((vendor, i) => (
                 <Card
-                  key={v.id}
-                  className="p-4 hover:shadow-lg hover:border-[#ef7f1b]/20 transition-all cursor-pointer group"
-                  onClick={() => setActiveVendor(v)}
+                  key={vendor.id}
+                  onClick={() => setActiveVendor(vendor)}
                   data-testid={`vendor-card-${i}`}
+                  className="animate-fadeInUp cursor-pointer rounded-2xl border border-gray-200 bg-white p-4 shadow-sm transition-all hover:-translate-y-1 hover:border-[#ef7f1b]/30 hover:shadow-lg"
                 >
-                  <div className="flex items-start justify-between mb-2">
-                    <div className="w-10 h-10 rounded-lg bg-orange-50 text-[#ef7f1b] flex items-center justify-center font-black text-sm">
-                      {v.name?.[0]}
+                  {/* ... rest of grid card (unchanged) ... */}
+                  <div className="mb-3 flex items-start justify-between">
+                    <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-orange-50 text-sm font-black text-[#ef7f1b]">
+                      {vendor.name?.[0] || "V"}
                     </div>
-                    <Badge className="bg-gray-100 text-gray-600 text-[9px] border-0">
-                      {v.trade_type}
+                    <Badge className="border-0 bg-gray-100 text-[10px] text-gray-600">
+                      {vendor.type_of_business || "Vendor"}
                     </Badge>
                   </div>
-                  <h3 className="text-sm font-bold text-black">{v.name}</h3>
-                  {v.location && (
-                    <p className="text-[10px] text-gray-400 mt-0.5 flex items-center gap-1">
-                      <MapPin className="w-3 h-3" />
-                      {v.location}
-                    </p>
+
+                  <h3 className="truncate text-sm font-bold text-black">
+                    {vendor.name}
+                  </h3>
+
+                  {(vendor.area_covered || vendor.notes) && (
+                    <div className="mt-1 flex items-center gap-1 text-[11px] text-gray-400">
+                      <MapPin className="h-3 w-3" />
+                      <span className="truncate">
+                        {vendor.area_covered || vendor.notes}
+                      </span>
+                    </div>
                   )}
-                  <div className="mt-2">{ratingStars(v.rating)}</div>
-                  <div className="flex items-center justify-between mt-3 pt-2 border-t border-gray-100 text-[10px] text-gray-400">
-                    <span>{v.price_range || "—"} range</span>
-                    <span>{v.past_projects_count} projects</span>
+
+                  <div className="mt-3">{ratingStars(vendor.rating)}</div>
+
+                  <div className="mt-4 flex items-center justify-between border-t border-gray-100 pt-3 text-[10px] text-gray-500">
+                    <span>{vendor.type_of_business || "—"}</span>
+                    <span>{vendor.mobile_number}</span>
                   </div>
                 </Card>
               ))}
             </div>
           ) : (
-            <div className="space-y-2">
-              {filtered.map((v, i) => (
+            /* List View - unchanged */
+            <div className="space-y-3">
+              {filtered.map((vendor, i) => (
                 <Card
-                  key={v.id}
-                  className="p-3 flex items-center gap-4 hover:shadow-md transition-all cursor-pointer"
-                  onClick={() => setActiveVendor(v)}
+                  key={vendor.id}
+                  onClick={() => setActiveVendor(vendor)}
                   data-testid={`vendor-row-${i}`}
+                  className="animate-fadeIn flex cursor-pointer items-center gap-4 rounded-2xl border border-gray-200 bg-white p-4 shadow-sm hover:border-[#ef7f1b]/30 hover:shadow-md"
                 >
-                  <div className="w-10 h-10 rounded-lg bg-orange-50 text-[#ef7f1b] flex items-center justify-center font-black text-sm shrink-0">
-                    {v.name?.[0]}
+                  {/* ... list view content ... */}
+                  <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-orange-50 text-sm font-black text-[#ef7f1b]">
+                    {vendor.name?.[0] || "V"}
                   </div>
-                  <div className="flex-1 min-w-0">
-                    <h3 className="text-xs font-bold text-black">{v.name}</h3>
-                    <p className="text-[10px] text-gray-400">
-                      {v.trade_type} &middot; {v.location}
+
+                  <div className="min-w-0 flex-1">
+                    <h3 className="truncate text-sm font-bold text-black">
+                      {vendor.name}
+                    </h3>
+                    <p className="truncate text-[11px] text-gray-400">
+                      {vendor.type_of_business} • {vendor.mobile_number}
                     </p>
                   </div>
-                  {ratingStars(v.rating)}
-                  <Badge className="bg-gray-100 text-gray-600 text-[9px] border-0">
-                    {v.price_range}
+
+                  <div className="hidden sm:block">
+                    {ratingStars(vendor.rating)}
+                  </div>
+
+                  <Badge className="border-0 bg-gray-100 text-[10px] text-gray-600">
+                    {vendor.type_of_business || "Vendor"}
                   </Badge>
-                  <ChevronRight className="w-4 h-4 text-gray-300" />
+
+                  <ChevronRight className="h-4 w-4 text-gray-300" />
                 </Card>
               ))}
             </div>
@@ -291,376 +310,32 @@ export default function VendorsPage() {
         </div>
       </ScrollArea>
 
-      {/* Add Vendor Dialog */}
+      {/* Add & Profile Modals - unchanged */}
       <Dialog open={showAdd} onOpenChange={setShowAdd}>
-        <DialogContent className="max-w-lg" data-testid="add-vendor-dialog">
-          <DialogHeader>
-            <DialogTitle>Add Vendor</DialogTitle>
+        <DialogContent className="max-w-2xl rounded-2xl border-0 p-0 shadow-2xl">
+          <DialogHeader className="border-b px-6 py-4">
+            <DialogTitle className="text-lg font-bold">Add Vendor</DialogTitle>
           </DialogHeader>
-          <AddVendorForm
-            api={api}
-            onSuccess={(v) => {
-              setVendors((p) => [...p, v]);
-              setShowAdd(false);
-              toast.success("Vendor added");
-            }}
-          />
+          <div className="p-6">
+            <AddVendorForm
+              vendorTypeId={null}
+              onSuccess={() => setShowAdd(false)}
+            />
+          </div>
         </DialogContent>
       </Dialog>
 
-      {/* Vendor Profile Sheet */}
-      <Sheet
-        open={!!activeVendor}
-        onOpenChange={(o) => {
-          if (!o) setActiveVendor(null);
-        }}
-      >
-        <SheetContent className="w-[420px] sm:w-[480px] p-0">
+      <Sheet open={!!activeVendor} onOpenChange={() => setActiveVendor(null)}>
+        <SheetContent className="w-[420px] border-l bg-white p-0 sm:w-[500px]">
           {activeVendor && (
             <VendorProfile
               vendor={activeVendor}
-              api={api}
-              user={user}
-              onClose={() => {
-                setActiveVendor(null);
-                fetchVendors();
-              }}
-              onDelete={() => {
-                handleDelete(activeVendor.id);
-                setActiveVendor(null);
-              }}
+              isClient={isClient}
+              onDelete={() => handleDelete(activeVendor.id)}
             />
           )}
         </SheetContent>
       </Sheet>
-    </div>
-  );
-}
-
-function AddVendorForm({ api, onSuccess }) {
-  const [form, setForm] = useState({
-    name: "",
-    contact_person: "",
-    phone: "",
-    email: "",
-    trade_type: "Civil",
-    services: "",
-    products: "",
-    location: "",
-    rating: 3,
-    price_range: "Mid",
-    budget_segment: "Mid-Range",
-    timeline_capability: "",
-    past_projects_count: 0,
-    internal_remarks: "",
-  });
-  const [saving, setSaving] = useState(false);
-
-  const handleSubmit = async () => {
-    if (!form.name.trim()) {
-      toast.error("Vendor name required");
-      return;
-    }
-    setSaving(true);
-    try {
-      const r = await api.post("/vendors", form);
-      onSuccess(r.data);
-    } catch {
-      toast.error("Failed");
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  const u = (k, v) => setForm((p) => ({ ...p, [k]: v }));
-
-  return (
-    <div className="space-y-3 py-2 max-h-[60vh] overflow-y-auto">
-      <div className="grid grid-cols-2 gap-3">
-        <div>
-          <Label className="text-[10px] font-bold uppercase tracking-wider text-gray-400">
-            Vendor Name *
-          </Label>
-          <Input
-            value={form.name}
-            onChange={(e) => u("name", e.target.value)}
-            className="mt-1"
-            data-testid="vendor-name-input"
-          />
-        </div>
-        <div>
-          <Label className="text-[10px] font-bold uppercase tracking-wider text-gray-400">
-            Contact Person
-          </Label>
-          <Input
-            value={form.contact_person}
-            onChange={(e) => u("contact_person", e.target.value)}
-            className="mt-1"
-          />
-        </div>
-      </div>
-      <div className="grid grid-cols-2 gap-3">
-        <div>
-          <Label className="text-[10px] font-bold uppercase tracking-wider text-gray-400">
-            Phone
-          </Label>
-          <Input
-            value={form.phone}
-            onChange={(e) => u("phone", e.target.value)}
-            className="mt-1"
-          />
-        </div>
-        <div>
-          <Label className="text-[10px] font-bold uppercase tracking-wider text-gray-400">
-            Email
-          </Label>
-          <Input
-            value={form.email}
-            onChange={(e) => u("email", e.target.value)}
-            className="mt-1"
-          />
-        </div>
-      </div>
-      <div className="grid grid-cols-2 gap-3">
-        <div>
-          <Label className="text-[10px] font-bold uppercase tracking-wider text-gray-400">
-            Trade Type
-          </Label>
-          <Select
-            value={form.trade_type}
-            onValueChange={(v) => u("trade_type", v)}
-          >
-            <SelectTrigger className="mt-1">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              {TRADE_TYPES.map((t) => (
-                <SelectItem key={t} value={t}>
-                  {t}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-        <div>
-          <Label className="text-[10px] font-bold uppercase tracking-wider text-gray-400">
-            Location
-          </Label>
-          <Input
-            value={form.location}
-            onChange={(e) => u("location", e.target.value)}
-            className="mt-1"
-          />
-        </div>
-      </div>
-      <div className="grid grid-cols-3 gap-3">
-        <div>
-          <Label className="text-[10px] font-bold uppercase tracking-wider text-gray-400">
-            Rating (1-5)
-          </Label>
-          <Input
-            type="number"
-            min={1}
-            max={5}
-            value={form.rating}
-            onChange={(e) => u("rating", Number(e.target.value))}
-            className="mt-1"
-          />
-        </div>
-        <div>
-          <Label className="text-[10px] font-bold uppercase tracking-wider text-gray-400">
-            Price Range
-          </Label>
-          <Select
-            value={form.price_range}
-            onValueChange={(v) => u("price_range", v)}
-          >
-            <SelectTrigger className="mt-1">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              {PRICE_RANGES.map((p) => (
-                <SelectItem key={p} value={p}>
-                  {p}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-        <div>
-          <Label className="text-[10px] font-bold uppercase tracking-wider text-gray-400">
-            Past Projects
-          </Label>
-          <Input
-            type="number"
-            value={form.past_projects_count}
-            onChange={(e) => u("past_projects_count", Number(e.target.value))}
-            className="mt-1"
-          />
-        </div>
-      </div>
-      <div>
-        <Label className="text-[10px] font-bold uppercase tracking-wider text-gray-400">
-          Services Offered
-        </Label>
-        <Textarea
-          value={form.services}
-          onChange={(e) => u("services", e.target.value)}
-          className="mt-1"
-          rows={2}
-        />
-      </div>
-      <div>
-        <Label className="text-[10px] font-bold uppercase tracking-wider text-gray-400">
-          Products
-        </Label>
-        <Textarea
-          value={form.products}
-          onChange={(e) => u("products", e.target.value)}
-          className="mt-1"
-          rows={2}
-        />
-      </div>
-      <div>
-        <Label className="text-[10px] font-bold uppercase tracking-wider text-gray-400">
-          Internal Remarks
-        </Label>
-        <Textarea
-          value={form.internal_remarks}
-          onChange={(e) => u("internal_remarks", e.target.value)}
-          className="mt-1"
-          rows={2}
-        />
-      </div>
-      <div className="flex justify-end">
-        <Button
-          onClick={handleSubmit}
-          disabled={saving}
-          className="bg-[#ef7f1b] hover:bg-[#d66e15] text-white"
-          data-testid="vendor-submit"
-        >
-          {saving ? (
-            <Loader2 className="w-4 h-4 animate-spin mr-1" />
-          ) : (
-            <Plus className="w-4 h-4 mr-1" />
-          )}{" "}
-          Add Vendor
-        </Button>
-      </div>
-    </div>
-  );
-}
-
-function VendorProfile({ vendor, api, user, onClose, onDelete }) {
-  const isClient = user?.role === "Client";
-  return (
-    <div className="flex flex-col h-full" data-testid="vendor-profile">
-      <div className="p-4 border-b border-gray-200">
-        <div className="flex items-center justify-between">
-          <h2 className="text-base font-bold text-black">{vendor.name}</h2>
-          {!isClient && (
-            <button
-              onClick={onDelete}
-              className="text-gray-300 hover:text-[#e31d3b]"
-            >
-              <Trash2 className="w-4 h-4" />
-            </button>
-          )}
-        </div>
-        <div className="flex items-center gap-2 mt-1">
-          <Badge className="bg-gray-100 text-gray-600 text-[9px] border-0">
-            {vendor.trade_type}
-          </Badge>
-          {ratingStars(vendor.rating)}
-        </div>
-      </div>
-      <ScrollArea className="flex-1 p-4">
-        <div className="space-y-4">
-          <ProfileSection title="Contact">
-            {vendor.contact_person && (
-              <ProfileField
-                icon={Briefcase}
-                label="Contact Person"
-                value={vendor.contact_person}
-              />
-            )}
-            {vendor.phone && (
-              <ProfileField icon={Phone} label="Phone" value={vendor.phone} />
-            )}
-            {vendor.email && (
-              <ProfileField icon={Mail} label="Email" value={vendor.email} />
-            )}
-            {vendor.location && (
-              <ProfileField
-                icon={MapPin}
-                label="Location"
-                value={vendor.location}
-              />
-            )}
-          </ProfileSection>
-          <ProfileSection title="Capabilities">
-            {vendor.services && (
-              <ProfileField
-                icon={Briefcase}
-                label="Services"
-                value={vendor.services}
-              />
-            )}
-            {vendor.products && (
-              <ProfileField
-                icon={Building2}
-                label="Products"
-                value={vendor.products}
-              />
-            )}
-            <ProfileField
-              icon={DollarSign}
-              label="Price Range"
-              value={vendor.price_range || "—"}
-            />
-            <ProfileField
-              icon={Award}
-              label="Past Projects"
-              value={String(vendor.past_projects_count)}
-            />
-            {vendor.timeline_capability && (
-              <ProfileField
-                icon={Clock}
-                label="Timeline"
-                value={vendor.timeline_capability}
-              />
-            )}
-          </ProfileSection>
-          {!isClient && vendor.internal_remarks && (
-            <ProfileSection title="Internal Remarks">
-              <p className="text-xs text-gray-600">{vendor.internal_remarks}</p>
-            </ProfileSection>
-          )}
-        </div>
-      </ScrollArea>
-    </div>
-  );
-}
-
-function ProfileSection({ title, children }) {
-  return (
-    <div>
-      <h3 className="text-[10px] font-bold uppercase tracking-wider text-[#ef7f1b] mb-2">
-        {title}
-      </h3>
-      <div className="space-y-2">{children}</div>
-    </div>
-  );
-}
-
-function ProfileField({ icon: Icon, label, value }) {
-  return (
-    <div className="flex items-start gap-2">
-      <Icon className="w-3.5 h-3.5 text-gray-400 mt-0.5 shrink-0" />
-      <div>
-        <p className="text-[10px] text-gray-400">{label}</p>
-        <p className="text-xs text-black">{value}</p>
-      </div>
     </div>
   );
 }
