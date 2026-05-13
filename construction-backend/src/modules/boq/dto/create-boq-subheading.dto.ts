@@ -1,6 +1,18 @@
-import { IsNotEmpty, IsOptional, IsString, IsUUID } from 'class-validator';
+import {
+  IsNotEmpty,
+  IsOptional,
+  IsString,
+  IsUUID,
+  IsNumber,
+} from 'class-validator';
+
+import { Type } from 'class-transformer';
 
 export class CreateBoqSubHeadingDto {
+  @IsNotEmpty()
+  @IsUUID()
+  boq_id!: string;
+
   @IsNotEmpty()
   @IsUUID()
   section_id!: string;
@@ -14,5 +26,7 @@ export class CreateBoqSubHeadingDto {
   description?: string;
 
   @IsOptional()
-  section_order?: number;
+  @Type(() => Number)
+  @IsNumber()
+  sort_order?: number;
 }

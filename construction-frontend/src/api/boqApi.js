@@ -2,7 +2,27 @@ import { baseApi } from "./baseApi";
 
 export const boqApi = baseApi.injectEndpoints({
   endpoints: (builder) => ({
-    // ================= BOQ =================
+    // =====================================================
+    // BOQ CATEGORIES
+    // =====================================================
+
+    getBoqCategories: builder.query({
+      query: () => "/boq/categories",
+      providesTags: ["BoqCategory"],
+    }),
+
+    createBoqCategory: builder.mutation({
+      query: (body) => ({
+        url: "/boq/categories",
+        method: "POST",
+        body,
+      }),
+      invalidatesTags: ["BoqCategory"],
+    }),
+
+    // =====================================================
+    // BOQ
+    // =====================================================
 
     createBoq: builder.mutation({
       query: (body) => ({
@@ -26,7 +46,17 @@ export const boqApi = baseApi.injectEndpoints({
       providesTags: ["Boq"],
     }),
 
-    // ================= SECTIONS =================
+    calculateBoqTotal: builder.mutation({
+      query: (id) => ({
+        url: `/boq/${id}/calculate`,
+        method: "POST",
+      }),
+      invalidatesTags: ["Boq"],
+    }),
+
+    // =====================================================
+    // BOQ SECTIONS
+    // =====================================================
 
     createSection: builder.mutation({
       query: (body) => ({
@@ -42,7 +72,27 @@ export const boqApi = baseApi.injectEndpoints({
       providesTags: ["Boq"],
     }),
 
-    // ================= ITEMS =================
+    // =====================================================
+    // BOQ SUBHEADINGS
+    // =====================================================
+
+    createSubHeading: builder.mutation({
+      query: (body) => ({
+        url: "/boq/subheadings",
+        method: "POST",
+        body,
+      }),
+      invalidatesTags: ["Boq"],
+    }),
+
+    getSubHeadingsBySection: builder.query({
+      query: (sectionId) => `/boq/sections/${sectionId}/subheadings`,
+      providesTags: ["Boq"],
+    }),
+
+    // =====================================================
+    // BOQ ITEMS
+    // =====================================================
 
     createItem: builder.mutation({
       query: (body) => ({
@@ -62,29 +112,54 @@ export const boqApi = baseApi.injectEndpoints({
       invalidatesTags: ["Boq"],
     }),
 
-    // ================= CALCULATIONS =================
-
-    calculateBoqTotal: builder.mutation({
+    deleteItem: builder.mutation({
       query: (id) => ({
-        url: `/boq/${id}/calculate`,
-        method: "POST",
+        url: `/boq/items/${id}`,
+        method: "DELETE",
       }),
       invalidatesTags: ["Boq"],
     }),
   }),
+
   overrideExisting: false,
 });
 
 export const {
+  // =====================================================
+  // CATEGORY
+  // =====================================================
+
+  useGetBoqCategoriesQuery,
+  useCreateBoqCategoryMutation,
+
+  // =====================================================
+  // BOQ
+  // =====================================================
+
   useCreateBoqMutation,
   useGetBoqsQuery,
   useGetBoqByIdQuery,
+  useCalculateBoqTotalMutation,
+
+  // =====================================================
+  // SECTIONS
+  // =====================================================
 
   useCreateSectionMutation,
   useGetSectionsByBoqQuery,
 
+  // =====================================================
+  // SUBHEADINGS
+  // =====================================================
+
+  useCreateSubHeadingMutation,
+  useGetSubHeadingsBySectionQuery,
+
+  // =====================================================
+  // ITEMS
+  // =====================================================
+
   useCreateItemMutation,
   useUpdateItemMutation,
-
-  useCalculateBoqTotalMutation,
+  useDeleteItemMutation,
 } = boqApi;

@@ -1,6 +1,7 @@
 /** @type {import('tailwindcss').Config} */
 module.exports = {
   darkMode: ["class"],
+
   content: [
     "./src/**/*.{js,jsx,ts,tsx,mdx}",
     "./app/**/*.{js,jsx,ts,tsx,mdx}",
@@ -8,6 +9,7 @@ module.exports = {
     "./pages/**/*.{js,jsx,ts,tsx,mdx}",
     "./public/index.html",
   ],
+
   theme: {
     extend: {
       borderRadius: {
@@ -66,6 +68,22 @@ module.exports = {
           4: "hsl(var(--chart-4))",
           5: "hsl(var(--chart-5))",
         },
+
+        brand: {
+          orange: "#ef7f1b",
+          amber: "#f59e0b",
+          slate: "#0f172a",
+          surface: "#f8fafc",
+        },
+      },
+
+      boxShadow: {
+        soft: "0 4px 20px rgba(0,0,0,0.06)",
+        glow: "0 0 0 1px rgba(239,127,27,0.15), 0 8px 30px rgba(239,127,27,0.12)",
+      },
+
+      backdropBlur: {
+        xs: "2px",
       },
 
       keyframes: {
@@ -78,11 +96,66 @@ module.exports = {
           from: { height: "var(--radix-accordion-content-height)" },
           to: { height: "0" },
         },
+
+        fadeInUp: {
+          from: {
+            opacity: "0",
+            transform: "translateY(20px)",
+          },
+          to: {
+            opacity: "1",
+            transform: "translateY(0)",
+          },
+        },
+
+        fadeIn: {
+          from: {
+            opacity: "0",
+          },
+          to: {
+            opacity: "1",
+          },
+        },
+
+        slideInRight: {
+          from: {
+            opacity: "0",
+            transform: "translateX(20px)",
+          },
+          to: {
+            opacity: "1",
+            transform: "translateX(0)",
+          },
+        },
+
+        subtlePulse: {
+          "0%, 100%": {
+            opacity: "1",
+          },
+          "50%": {
+            opacity: ".7",
+          },
+        },
+
+        shimmer: {
+          "0%": {
+            backgroundPosition: "-200% 0",
+          },
+          "100%": {
+            backgroundPosition: "200% 0",
+          },
+        },
       },
 
       animation: {
         "accordion-down": "accordion-down 0.2s ease-out",
         "accordion-up": "accordion-up 0.2s ease-out",
+
+        fadeInUp: "fadeInUp 0.5s ease-out",
+        fadeIn: "fadeIn 0.4s ease-out",
+        slideInRight: "slideInRight 0.4s ease-out",
+        subtlePulse: "subtlePulse 2.5s ease-in-out infinite",
+        shimmer: "shimmer 2.5s linear infinite",
       },
     },
   },

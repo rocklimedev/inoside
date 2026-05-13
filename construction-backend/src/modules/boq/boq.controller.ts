@@ -6,13 +6,17 @@ import {
   Param,
   Patch,
   Query,
+  Delete,
   UseGuards,
 } from '@nestjs/common';
 
 import { BoqService } from './boq.service';
+
 import { CreateBoqDto } from './dto/create-boq.dto';
 import { CreateBoqSectionDto } from './dto/create-boq-section.dto';
 import { CreateBoqItemDto } from './dto/create-boq-item.dto';
+import { CreateBoqSubHeadingDto } from './dto/create-boq-subheading.dto';
+import { CreateBoqCategoryDto } from './dto/create-boq-category.dto';
 
 import { JwtAuthGuard } from '@/common/guards/jwt-auth.guard';
 import { RolesGuard } from '@/common/guards/roles.guard';
@@ -23,85 +27,106 @@ import { Roles } from '@/common/decorators/roles.decorator';
 export class BoqController {
   constructor(private readonly boqService: BoqService) {}
 
-  // ====================== BOQ CATEGORY ======================
+  // =========================================================
+  // BOQ CATEGORIES
+  // =========================================================
 
   @Get('categories')
-  findCategories(@Query('projectId') projectId?: string) {
-    return this.boqService.findAllCategories(projectId);
+  findCategories() {
+    return this.boqService.findAllCategories();
   }
 
   @Post('categories')
   @UseGuards(RolesGuard)
   @Roles('admin', 'estimator', 'project_manager')
-  createCategory(@Body() body: any) {
-    return this.boqService.createCategory(body);
+  createCategory(@Body() dto: CreateBoqCategoryDto) {
+    return this.boqService.createCategory(dto);
   }
 
-  // ====================== BOQ ======================
+  // =========================================================
+  // BOQS
+  // =========================================================
 
   @Post()
   @UseGuards(RolesGuard)
   @Roles('admin', 'estimator', 'project_manager')
-  create(@Body() dto: CreateBoqDto) {
+  createBoq(@Body() dto: CreateBoqDto) {
     return this.boqService.createBoq(dto);
   }
 
   @Get()
-  findAll(@Query('projectId') projectId?: string) {
+  findAllBoqs(@Query('projectId') projectId?: string) {
     return this.boqService.findAllBoqs(projectId);
   }
 
   @Get(':id')
-  findOne(@Param('id') id: string) {
+  findBoq(@Param('id') id: string) {
     return this.boqService.getBoqWithDetails(id);
   }
 
-  // ====================== SECTIONS ======================
+  @Post(':id/calculate')
+  calculateTotal(@Param('id') id: string) {
+    return this.boqService.calculateBoqTotal(id);
+  }
+
+  // =========================================================
+  // SECTIONS
+  // =========================================================
 
   @Post('sections')
+  @UseGuards(RolesGuard)
+  @Roles('admin', 'estimator', 'project_manager')
   createSection(@Body() dto: CreateBoqSectionDto) {
     return this.boqService.createSection(dto);
   }
 
   @Get(':boqId/sections')
-  getSections(@Param('boqId') boqId: string) {
+  findSections(@Param('boqId') boqId: string) {
     return this.boqService.findSectionsByBoq(boqId);
   }
 
-  // ====================== SUB HEADINGS (NEW) ======================
+  // =========================================================
+  // SUBHEADINGS
+  // =========================================================
 
   @Post('subheadings')
-  createSubHeading(@Body() body: any) {
-    return this.boqService.createSubHeading(body);
+  @UseGuards(RolesGuard)
+  @Roles('admin', 'estimator', 'project_manager')
+  createSubHeading(@Body() dto: CreateBoqSubHeadingDto) {
+    return this.boqService.createSubHeading(dto);
   }
 
   @Get('sections/:sectionId/subheadings')
-  getSubHeadings(@Param('sectionId') sectionId: string) {
+  findSubHeadings(@Param('sectionId') sectionId: string) {
     return this.boqService.findSubHeadingsBySection(sectionId);
   }
 
-  // ====================== ITEMS ======================
+  // =========================================================
+  // ITEMS
+  // =========================================================
 
   @Post('items')
+  @UseGuards(RolesGuard)
+  @Roles('admin', 'estimator', 'project_manager')
   createItem(@Body() dto: CreateBoqItemDto) {
     return this.boqService.createItem(dto);
   }
 
   @Patch('items/:id')
-  updateItem(@Param('id') id: string, @Body() dto: Partial<CreateBoqItemDto>) {
+  @UseGuards(RolesGuard)
+  @Roles('admin', 'estimator', 'project_manager')
+  updateItem(
+    @Param('id') id: string,
+    @Body()
+    dto: Partial<CreateBoqItemDto>,
+  ) {
     return this.boqService.updateItem(id, dto);
   }
 
-  // optional (recommended)
-  @Post('items/:id/delete')
+  @Delete('items/:id')
+  @UseGuards(RolesGuard)
+  @Roles('admin', 'estimator', 'project_manager')
   deleteItem(@Param('id') id: string) {
     return this.boqService.deleteItem(id);
-  }
-
-  // ====================== CALCULATIONS ======================
-
-  @Post(':id/calculate')
-  calculateTotal(@Param('id') id: string) {
-    return this.boqService.calculateBoqTotal(id);
   }
 }

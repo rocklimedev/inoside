@@ -3,8 +3,6 @@ import {
   Column,
   Model,
   DataType,
-  ForeignKey,
-  BelongsTo,
   HasMany,
   Default,
 } from 'sequelize-typescript';
@@ -16,7 +14,6 @@ import type {
   NonAttribute,
 } from 'sequelize';
 
-import { Project } from '@/modules/projects/models/project.model';
 import { Boq } from './boq.model';
 
 @Table({
@@ -36,18 +33,18 @@ export class BoqCategory extends Model<
   })
   declare id: CreationOptional<string>;
 
-  @ForeignKey(() => Project)
-  @Column({
-    type: DataType.UUID,
-    allowNull: false,
-  })
-  declare project_id: string;
-
   @Column({
     type: DataType.STRING(255),
     allowNull: false,
   })
   declare name: string;
+
+  @Column({
+    type: DataType.STRING(100),
+    allowNull: true,
+    unique: true,
+  })
+  declare code: CreationOptional<string | null>;
 
   @Column({
     type: DataType.TEXT,
@@ -61,10 +58,13 @@ export class BoqCategory extends Model<
   })
   declare sort_order: CreationOptional<number>;
 
-  // ================= RELATIONS =================
+  @Column({
+    type: DataType.BOOLEAN,
+    defaultValue: true,
+  })
+  declare is_active: CreationOptional<boolean>;
 
-  @BelongsTo(() => Project)
-  declare project?: NonAttribute<Project>;
+  // ================= RELATIONS =================
 
   @HasMany(() => Boq)
   declare boqs?: NonAttribute<Boq[]>;

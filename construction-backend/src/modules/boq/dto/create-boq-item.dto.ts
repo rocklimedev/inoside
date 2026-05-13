@@ -13,27 +13,49 @@ export class CreateBoqItemDto {
   @IsUUID()
   boq_id!: string;
 
-  // ❌ REMOVE section_id (no longer needed)
-
   @IsNotEmpty()
   @IsUUID()
-  subheading_id!: string; // ✅ NEW REQUIRED FIELD
+  section_id!: string;
+
+  @IsOptional()
+  @IsUUID()
+  subheading_id?: string;
+
+  @IsOptional()
+  @IsUUID()
+  inventory_item_id?: string;
 
   @IsOptional()
   @IsUUID()
   unit_id?: string;
 
+  // ================= BASIC INFO =================
+
   @IsOptional()
   @IsString()
   sno?: string;
 
-  @IsNotEmpty()
+  @IsOptional()
   @IsString()
-  item_name!: string;
+  item_code?: string;
+
+  @IsOptional()
+  @IsString()
+  item_name?: string;
 
   @IsOptional()
   @IsString()
   description?: string;
+
+  @IsOptional()
+  @IsString()
+  specification?: string;
+
+  @IsOptional()
+  @IsString()
+  brand?: string;
+
+  // ================= VALUES =================
 
   @IsOptional()
   @Type(() => Number)
@@ -48,7 +70,19 @@ export class CreateBoqItemDto {
   @IsOptional()
   @Type(() => Number)
   @IsNumber()
-  amount?: number;
+  wastage_percent?: number;
+
+  @IsOptional()
+  @Type(() => Number)
+  @IsNumber()
+  discount_percent?: number;
+
+  @IsOptional()
+  @Type(() => Number)
+  @IsNumber()
+  tax_percent?: number;
+
+  // ================= OTHER =================
 
   @IsOptional()
   @IsString()

@@ -2,18 +2,18 @@ import {
   IsNotEmpty,
   IsOptional,
   IsString,
-  IsUUID,
   IsNumber,
+  IsBoolean,
 } from 'class-validator';
 
 export class CreateBoqCategoryDto {
   @IsNotEmpty()
-  @IsUUID()
-  project_id!: string;
-
-  @IsNotEmpty()
   @IsString()
   name!: string;
+
+  @IsOptional()
+  @IsString()
+  code?: string;
 
   @IsOptional()
   @IsString()
@@ -22,4 +22,8 @@ export class CreateBoqCategoryDto {
   @IsOptional()
   @IsNumber()
   sort_order?: number;
+
+  @IsOptional()
+  @IsBoolean()
+  is_active?: boolean;
 }
