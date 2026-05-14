@@ -1,7 +1,8 @@
+import { API_URL } from "@/lib";
 import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
 
 const baseQuery = fetchBaseQuery({
-  baseUrl: "/api", // change to your backend URL
+  baseUrl: `${API_URL}`, // change to your backend URL
 
   prepareHeaders: (headers) => {
     const token = localStorage.getItem("access_token");
