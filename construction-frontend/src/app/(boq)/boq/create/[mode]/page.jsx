@@ -24,6 +24,7 @@ import { BoqSubHeadingForm } from "@/components/boq/BoqSubHeadingForm";
 import { BoqItemForm } from "@/components/boq/BoqItemForm";
 import { BoqTreeView } from "@/components/boq/BoqTreeView";
 import { BoqSummary } from "@/components/boq/BoqSummary";
+import { ProjectSelector } from "@/components/projects/ProjectSelector";
 
 import {
   useGetBoqCategoriesQuery,
@@ -31,13 +32,17 @@ import {
   useCreateSectionMutation,
   useCreateSubHeadingMutation,
   useCreateItemMutation,
-} from "@/api/boqApi"; // Adjust path as per your structure
+} from "@/api/boqApi";
 
-export default function BoqPage({ projectId, boqId }) {
+export default function BoqPage({ projectId: initialProjectId, boqId }) {
   const router = useRouter();
 
+  const [selectedProjectId, setSelectedProjectId] = useState(
+    initialProjectId || "",
+  );
+
   const [boq, setBoq] = useState({
-    project_id: projectId,
+    project_id: selectedProjectId,
     boq_category_id: "",
     title: "",
     revision_no: "Rev-01",
@@ -50,19 +55,24 @@ export default function BoqPage({ projectId, boqId }) {
   const [subheadingModalOpen, setSubheadingModalOpen] = useState(false);
   const [currentSectionId, setCurrentSectionId] = useState("");
   const [activeItem, setActiveItem] = useState(null);
+  const [isSavingStructure, setIsSavingStructure] = useState(false);
 
+  // RTK Query Hooks
   const [createBoq, { isLoading: isCreatingBoq }] = useCreateBoqMutation();
   const [createSection] = useCreateSectionMutation();
   const [createSubHeading] = useCreateSubHeadingMutation();
   const [createItem] = useCreateItemMutation();
 
-  // Fetch Categories
   const { data: categories = [] } = useGetBoqCategoriesQuery();
 
-  // Load existing BOQ if editing (optional - implement later if needed)
+  // Sync project_id
+  useEffect(() => {
+    setBoq((prev) => ({ ...prev, project_id: selectedProjectId }));
+  }, [selectedProjectId]);
+
+  // Load existing BOQ (for future edit mode)
   useEffect(() => {
     if (boqId) {
-      // You can use useGetBoqByIdQuery(boqId) here
       console.log("Loading existing BOQ:", boqId);
     }
   }, [boqId]);
@@ -71,6 +81,7 @@ export default function BoqPage({ projectId, boqId }) {
     setBoq((prev) => ({ ...prev, ...patch }));
   };
 
+  // ================== ADD SECTION ==================
   const addSection = (data) => {
     const newSection = {
       id: `temp_${Date.now()}`,
@@ -87,6 +98,7 @@ export default function BoqPage({ projectId, boqId }) {
     toast.success("Section added");
   };
 
+  // ================== ADD SUBHEADING ==================
   const addSubHeading = (sectionId) => {
     setCurrentSectionId(sectionId);
     setSubheadingModalOpen(true);
@@ -114,6 +126,11 @@ export default function BoqPage({ projectId, boqId }) {
     }));
     setSubheadingModalOpen(false);
     toast.success("Subheading added");
+  };
+
+  // ================== ITEM HANDLERS ==================
+  const handleAddItem = (sectionId, subheadingId) => {
+    setActiveItem({ sectionId, subheadingId, item: null });
   };
 
   const addOrUpdateItem = (sectionId, subheadingId, item) => {
@@ -167,9 +184,9 @@ export default function BoqPage({ projectId, boqId }) {
     }));
   };
 
+  // ================== CALCULATE TOTALS ==================
   const calculateTotals = useMemo(() => {
     let subtotal = 0;
-
     boq.sections.forEach((section) => {
       section.subheadings.forEach((subheading) => {
         subheading.items.forEach((item) => {
@@ -190,15 +207,78 @@ export default function BoqPage({ projectId, boqId }) {
     };
   }, [boq.sections]);
 
+  // ================== SAVE FULL STRUCTURE ==================
+  const saveBoqStructure = async (boqId) => {
+    setIsSavingStructure(true);
+    try {
+      for (const section of boq.sections) {
+        const sectionPayload = {
+          boq_id: boqId,
+          title: section.title,
+          description: section.description || "",
+          sort_order: section.sort_order || 0,
+        };
+
+        const createdSection = await createSection(sectionPayload).unwrap();
+        const sectionId = createdSection.id || createdSection.data?.id;
+
+        for (const subheading of section.subheadings) {
+          const subheadingPayload = {
+            boq_id: boqId,
+            section_id: sectionId,
+            title: subheading.title,
+            description: subheading.description || "",
+            sort_order: subheading.sort_order || 0,
+          };
+
+          const createdSubheading =
+            await createSubHeading(subheadingPayload).unwrap();
+          const subheadingId =
+            createdSubheading.id || createdSubheading.data?.id;
+
+          for (const item of subheading.items) {
+            const itemPayload = {
+              boq_id: boqId,
+              section_id: sectionId,
+              subheading_id: subheadingId,
+              item_name: item.item_name,
+              item_code: item.item_code || null,
+              description: item.description || null,
+              specification: item.specification || null,
+              brand: item.brand || null,
+              qty: Number(item.qty) || 0,
+              unit_id: item.unit_id || null,
+              rate: Number(item.rate) || 0,
+              wastage_percent: Number(item.wastage_percent) || 0,
+              discount_percent: Number(item.discount_percent) || 0,
+              tax_percent: Number(item.tax_percent) || 18,
+              remarks: item.remarks || null,
+              sort_order: item.sort_order || 0,
+            };
+
+            await createItem(itemPayload).unwrap();
+          }
+        }
+      }
+      toast.success("BOQ structure saved successfully");
+    } catch (err) {
+      console.error(err);
+      toast.error("BOQ created, but some sections/items failed to save");
+    } finally {
+      setIsSavingStructure(false);
+    }
+  };
+
+  // ================== MAIN SAVE HANDLER ==================
   const handleSave = async () => {
+    if (!selectedProjectId) return toast.error("Please select a Project");
     if (!boq.title.trim()) return toast.error("BOQ Title is required");
     if (!boq.boq_category_id)
       return toast.error("Please select a BOQ Category");
 
     try {
-      // Step 1: Create Main BOQ
       const boqPayload = {
-        project_id: boq.project_id,
+        project_id: selectedProjectId,
         boq_category_id: boq.boq_category_id,
         title: boq.title,
         revision_no: boq.revision_no,
@@ -212,12 +292,16 @@ export default function BoqPage({ projectId, boqId }) {
       const createdBoq = await createBoq(boqPayload).unwrap();
       const boqIdCreated = createdBoq.id || createdBoq.data?.id;
 
+      if (!boqIdCreated) throw new Error("Failed to retrieve BOQ ID");
+
       toast.success("BOQ created successfully");
 
-      // Note: You can later improve this to create sections/subheadings/items in batch
-      // For now, we save the structure in frontend state and can sync later
+      // Save full hierarchy
+      if (boq.sections.length > 0) {
+        await saveBoqStructure(boqIdCreated);
+      }
 
-      router.push(`/projects/${projectId}/boqs/${boqIdCreated}`);
+      router.push(`/projects/${selectedProjectId}/boqs/${boqIdCreated}`);
     } catch (error) {
       console.error(error);
       toast.error(error?.data?.message || "Failed to save BOQ");
@@ -234,12 +318,21 @@ export default function BoqPage({ projectId, boqId }) {
             <Button variant="outline" onClick={() => router.back()}>
               <ArrowLeft className="mr-2 h-4 w-4" /> Back
             </Button>
-            <Button onClick={handleSave} disabled={isCreatingBoq}>
+            <Button
+              onClick={handleSave}
+              disabled={isCreatingBoq || isSavingStructure}
+            >
               <Save className="mr-2 h-4 w-4" />
-              {isCreatingBoq ? "Saving..." : "Save BOQ"}
+              {isCreatingBoq || isSavingStructure ? "Saving..." : "Save BOQ"}
             </Button>
           </div>
         }
+      />
+
+      <ProjectSelector
+        value={selectedProjectId}
+        onChange={setSelectedProjectId}
+        disabled={!!boqId}
       />
 
       {/* Top Info */}
@@ -311,6 +404,7 @@ export default function BoqPage({ projectId, boqId }) {
         </div>
       </Card>
 
+      {/* BOQ Builder */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
         <div className="lg:col-span-4">
           <BoqTreeView
@@ -321,6 +415,7 @@ export default function BoqPage({ projectId, boqId }) {
               setActiveItem({ sectionId, subheadingId, item })
             }
             onDeleteItem={deleteItem}
+            onAddItem={handleAddItem}
           />
         </div>
 

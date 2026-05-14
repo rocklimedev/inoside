@@ -2,13 +2,15 @@
 
 import { useState, useMemo } from "react";
 import { toast } from "sonner";
+import { useRouter } from "next/navigation";
+
 import {
   useGetBoqsQuery,
   useCreateBoqMutation,
   useGetBoqByIdQuery,
-  useCalculateBoqTotalMutation,
 } from "@/api/boqApi";
-import { useGetProjectsQuery } from "@/api/projectsApi"; // Assuming you have this
+
+import { useGetProjectsQuery } from "@/api/projectsApi";
 
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -51,41 +53,30 @@ import {
   FileText,
   Calendar,
   DollarSign,
-  Users,
+  TrendingUp,
   X,
   Loader2,
-  TrendingUp,
 } from "lucide-react";
 
-const BOQ_STATUSES = ["Draft", "In Progress", "Approved", "Revised", "Final"];
+const BOQ_STATUSES = ["draft", "submitted", "approved", "rejected", "revised"];
 
 export default function BoqsPage() {
+  const router = useRouter();
+
   const [viewMode, setViewMode] = useState("grid");
   const [search, setSearch] = useState("");
   const [showFilters, setShowFilters] = useState(false);
-  const [filters, setFilters] = useState({
-    statuses: [],
-    projects: [],
-  });
-  const [sortBy, setSortBy] = useState("date");
+  const [filters, setFilters] = useState({ statuses: [], projects: [] });
+  const [sortBy, setSortBy] = useState("total");
   const [selectedBoqId, setSelectedBoqId] = useState(null);
-  const [showNewBoq, setShowNewBoq] = useState(false);
-
-  const [newBoq, setNewBoq] = useState({
-    name: "",
-    projectId: "",
-    description: "",
-    revision: "1",
-  });
 
   // RTK Query
-  const { data: boqs = [], isLoading, error } = useGetBoqsQuery(undefined);
+  const { data: boqs = [], isLoading, error } = useGetBoqsQuery();
   const { data: projects = [] } = useGetProjectsQuery();
   const [createBoq, { isLoading: isCreating }] = useCreateBoqMutation();
   const { data: selectedBoq } = useGetBoqByIdQuery(selectedBoqId, {
     skip: !selectedBoqId,
   });
-  const [calculateTotal] = useCalculateBoqTotalMutation();
 
   const projectMap = useMemo(() => {
     return new Map(projects.map((p) => [p.id, p.name]));
@@ -94,37 +85,34 @@ export default function BoqsPage() {
   const filteredBoqs = useMemo(() => {
     let result = [...boqs];
 
-    // Search
+    // Search by title
     if (search.trim()) {
       const term = search.toLowerCase();
-      result = result.filter((b) =>
-        [b.name, b.description].some((field) =>
-          field?.toLowerCase().includes(term),
-        ),
-      );
+      result = result.filter((b) => b.title?.toLowerCase().includes(term));
     }
 
-    // Filters
-    if (filters.statuses.length) {
-      result = result.filter((b) =>
-        filters.statuses.includes(b.status || "Draft"),
-      );
+    // Filter by status
+    if (filters.statuses.length > 0) {
+      result = result.filter((b) => filters.statuses.includes(b.status));
     }
-    if (filters.projects.length) {
-      result = result.filter((b) =>
-        filters.projects.includes(b.projectId || ""),
-      );
+
+    // Filter by project
+    if (filters.projects.length > 0) {
+      result = result.filter((b) => filters.projects.includes(b.project_id));
     }
 
     // Sorting
     result.sort((a, b) => {
-      if (sortBy === "name") return (a.name || "").localeCompare(b.name || "");
-      if (sortBy === "total")
-        return (b.totalAmount || 0) - (a.totalAmount || 0);
-      // Default: date (newest first)
+      if (sortBy === "name") {
+        return (a.title || "").localeCompare(b.title || "");
+      }
+      if (sortBy === "total") {
+        return Number(b.grand_total || 0) - Number(a.grand_total || 0);
+      }
+      // Default: newest first
       return (
-        new Date(b.createdAt || 0).getTime() -
-        new Date(a.createdAt || 0).getTime()
+        new Date(b.created_at || 0).getTime() -
+        new Date(a.created_at || 0).getTime()
       );
     });
 
@@ -132,28 +120,9 @@ export default function BoqsPage() {
   }, [boqs, search, filters, sortBy]);
 
   const handleCreate = async () => {
-    if (!newBoq.name || !newBoq.projectId) {
-      toast.error("BOQ Name and Project are required");
-      return;
-    }
-
-    try {
-      await createBoq(newBoq).unwrap();
-      setShowNewBoq(false);
-      resetNewBoqForm();
-      toast.success("BOQ created successfully");
-    } catch (err) {
-      toast.error(err?.data?.message || "Failed to create BOQ");
-    }
-  };
-
-  const resetNewBoqForm = () => {
-    setNewBoq({
-      name: "",
-      projectId: "",
-      description: "",
-      revision: "1",
-    });
+    // This part can be removed if you're navigating to /boq/create instead
+    toast.info("Redirecting to BOQ Creator...");
+    router.push("/boq/create");
   };
 
   const toggleFilter = (key, value) => {
@@ -186,7 +155,7 @@ export default function BoqsPage() {
   }
 
   return (
-    <div className="flex h-full" data-testid="boqs-page">
+    <div className="flex h-full">
       {/* Filter Sidebar */}
       {showFilters && (
         <div className="w-72 border-r border-gray-200 bg-white p-6 shrink-0 overflow-auto">
@@ -194,10 +163,7 @@ export default function BoqsPage() {
             <h3 className="text-sm font-bold uppercase tracking-wider">
               Filters
             </h3>
-            <button
-              onClick={() => setShowFilters(false)}
-              className="text-gray-400 hover:text-gray-600"
-            >
+            <button onClick={() => setShowFilters(false)}>
               <X className="w-5 h-5" />
             </button>
           </div>
@@ -241,7 +207,7 @@ export default function BoqsPage() {
                 <Search className="w-4 h-4 text-gray-400" />
                 <input
                   type="text"
-                  placeholder="Search BOQs..."
+                  placeholder="Search BOQs by title..."
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
                   className="bg-transparent text-sm outline-none w-full"
@@ -264,9 +230,9 @@ export default function BoqsPage() {
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="name">Name</SelectItem>
-                  <SelectItem value="total">Total Amount</SelectItem>
                   <SelectItem value="date">Date Created</SelectItem>
+                  <SelectItem value="name">Title</SelectItem>
+                  <SelectItem value="total">Total Amount</SelectItem>
                 </SelectContent>
               </Select>
 
@@ -278,11 +244,7 @@ export default function BoqsPage() {
                   <button
                     key={mode}
                     onClick={() => setViewMode(mode)}
-                    className={`p-2.5 ${
-                      viewMode === mode
-                        ? "bg-[#ef7f1b] text-white"
-                        : "hover:bg-gray-100"
-                    }`}
+                    className={`p-2.5 ${viewMode === mode ? "bg-[#ef7f1b] text-white" : "hover:bg-gray-100"}`}
                   >
                     <Icon className="w-4 h-4" />
                   </button>
@@ -290,7 +252,7 @@ export default function BoqsPage() {
               </div>
 
               <Button
-                onClick={() => setShowNewBoq(true)}
+                onClick={() => router.push("/boq/create")}
                 className="bg-[#ef7f1b] hover:bg-[#d66e15]"
               >
                 <Plus className="w-4 h-4 mr-2" /> New BOQ
@@ -303,7 +265,7 @@ export default function BoqsPage() {
           </p>
         </div>
 
-        {/* Main Content */}
+        {/* Content */}
         <ScrollArea className="flex-1">
           <div className="p-6">
             {viewMode === "grid" && (
@@ -324,93 +286,15 @@ export default function BoqsPage() {
         </ScrollArea>
       </div>
 
-      {/* New BOQ Dialog */}
-      <Dialog open={showNewBoq} onOpenChange={setShowNewBoq}>
-        <DialogContent className="max-w-lg">
-          <DialogHeader>
-            <DialogTitle>Create New BOQ</DialogTitle>
-          </DialogHeader>
-
-          <div className="space-y-4 py-4">
-            <div>
-              <Label>BOQ Name / Title *</Label>
-              <Input
-                value={newBoq.name}
-                onChange={(e) =>
-                  setNewBoq((p) => ({ ...p, name: e.target.value }))
-                }
-                placeholder="e.g. Phase 1 - Villa Construction"
-              />
-            </div>
-
-            <div>
-              <Label>Project *</Label>
-              <Select
-                value={newBoq.projectId}
-                onValueChange={(v) =>
-                  setNewBoq((p) => ({ ...p, projectId: v }))
-                }
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select project" />
-                </SelectTrigger>
-                <SelectContent>
-                  {projects.map((p) => (
-                    <SelectItem key={p.id} value={p.id}>
-                      {p.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div>
-              <Label>Description</Label>
-              <Input
-                value={newBoq.description}
-                onChange={(e) =>
-                  setNewBoq((p) => ({ ...p, description: e.target.value }))
-                }
-                placeholder="Optional description"
-              />
-            </div>
-
-            <div>
-              <Label>Revision</Label>
-              <Input
-                type="text"
-                value={newBoq.revision}
-                onChange={(e) =>
-                  setNewBoq((p) => ({ ...p, revision: e.target.value }))
-                }
-              />
-            </div>
-          </div>
-
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setShowNewBoq(false)}>
-              Cancel
-            </Button>
-            <Button
-              onClick={handleCreate}
-              disabled={isCreating}
-              className="bg-[#ef7f1b] hover:bg-[#d66e15]"
-            >
-              {isCreating ? <Loader2 className="animate-spin" /> : "Create BOQ"}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
       {/* BOQ Detail Sheet */}
       <Sheet open={!!selectedBoqId} onOpenChange={() => setSelectedBoqId(null)}>
         <SheetContent className="w-[440px] sm:w-[520px]">
           {selectedBoq && (
             <>
               <SheetHeader>
-                <SheetTitle>{selectedBoq.name}</SheetTitle>
+                <SheetTitle>{selectedBoq.title}</SheetTitle>
                 <p className="text-sm text-gray-500">
-                  {projectMap.get(selectedBoq.projectId)}
+                  {projectMap.get(selectedBoq.project_id)}
                 </p>
               </SheetHeader>
 
@@ -419,49 +303,41 @@ export default function BoqsPage() {
                   <InfoRow
                     icon={FileText}
                     label="Status"
-                    value={selectedBoq.status || "Draft"}
+                    value={selectedBoq.status}
                   />
                   <InfoRow
                     icon={Calendar}
                     label="Revision"
-                    value={`Rev ${selectedBoq.revision || "1"}`}
+                    value={selectedBoq.revision_no}
                   />
                   <InfoRow
                     icon={DollarSign}
-                    label="Total Amount"
-                    value={`₹${(selectedBoq.totalAmount || 0).toLocaleString()}`}
+                    label="Grand Total"
+                    value={`₹${Number(selectedBoq.grand_total || 0).toLocaleString()}`}
                   />
                   <InfoRow
                     icon={TrendingUp}
                     label="Items"
-                    value={selectedBoq.itemCount || 0}
+                    value={
+                      selectedBoq.sections?.reduce((acc, s) => {
+                        return (
+                          acc +
+                          (s.subheadings?.reduce(
+                            (a, sh) => a + (sh.items?.length || 0),
+                            0,
+                          ) || 0)
+                        );
+                      }, 0) || 0
+                    }
                   />
                 </div>
 
-                <Separator />
-
-                <div>
-                  <div className="flex justify-between items-center mb-3">
-                    <p className="text-xs font-bold uppercase tracking-wider text-gray-500">
-                      Progress
-                    </p>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => calculateTotal(selectedBoq.id)}
-                    >
-                      Recalculate
-                    </Button>
-                  </div>
-                  <Progress value={75} className="h-2.5" />{" "}
-                  {/* You can make this dynamic */}
-                </div>
-
-                <div className="pt-4">
-                  <Button className="w-full bg-[#ef7f1b] hover:bg-[#d66e15]">
-                    Open BOQ Editor
-                  </Button>
-                </div>
+                <Button
+                  className="w-full bg-[#ef7f1b] hover:bg-[#d66e15]"
+                  onClick={() => router.push(`/boq/${selectedBoq.id}`)}
+                >
+                  Open BOQ Editor
+                </Button>
               </div>
             </>
           )}
@@ -517,17 +393,17 @@ function FilterSection({
 function GridView({ boqs, projectMap, onSelect }) {
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-      {boqs.map((b, i) => (
+      {boqs.map((b) => (
         <Card
-          key={b.id || i}
+          key={b.id}
           className="p-5 hover:shadow-lg hover:border-[#ef7f1b]/30 transition-all cursor-pointer group"
           onClick={() => onSelect(b.id)}
         >
           <div className="flex justify-between items-start mb-4">
             <div className="min-w-0 flex-1">
-              <h3 className="font-bold truncate">{b.name}</h3>
+              <h3 className="font-bold truncate">{b.title}</h3>
               <p className="text-xs text-gray-500 mt-1">
-                {projectMap.get(b.projectId)}
+                {projectMap.get(b.project_id)}
               </p>
             </div>
             <ArrowUpRight className="w-4 h-4 text-gray-300 group-hover:text-[#ef7f1b]" />
@@ -535,24 +411,24 @@ function GridView({ boqs, projectMap, onSelect }) {
 
           <div className="flex flex-wrap gap-2 mb-4">
             <Badge className="bg-orange-50 text-[#ef7f1b] border-orange-200 text-xs">
-              Rev {b.revision || "1"}
+              {b.revision_no}
             </Badge>
             <Badge
               variant="secondary"
               className={
-                b.status === "Approved"
+                b.status === "approved"
                   ? "bg-green-100 text-green-700"
                   : "bg-amber-100 text-amber-700"
               }
             >
-              {b.status || "Draft"}
+              {b.status}
             </Badge>
           </div>
 
           <div className="text-xl font-bold text-[#ef7f1b] mb-1">
-            ₹{(b.totalAmount || 0).toLocaleString()}
+            ₹{Number(b.grand_total || 0).toLocaleString()}
           </div>
-          <p className="text-xs text-gray-500">Total Estimated Cost</p>
+          <p className="text-xs text-gray-500">Grand Total</p>
         </Card>
       ))}
     </div>
@@ -563,38 +439,38 @@ function ListView({ boqs, projectMap, onSelect }) {
   return (
     <div className="bg-white rounded-xl border">
       <div className="grid grid-cols-12 gap-4 px-6 py-3 bg-gray-50 text-xs font-bold uppercase text-gray-500 border-b">
-        <div className="col-span-5">BOQ</div>
+        <div className="col-span-5">BOQ Title</div>
         <div className="col-span-3">Project</div>
         <div className="col-span-2">Status</div>
         <div className="col-span-2 text-right">Total</div>
       </div>
 
-      {boqs.map((b, i) => (
+      {boqs.map((b) => (
         <div
-          key={b.id || i}
+          key={b.id}
           onClick={() => onSelect(b.id)}
           className="grid grid-cols-12 gap-4 px-6 py-4 border-b hover:bg-orange-50/50 cursor-pointer items-center"
         >
           <div className="col-span-5">
-            <p className="font-medium">{b.name}</p>
-            <p className="text-xs text-gray-500">Rev {b.revision}</p>
+            <p className="font-medium">{b.title}</p>
+            <p className="text-xs text-gray-500">{b.revision_no}</p>
           </div>
           <div className="col-span-3 text-sm">
-            {projectMap.get(b.projectId)}
+            {projectMap.get(b.project_id)}
           </div>
           <div className="col-span-2">
             <Badge
               className={
-                b.status === "Approved"
+                b.status === "approved"
                   ? "bg-green-100 text-green-700"
                   : "bg-amber-100 text-amber-700"
               }
             >
-              {b.status || "Draft"}
+              {b.status}
             </Badge>
           </div>
           <div className="col-span-2 text-right font-semibold">
-            ₹{(b.totalAmount || 0).toLocaleString()}
+            ₹{Number(b.grand_total || 0).toLocaleString()}
           </div>
         </div>
       ))}

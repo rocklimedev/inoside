@@ -1,6 +1,5 @@
 "use client";
-
-import { Plus, Trash2, ChevronRight, ChevronDown } from "lucide-react";
+import { Plus, Trash2, Edit3, ChevronRight, ChevronDown } from "lucide-react";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -11,6 +10,7 @@ export function BoqTreeView({
   onAddSubheading,
   onEditItem,
   onDeleteItem,
+  onAddItem, // ← NEW PROP
 }) {
   const [expandedSections, setExpandedSections] = useState(new Set());
 
@@ -37,16 +37,15 @@ export function BoqTreeView({
           </div>
         )}
 
-        {sections.map((section, sIndex) => {
-          const isExpanded = expandedSections.has(section.id || section.title);
+        {sections.map((section) => {
+          const sectionKey = section.id || section.title;
+          const isExpanded = expandedSections.has(sectionKey);
+
           return (
-            <div
-              key={section.id || sIndex}
-              className="border rounded-lg overflow-hidden"
-            >
+            <div key={sectionKey} className="border rounded-lg overflow-hidden">
               <div
                 className="flex items-center justify-between bg-muted/50 px-3 py-2 cursor-pointer hover:bg-muted"
-                onClick={() => toggleSection(section.id || section.title)}
+                onClick={() => toggleSection(sectionKey)}
               >
                 <div className="flex items-center gap-2 font-medium">
                   {isExpanded ? (
@@ -61,7 +60,7 @@ export function BoqTreeView({
                   size="sm"
                   onClick={(e) => {
                     e.stopPropagation();
-                    onAddSubheading(section.id || section.title);
+                    onAddSubheading(sectionKey);
                   }}
                 >
                   <Plus size={14} />
@@ -70,76 +69,75 @@ export function BoqTreeView({
 
               {isExpanded && (
                 <div className="pl-6 pr-3 py-2 space-y-3">
-                  {section.subheadings.map((sub, shIndex) => (
-                    <div
-                      key={sub.id || shIndex}
-                      className="border-l-2 border-border pl-4"
-                    >
-                      <div className="font-medium text-sm mb-2 flex items-center justify-between">
-                        {sub.title}
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() =>
-                            onAddSubheading(section.id || section.title)
-                          } // Reuse for simplicity or make separate
-                        >
-                          <Plus size={14} />
-                        </Button>
-                      </div>
+                  {section.subheadings.map((sub) => {
+                    const subKey = sub.id || sub.title;
 
-                      <div className="space-y-1">
-                        {sub.items.map((item, iIndex) => (
-                          <div
-                            key={item.id || iIndex}
-                            className="flex items-center justify-between bg-white border rounded p-2 text-sm group hover:border-primary/50"
-                          >
-                            <div
-                              className="cursor-pointer flex-1 truncate"
-                              onClick={() =>
-                                onEditItem(
-                                  section.id || section.title,
-                                  sub.id || sub.title,
-                                  item,
-                                )
-                              }
+                    return (
+                      <div
+                        key={subKey}
+                        className="border-l-2 border-border pl-4"
+                      >
+                        <div className="font-medium text-sm mb-2 flex items-center justify-between">
+                          {sub.title}
+                          <div className="flex gap-1">
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => onAddItem(sectionKey, subKey)}
                             >
-                              {item.item_name}
-                            </div>
-                            <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100">
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={() =>
-                                  onEditItem(
-                                    section.id || section.title,
-                                    sub.id || sub.title,
-                                    item,
-                                  )
-                                }
-                              >
-                                <Edit3 size={14} />
-                              </Button>
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                className="text-destructive"
-                                onClick={() =>
-                                  onDeleteItem(
-                                    section.id || section.title,
-                                    sub.id || sub.title,
-                                    item.id,
-                                  )
-                                }
-                              >
-                                <Trash2 size={14} />
-                              </Button>
-                            </div>
+                              <Plus size={14} /> Item
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => onAddSubheading(sectionKey)}
+                            >
+                              <Plus size={14} />
+                            </Button>
                           </div>
-                        ))}
+                        </div>
+
+                        <div className="space-y-1">
+                          {sub.items.map((item, iIndex) => (
+                            <div
+                              key={item.id || iIndex}
+                              className="flex items-center justify-between bg-white border rounded p-2 text-sm group hover:border-primary/50"
+                            >
+                              <div
+                                className="cursor-pointer flex-1 truncate"
+                                onClick={() =>
+                                  onEditItem(sectionKey, subKey, item)
+                                }
+                              >
+                                {item.item_name || "Unnamed Item"}
+                              </div>
+                              <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100">
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() =>
+                                    onEditItem(sectionKey, subKey, item)
+                                  }
+                                >
+                                  <Edit3 size={14} />
+                                </Button>
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  className="text-destructive"
+                                  onClick={() =>
+                                    onDeleteItem(sectionKey, subKey, item.id)
+                                  }
+                                >
+                                  <Trash2 size={14} />
+                                </Button>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
                       </div>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               )}
             </div>

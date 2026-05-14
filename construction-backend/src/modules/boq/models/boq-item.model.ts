@@ -19,7 +19,6 @@ import { Boq } from './boq.model';
 import { BoqSection } from './boq-section.model';
 import { BoqSubHeading } from './boq-subheading.model';
 import { Unit } from './unit.model';
-
 import { InventoryItem } from '@/modules/inventory/models/inventory-item.model';
 
 @Table({
@@ -33,167 +32,89 @@ export class BoqItem extends Model<
   InferCreationAttributes<BoqItem>
 > {
   @Default(DataType.UUIDV4)
-  @Column({
-    type: DataType.UUID,
-    primaryKey: true,
-  })
+  @Column({ type: DataType.UUID, primaryKey: true })
   declare id: CreationOptional<string>;
 
   // ================= FOREIGN KEYS =================
-
   @ForeignKey(() => Boq)
-  @Column({
-    type: DataType.UUID,
-    allowNull: false,
-  })
+  @Column({ type: DataType.UUID, allowNull: false })
   declare boq_id: string;
 
   @ForeignKey(() => BoqSection)
-  @Column({
-    type: DataType.UUID,
-    allowNull: false,
-  })
+  @Column({ type: DataType.UUID, allowNull: false })
   declare section_id: string;
 
   @ForeignKey(() => BoqSubHeading)
-  @Column({
-    type: DataType.UUID,
-    allowNull: true,
-  })
+  @Column({ type: DataType.UUID, allowNull: true })
   declare subheading_id: CreationOptional<string | null>;
 
   @ForeignKey(() => InventoryItem)
-  @Column({
-    type: DataType.UUID,
-    allowNull: true,
-  })
+  @Column({ type: DataType.UUID, allowNull: true })
   declare inventory_item_id: CreationOptional<string | null>;
 
   @ForeignKey(() => Unit)
-  @Column({
-    type: DataType.UUID,
-    allowNull: true,
-  })
+  @Column({ type: DataType.UUID, allowNull: true })
   declare unit_id: CreationOptional<string | null>;
 
   // ================= BASIC INFO =================
-
-  @Column({
-    type: DataType.STRING(50),
-    allowNull: true,
-  })
+  @Column({ type: DataType.STRING(50), allowNull: true })
   declare sno: CreationOptional<string | null>;
 
-  @Column({
-    type: DataType.STRING(100),
-    allowNull: true,
-  })
+  @Column({ type: DataType.STRING(100), allowNull: true })
   declare item_code: CreationOptional<string | null>;
 
-  @Column({
-    type: DataType.TEXT,
-    allowNull: false,
-  })
+  @Column({ type: DataType.TEXT, allowNull: false })
   declare item_name: string;
 
-  @Column({
-    type: DataType.TEXT,
-    allowNull: true,
-  })
+  @Column({ type: DataType.TEXT, allowNull: true })
   declare description: CreationOptional<string | null>;
 
-  @Column({
-    type: DataType.TEXT,
-    allowNull: true,
-  })
+  @Column({ type: DataType.TEXT, allowNull: true })
   declare specification: CreationOptional<string | null>;
 
-  @Column({
-    type: DataType.STRING(255),
-    allowNull: true,
-  })
+  @Column({ type: DataType.STRING(255), allowNull: true })
   declare brand: CreationOptional<string | null>;
 
   // ================= QUANTITY & RATE =================
-
-  @Column({
-    type: DataType.DECIMAL(14, 3),
-    defaultValue: 0,
-  })
+  @Column({ type: DataType.DECIMAL(14, 3), defaultValue: 0 })
   declare qty: CreationOptional<number>;
 
-  @Column({
-    type: DataType.DECIMAL(14, 2),
-    defaultValue: 0,
-  })
+  @Column({ type: DataType.DECIMAL(14, 2), defaultValue: 0 })
   declare rate: CreationOptional<number>;
 
-  @Column({
-    type: DataType.DECIMAL(5, 2),
-    defaultValue: 0,
-  })
+  @Column({ type: DataType.DECIMAL(5, 2), defaultValue: 0 })
   declare wastage_percent: CreationOptional<number>;
 
-  @Column({
-    type: DataType.DECIMAL(5, 2),
-    defaultValue: 0,
-  })
+  @Column({ type: DataType.DECIMAL(5, 2), defaultValue: 0 })
   declare discount_percent: CreationOptional<number>;
 
-  @Column({
-    type: DataType.DECIMAL(5, 2),
-    defaultValue: 0,
-  })
+  @Column({ type: DataType.DECIMAL(5, 2), defaultValue: 18 })
   declare tax_percent: CreationOptional<number>;
 
-  // ================= GENERATED VALUES =================
-
-  @Column({
-    type: DataType.DECIMAL(16, 2),
-    allowNull: true,
-  })
+  // ================= GENERATED COLUMNS (IMPORTANT) =================
+  // These are STORED GENERATED in DB → Do NOT let Sequelize write to them
+  @Column({ type: DataType.DECIMAL(16, 2), allowNull: true })
   declare base_amount: CreationOptional<number>;
 
-  @Column({
-    type: DataType.DECIMAL(16, 2),
-    allowNull: true,
-  })
+  @Column({ type: DataType.DECIMAL(16, 2), allowNull: true })
   declare tax_amount: CreationOptional<number>;
 
-  @Column({
-    type: DataType.DECIMAL(16, 2),
-    allowNull: true,
-  })
+  @Column({ type: DataType.DECIMAL(16, 2), allowNull: true })
   declare final_amount: CreationOptional<number>;
 
   // ================= OTHER =================
-
-  @Column({
-    type: DataType.TEXT,
-    allowNull: true,
-  })
+  @Column({ type: DataType.TEXT, allowNull: true })
   declare remarks: CreationOptional<string | null>;
 
-  @Column({
-    type: DataType.INTEGER,
-    defaultValue: 0,
-  })
+  @Column({ type: DataType.INTEGER, defaultValue: 0 })
   declare sort_order: CreationOptional<number>;
 
   // ================= RELATIONS =================
-
-  @BelongsTo(() => Boq)
-  declare boq?: NonAttribute<Boq>;
-
-  @BelongsTo(() => BoqSection)
-  declare section?: NonAttribute<BoqSection>;
-
+  @BelongsTo(() => Boq) declare boq?: NonAttribute<Boq>;
+  @BelongsTo(() => BoqSection) declare section?: NonAttribute<BoqSection>;
   @BelongsTo(() => BoqSubHeading)
   declare subheading?: NonAttribute<BoqSubHeading>;
-
   @BelongsTo(() => InventoryItem)
   declare inventory_item?: NonAttribute<InventoryItem>;
-
-  @BelongsTo(() => Unit)
-  declare unit?: NonAttribute<Unit>;
+  @BelongsTo(() => Unit) declare unit?: NonAttribute<Unit>;
 }

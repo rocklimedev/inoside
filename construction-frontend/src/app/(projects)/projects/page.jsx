@@ -59,7 +59,7 @@ import {
   Trash2,
   Loader2,
 } from "lucide-react";
-
+import { CreateProjectModal } from "@/components/projects/CreateProjectModal";
 const STAGES = [
   "Brief",
   "Pitch",
@@ -98,6 +98,7 @@ export default function ProjectsPage() {
   const [sortBy, setSortBy] = useState("stage");
   const [selectedProject, setSelectedProject] = useState(null);
   const [showNewProject, setShowNewProject] = useState(false);
+  const [showCreateModal, setShowCreateModal] = useState(false);
 
   const [newProject, setNewProject] = useState({
     name: "",
@@ -334,7 +335,7 @@ export default function ProjectsPage() {
               </div>
 
               <Button
-                onClick={() => setShowNewProject(true)}
+                onClick={() => setShowCreateModal(true)}
                 className="bg-[#ef7f1b] hover:bg-[#d66e15]"
               >
                 <Plus className="w-4 h-4 mr-2" /> New Project
@@ -373,153 +374,15 @@ export default function ProjectsPage() {
         </ScrollArea>
       </div>
 
-      {/* New Project Dialog */}
-      <Dialog open={showNewProject} onOpenChange={setShowNewProject}>
-        <DialogContent className="max-w-lg">
-          <DialogHeader>
-            <DialogTitle>New Project</DialogTitle>
-          </DialogHeader>
-
-          <div className="space-y-4 py-4">
-            {/* Form fields */}
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <Label>Project Name *</Label>
-                <Input
-                  value={newProject.name}
-                  onChange={(e) =>
-                    setNewProject((p) => ({ ...p, name: e.target.value }))
-                  }
-                />
-              </div>
-              <div>
-                <Label>Client Name</Label>
-                <Input
-                  value={newProject.client_name}
-                  onChange={(e) =>
-                    setNewProject((p) => ({
-                      ...p,
-                      client_name: e.target.value,
-                    }))
-                  }
-                />
-              </div>
-            </div>
-
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <Label>Type *</Label>
-                <Select
-                  value={newProject.type}
-                  onValueChange={(v) =>
-                    setNewProject((p) => ({ ...p, type: v }))
-                  }
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select type" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {TYPES.map((t) => (
-                      <SelectItem key={t} value={t}>
-                        {t}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div>
-                <Label>Service Type</Label>
-                <Input
-                  value={newProject.service_type}
-                  onChange={(e) =>
-                    setNewProject((p) => ({
-                      ...p,
-                      service_type: e.target.value,
-                    }))
-                  }
-                  placeholder="e.g. Full Design + Execution"
-                />
-              </div>
-            </div>
-
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <Label>Location</Label>
-                <Input
-                  value={newProject.location}
-                  onChange={(e) =>
-                    setNewProject((p) => ({ ...p, location: e.target.value }))
-                  }
-                />
-              </div>
-              <div>
-                <Label>Starting Stage</Label>
-                <Select
-                  value={newProject.stage}
-                  onValueChange={(v) =>
-                    setNewProject((p) => ({ ...p, stage: v }))
-                  }
-                >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {STAGES.map((s) => (
-                      <SelectItem key={s} value={s}>
-                        {s}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <Label>Start Date</Label>
-                <Input
-                  type="date"
-                  value={newProject.start_date}
-                  onChange={(e) =>
-                    setNewProject((p) => ({ ...p, start_date: e.target.value }))
-                  }
-                />
-              </div>
-              <div>
-                <Label>Expected Completion</Label>
-                <Input
-                  type="date"
-                  value={newProject.expected_completion}
-                  onChange={(e) =>
-                    setNewProject((p) => ({
-                      ...p,
-                      expected_completion: e.target.value,
-                    }))
-                  }
-                />
-              </div>
-            </div>
-          </div>
-
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setShowNewProject(false)}>
-              Cancel
-            </Button>
-            <Button
-              onClick={handleCreate}
-              disabled={isCreating}
-              className="bg-[#ef7f1b] hover:bg-[#d66e15]"
-            >
-              {isCreating ? (
-                <Loader2 className="animate-spin" />
-              ) : (
-                "Create Project"
-              )}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
+      {/* Create Project Modal */}
+      <CreateProjectModal
+        open={showCreateModal}
+        onClose={() => setShowCreateModal(false)}
+        onProjectCreated={(newProjectId) => {
+          console.log("New Project Created:", newProjectId);
+          // You can refresh data or navigate here if needed
+        }}
+      />
       {/* Project Detail Sheet */}
       <Sheet
         open={!!selectedProject}

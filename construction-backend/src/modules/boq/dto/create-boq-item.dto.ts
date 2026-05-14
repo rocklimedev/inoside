@@ -5,7 +5,6 @@ import {
   IsNumber,
   IsUUID,
 } from 'class-validator';
-
 import { Type } from 'class-transformer';
 
 export class CreateBoqItemDto {
@@ -29,8 +28,12 @@ export class CreateBoqItemDto {
   @IsUUID()
   unit_id?: string;
 
-  // ================= BASIC INFO =================
+  // ================= REQUIRED =================
+  @IsNotEmpty() // ← CHANGED
+  @IsString()
+  item_name!: string;
 
+  // ================= OPTIONAL =================
   @IsOptional()
   @IsString()
   sno?: string;
@@ -38,10 +41,6 @@ export class CreateBoqItemDto {
   @IsOptional()
   @IsString()
   item_code?: string;
-
-  @IsOptional()
-  @IsString()
-  item_name?: string;
 
   @IsOptional()
   @IsString()
@@ -54,8 +53,6 @@ export class CreateBoqItemDto {
   @IsOptional()
   @IsString()
   brand?: string;
-
-  // ================= VALUES =================
 
   @IsOptional()
   @Type(() => Number)
@@ -81,8 +78,6 @@ export class CreateBoqItemDto {
   @Type(() => Number)
   @IsNumber()
   tax_percent?: number;
-
-  // ================= OTHER =================
 
   @IsOptional()
   @IsString()

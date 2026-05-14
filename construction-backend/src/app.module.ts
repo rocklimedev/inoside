@@ -7,7 +7,7 @@ import { AuthModule } from './modules/auth/auth.module';
 import { UsersModule } from './modules/users/users.module';
 import { RbacModule } from './modules/rbac/rbac.module';
 import { ProjectsModule } from './modules/projects/projects.module';
-
+import { InventoryModule } from './modules/inventory/inventory.module';
 import { BoqModule } from './modules/boq/boq.module';
 import { VendorsModule } from './modules/vendors/vendors.module';
 import { ClientsModule } from './modules/clients/client.module';
@@ -40,6 +40,7 @@ import databaseConfig from './config/database.config';
     ClientsModule,
     SitesModule,
     VendorsModule,
+    InventoryModule,
   ],
 })
 export class AppModule {}
