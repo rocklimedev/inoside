@@ -287,28 +287,12 @@ export default function LoginPage() {
             <button
               type="button"
               className="w-full h-12 border border-gray-200 text-gray-600 hover:bg-gray-50 hover:border-gray-300 font-medium rounded-lg transition-all flex items-center justify-center gap-2"
-              onClick={() => toast.info("OTP login coming soon")}
+              onClick={() => router.push("/register")}
             >
               <Lock className="w-4 h-4" />
-              Login with OTP
+              Register
             </button>
           </form>
-
-          {/* Footer */}
-          <div className="mt-8 flex items-center justify-center gap-2 text-xs text-gray-400">
-            <Shield className="w-3.5 h-3.5" />
-            <span>Secure role-based access for construction teams</span>
-          </div>
-
-          <div className="mt-4 p-3 bg-gray-50 rounded-lg border border-gray-100">
-            <p className="text-[10px] font-bold uppercase tracking-wider text-gray-400 mb-1">
-              Demo Access
-            </p>
-
-            <p className="text-xs text-gray-500">
-              demo@buildcon.com / password123
-            </p>
-          </div>
         </div>
       </div>
     </div>

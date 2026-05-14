@@ -1,3 +1,4 @@
+"use client";
 import { useState, useEffect, useCallback } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { Card } from "@/components/ui/card";
@@ -100,15 +101,22 @@ export default function TeamTasksPage() {
   const [myTasksOnly, setMyTasksOnly] = useState(false);
 
   useEffect(() => {
+    if (!api) {
+      setLoading(false);
+      return;
+    }
+
     Promise.all([api.get("/team-tasks"), api.get("/projects")])
       .then(([t, p]) => {
         setTasks(t.data);
         setProjects(p.data);
       })
-      .catch(() => {})
+      .catch((err) => {
+        console.error("Failed to fetch team tasks and projects:", err);
+        // toast.error("Failed to load tasks"); // optional
+      })
       .finally(() => setLoading(false));
-  }, []);
-
+  }, [api]); // ← Important
   const reload = () => api.get("/team-tasks").then((r) => setTasks(r.data));
 
   const updateStatus = async (tid, status) => {

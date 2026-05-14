@@ -1,3 +1,4 @@
+"use client";
 import { useState, useEffect } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { Card } from "@/components/ui/card";
@@ -44,13 +45,20 @@ export default function ReportsPage() {
   const [viewMode, setViewMode] = useState("list");
 
   useEffect(() => {
+    if (!api) {
+      setLoading(false);
+      return;
+    }
+
     api
       .get("/reports/all")
       .then((r) => setReports(r.data))
-      .catch(() => {})
+      .catch((err) => {
+        console.error("Failed to fetch reports:", err);
+        // toast.error("Failed to load reports");   // optional
+      })
       .finally(() => setLoading(false));
-  }, []);
-
+  }, [api]); // ← Important
   const filtered = reports.filter((r) => {
     if (
       search &&

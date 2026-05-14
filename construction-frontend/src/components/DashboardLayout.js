@@ -77,12 +77,12 @@ const navSections = [
     title: "WORKFLOW",
     items: [
       { icon: FileText, label: "Brief", path: "/brief" },
-      { icon: Presentation, label: "Pitch", path: "/pitch" },
+      { icon: Presentation, label: "Pitch", path: "/pitches" },
       { icon: MapPin, label: "Site Reki", path: "/site-reki" },
-      { icon: ClipboardList, label: "Scope of Work", path: "/scope" },
+      { icon: ClipboardList, label: "Scope of Work", path: "/scopes" },
       { icon: Clock, label: "Time & Cost", path: "/time-cost" },
       { icon: Calculator, label: "BOQ", path: "/boq" },
-      { icon: Palette, label: "Design", path: "/design" },
+      { icon: Palette, label: "Design", path: "/designs" },
       { icon: Hammer, label: "Execution", path: "/execution" },
       { icon: Store, label: "Vendors", path: "/vendors" },
       { icon: Package, label: "Inventory", path: "/inventory" },
@@ -95,7 +95,7 @@ const navSections = [
     items: [
       { icon: Files, label: "PDFs", path: "/pdfs" },
       { icon: PenTool, label: "Drawings", path: "/drawings" },
-      { icon: ThumbsUp, label: "Approvals", path: "/approvals-list" },
+      { icon: ThumbsUp, label: "Approvals", path: "/approvals" },
       { icon: BarChart3, label: "Reports", path: "/reports" },
       { icon: History, label: "Revision Logs", path: "/revision-logs" },
     ],
@@ -105,7 +105,11 @@ const navSections = [
     items: [
       { icon: ListTodo, label: "Team Tasks", path: "/team-tasks" },
       { icon: ListTodo, label: "Team & Roles", path: "/team-roles" },
-      { icon: Building2, label: "Site Coordination", path: "/site-coord" },
+      {
+        icon: Building2,
+        label: "Site Coordination",
+        path: "/site-coordination",
+      },
       { icon: StickyNote, label: "Internal Notes", path: "/notes" },
     ],
   },

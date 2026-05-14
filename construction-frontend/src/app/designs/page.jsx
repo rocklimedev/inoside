@@ -1,3 +1,4 @@
+"use client";
 import React, { useState, useEffect, useRef } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { Card } from "@/components/ui/card";
@@ -92,15 +93,21 @@ export default function DesignPage() {
   const [showUpload, setShowUpload] = useState(false);
   const [activeDesign, setActiveDesign] = useState(null);
   const [filterStatus, setFilterStatus] = useState("all");
-
   useEffect(() => {
+    if (!api) {
+      setLoading(false);
+      return;
+    }
+
     api
       .get("/projects")
       .then((r) => setProjects(r.data))
-      .catch(() => {})
+      .catch((err) => {
+        console.error("Failed to fetch projects:", err);
+        toast.error("Failed to load projects");
+      })
       .finally(() => setLoading(false));
-  }, []);
-
+  }, [api]); // ← Important: depend on api
   useEffect(() => {
     if (selectedProject) fetchDesigns();
   }, [selectedProject]);

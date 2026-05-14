@@ -1,3 +1,4 @@
+"use client";
 import { useState, useEffect } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { Card } from "@/components/ui/card";
@@ -35,12 +36,20 @@ export default function SiteCoordinationPage() {
   const [search, setSearch] = useState("");
 
   useEffect(() => {
+    if (!api) {
+      setLoading(false);
+      return;
+    }
+
     api
       .get("/projects")
       .then((r) => setProjects(r.data))
-      .catch(() => {})
+      .catch((err) => {
+        console.error("Failed to fetch projects:", err);
+        // toast.error("Failed to load projects"); // optional
+      })
       .finally(() => setLoading(false));
-  }, []);
+  }, [api]); // ← Important
 
   if (loading)
     return (

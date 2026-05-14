@@ -1,3 +1,4 @@
+"use client";
 import React, { useState, useEffect, useRef } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { Card } from "@/components/ui/card";
@@ -92,13 +93,20 @@ export default function ExecutionPage() {
   const [search, setSearch] = useState("");
 
   useEffect(() => {
+    if (!api) {
+      setLoading(false);
+      return;
+    }
+
     api
       .get("/projects")
       .then((r) => setProjects(r.data))
-      .catch(() => {})
+      .catch((err) => {
+        console.error("Failed to fetch projects:", err);
+        toast.error("Failed to load projects");
+      })
       .finally(() => setLoading(false));
-  }, []);
-
+  }, [api]); // ← Important: depend on api
   if (loading)
     return (
       <div className="flex items-center justify-center h-full min-h-[60vh]">

@@ -1,7 +1,6 @@
 "use client";
 
 import React, { createContext, useContext, useEffect, useState } from "react";
-
 import {
   useLoginMutation,
   useRegisterMutation,
@@ -25,14 +24,15 @@ export const AuthProvider = ({ children }) => {
     skip: !token,
   });
 
+  // Load token from localStorage on mount
   useEffect(() => {
     const savedToken = localStorage.getItem("access_token");
-
     if (savedToken) {
       setToken(savedToken);
     }
   }, []);
 
+  // Update user when profile is fetched
   useEffect(() => {
     if (profileData?.user) {
       setUser(profileData.user);
@@ -45,14 +45,17 @@ export const AuthProvider = ({ children }) => {
 
       const accessToken = res.access_token;
 
+      // Save token
       setToken(accessToken);
       localStorage.setItem("access_token", accessToken);
 
-      setUser(res.user);
+      // Set user immediately from login response
+      const loggedInUser = res.user || profileData?.user;
+      setUser(loggedInUser);
 
       return res;
     } catch (err) {
-      throw err?.data?.message || "Login failed";
+      throw err?.data?.message || err?.data?.detail || "Login failed";
     }
   };
 
@@ -61,14 +64,13 @@ export const AuthProvider = ({ children }) => {
       const res = await registerMutation(data).unwrap();
       return res;
     } catch (err) {
-      throw err?.data?.message || "Registration failed";
+      throw err?.data?.message || err?.data?.detail || "Registration failed";
     }
   };
 
   const logout = () => {
     setToken(null);
     setUser(null);
-
     localStorage.removeItem("access_token");
   };
 
@@ -78,6 +80,12 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
+  // Helper to check if user is active
+  const isUserActive = () => {
+    if (!user) return false;
+    return user.is_active === true || user.isActive === true;
+  };
+
   const value = {
     token,
     user,
@@ -85,7 +93,8 @@ export const AuthProvider = ({ children }) => {
     register,
     logout,
     refreshUser,
-    isAuthenticated: !!token,
+    isAuthenticated: !!token && !!user,
+    isActive: isUserActive(),
     profileLoading,
   };
 

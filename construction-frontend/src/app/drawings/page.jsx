@@ -1,3 +1,4 @@
+"use client";
 import { useState, useEffect } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { Card } from "@/components/ui/card";
@@ -78,15 +79,24 @@ export default function DrawingsPage() {
   const isClient = user?.role === "Client";
 
   useEffect(() => {
+    if (!api) {
+      setLoading(false);
+      return;
+    }
+
     const pq = filterProject !== "all" ? `?project_id=${filterProject}` : "";
+
     Promise.all([api.get(`/drawings/all${pq}`), api.get("/projects")])
       .then(([d, p]) => {
         setDrawings(d.data);
         setProjects(p.data);
       })
-      .catch(() => {})
+      .catch((err) => {
+        console.error("Failed to fetch drawings/projects:", err);
+        // toast.error("Failed to load data"); // Uncomment if you want user feedback
+      })
       .finally(() => setLoading(false));
-  }, [filterProject]);
+  }, [api, filterProject]); // ← Both dependencies
 
   const filtered = drawings.filter((d) => {
     if (

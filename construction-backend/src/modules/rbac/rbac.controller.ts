@@ -7,70 +7,83 @@ import {
   UseGuards,
   Request,
 } from '@nestjs/common';
+
 import { RbacService } from './roles.service';
+
 import { CreateRoleDto } from './dto/create-role.dto';
 import { CreatePermissionDto } from './dto/create-permission.dto';
 import { AssignPermissionsDto } from './dto/assign-permission.dto';
 
 import { JwtAuthGuard } from '@/common/guards/jwt-auth.guard';
 import { RolesGuard } from '@/common/guards/roles.guard';
+
 import { Roles } from '@/common/decorators/roles.decorator';
 
 @Controller('rbac')
-@UseGuards(JwtAuthGuard)
 export class RbacController {
   constructor(private readonly rbacService: RbacService) {}
 
-  // ====================== ROLES ======================
+  // =========================================================
+  // ROLES
+  // =========================================================
 
+  // PUBLIC (used in register page)
+  @Get('roles')
+  findAllRoles() {
+    return this.rbacService.findAllRoles();
+  }
+
+  // ADMIN ONLY
   @Post('roles')
-  @UseGuards(RolesGuard)
+  @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('admin')
   createRole(@Body() dto: CreateRoleDto) {
     return this.rbacService.createRole(dto);
   }
 
-  @Get('roles')
-  @UseGuards(RolesGuard)
-  @Roles('admin')
-  findAllRoles() {
-    return this.rbacService.findAllRoles();
-  }
-
+  // ADMIN ONLY
   @Get('roles/:id')
-  @UseGuards(RolesGuard)
+  @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('admin')
   findRoleById(@Param('id') id: string) {
     return this.rbacService.findRoleById(id);
   }
 
+  // ADMIN ONLY
   @Get('roles/:id/permissions')
-  @UseGuards(RolesGuard)
+  @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('admin')
   getRoleWithPermissions(@Param('id') id: string) {
     return this.rbacService.getRoleWithPermissions(id);
   }
 
-  // ====================== PERMISSIONS ======================
+  // =========================================================
+  // PERMISSIONS
+  // =========================================================
 
+  // ADMIN ONLY
   @Post('permissions')
-  @UseGuards(RolesGuard)
+  @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('admin')
   createPermission(@Body() dto: CreatePermissionDto) {
     return this.rbacService.createPermission(dto);
   }
 
+  // ADMIN ONLY
   @Get('permissions')
-  @UseGuards(RolesGuard)
+  @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('admin')
   findAllPermissions() {
     return this.rbacService.findAllPermissions();
   }
 
-  // ====================== ASSIGN PERMISSIONS ======================
+  // =========================================================
+  // ASSIGN PERMISSIONS
+  // =========================================================
 
+  // ADMIN ONLY
   @Post('roles/:id/permissions')
-  @UseGuards(RolesGuard)
+  @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('admin')
   assignPermissions(
     @Param('id') roleId: string,
@@ -79,9 +92,12 @@ export class RbacController {
     return this.rbacService.assignPermissions(roleId, dto);
   }
 
-  // ====================== UTILITY ======================
+  // =========================================================
+  // CURRENT USER
+  // =========================================================
 
   @Get('me/permissions')
+  @UseGuards(JwtAuthGuard)
   getMyPermissions(@Request() req) {
     return {
       role: req.user.role,

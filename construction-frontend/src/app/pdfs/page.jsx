@@ -1,3 +1,4 @@
+"use client";
 import { useState, useEffect } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { Card } from "@/components/ui/card";
@@ -74,15 +75,23 @@ export default function PDFsPage() {
   const [filterProject, setFilterProject] = useState("All");
 
   useEffect(() => {
+    if (!api) {
+      setLoading(false);
+      return;
+    }
+
     Promise.all([api.get("/pdfs/all"), api.get("/projects")])
       .then(([r, p]) => {
         setPdfs(r.data);
         setProjects(p.data);
       })
-      .catch(() => {})
+      .catch((err) => {
+        console.error("Failed to load data:", err);
+        // Optional: show user feedback
+        // toast.error("Failed to load projects and PDFs");
+      })
       .finally(() => setLoading(false));
-  }, []);
-
+  }, [api]); // ← Very important
   const filtered = pdfs.filter((p) => {
     if (
       search &&

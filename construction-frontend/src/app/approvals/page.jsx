@@ -1,3 +1,4 @@
+"use client";
 import { useState, useEffect } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { Card } from "@/components/ui/card";
@@ -79,13 +80,20 @@ export default function ApprovalsPage() {
   const [activeItem, setActiveItem] = useState(null);
 
   useEffect(() => {
+    if (!api) {
+      setLoading(false);
+      return;
+    }
+
     api
       .get("/approvals/all")
       .then((r) => setApprovals(r.data))
-      .catch(() => {})
+      .catch((err) => {
+        console.error("Failed to fetch approvals:", err);
+        // toast.error("Failed to load approvals"); // optional
+      })
       .finally(() => setLoading(false));
-  }, []);
-
+  }, [api]); // ← Important: depend on api
   const tabFiltered = (tab) => {
     let items = approvals;
     if (search)

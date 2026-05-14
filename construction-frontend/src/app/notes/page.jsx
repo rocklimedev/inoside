@@ -1,3 +1,4 @@
+"use client";
 import { useState, useEffect } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { Card } from "@/components/ui/card";
@@ -87,14 +88,22 @@ export default function InternalNotesPage() {
   const [showPinnedOnly, setShowPinnedOnly] = useState(false);
 
   useEffect(() => {
+    if (!api) {
+      setLoading(false);
+      return;
+    }
+
     Promise.all([api.get("/internal-notes"), api.get("/projects")])
       .then(([n, p]) => {
         setNotes(n.data);
         setProjects(p.data);
       })
-      .catch(() => {})
+      .catch((err) => {
+        console.error("Failed to fetch internal notes and projects:", err);
+        // toast.error("Failed to load notes"); // optional
+      })
       .finally(() => setLoading(false));
-  }, []);
+  }, [api]); // ← Important
 
   const reload = () => api.get("/internal-notes").then((r) => setNotes(r.data));
 

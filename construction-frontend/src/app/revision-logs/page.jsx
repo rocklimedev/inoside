@@ -1,3 +1,4 @@
+"use client";
 import { useState, useEffect } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { Card } from "@/components/ui/card";
@@ -67,14 +68,22 @@ export default function RevisionLogsPage() {
   const [activeLog, setActiveLog] = useState(null);
 
   useEffect(() => {
+    if (!api) {
+      setLoading(false);
+      return;
+    }
+
     Promise.all([api.get("/revision-logs/all"), api.get("/projects")])
       .then(([r, p]) => {
         setLogs(r.data);
         setProjects(p.data);
       })
-      .catch(() => {})
+      .catch((err) => {
+        console.error("Failed to fetch revision logs and projects:", err);
+        // toast.error("Failed to load data"); // optional
+      })
       .finally(() => setLoading(false));
-  }, []);
+  }, [api]); // ← Important
 
   const filtered = logs.filter((l) => {
     if (
