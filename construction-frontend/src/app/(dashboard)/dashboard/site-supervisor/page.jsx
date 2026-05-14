@@ -49,6 +49,11 @@ export default function SupervisorDashboard() {
   const [reports, setReports] = useState([]);
 
   useEffect(() => {
+    if (!api) {
+      setLoading(false);
+      return;
+    }
+
     Promise.all([
       api.get("/projects"),
       api.get("/team-tasks"),
@@ -70,7 +75,6 @@ export default function SupervisorDashboard() {
       .catch(console.error)
       .finally(() => setLoading(false));
   }, []);
-
   if (loading) return <Loader />;
 
   const openIssues = issues.filter((i) => i.status === "open");

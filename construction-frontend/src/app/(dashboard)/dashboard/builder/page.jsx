@@ -49,6 +49,11 @@ export default function BuilderDashboard() {
   const [siteProgress, setSiteProgress] = useState([]);
 
   useEffect(() => {
+    if (!api) {
+      setLoading(false);
+      return;
+    }
+
     Promise.all([
       api.get("/projects"),
       api.get("/team-tasks"),

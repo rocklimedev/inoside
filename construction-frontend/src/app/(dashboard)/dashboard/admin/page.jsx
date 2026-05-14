@@ -47,6 +47,11 @@ export default function TeamDashboard() {
   const [recentActivity, setRecentActivity] = useState([]);
 
   useEffect(() => {
+    if (!api) {
+      setLoading(false);
+      return;
+    }
+
     Promise.all([
       api.get("/team-tasks"),
       api.get("/internal-notes"),

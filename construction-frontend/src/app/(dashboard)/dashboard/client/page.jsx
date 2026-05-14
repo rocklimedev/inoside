@@ -47,6 +47,11 @@ export default function ClientDashboard() {
   const [comms, setComms] = useState([]);
 
   useEffect(() => {
+    if (!api) {
+      setLoading(false);
+      return;
+    }
+
     Promise.all([
       api.get("/projects"),
       api.get("/approvals/all"),

@@ -61,6 +61,11 @@ export default function ArchitectDashboardPage() {
   }, []);
 
   const fetchDashboard = async () => {
+    if (!api) {
+      setLoading(false);
+      return;
+    }
+
     try {
       const [k, p, proj, act, apr, doc, sp, cc, al] = await Promise.all([
         api.get("/dashboard/kpis"),
