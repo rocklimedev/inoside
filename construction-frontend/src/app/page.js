@@ -20,23 +20,25 @@ export default function Home() {
 
     switch (role) {
       case "architect":
-        router.replace("/architect");
+        router.replace("/dashboard/architect");
         break;
 
       case "admin":
-        router.replace("/admin");
+        router.replace("/dashboard/admin");
         break;
 
       case "vendor":
-        router.replace("/vendor");
+        router.replace("/dashboard/vendor");
         break;
 
       case "client":
-        router.replace("/client");
+        router.replace("/dashboard/client");
         break;
-
+      case "site_supervisor":
+        router.replace("/dashboard/site_supervisor");
+        break;
       default:
-        router.replace("/login");
+        router.replace("/dashboard/login");
     }
   }, [user, isAuthenticated, profileLoading, router]);
 
