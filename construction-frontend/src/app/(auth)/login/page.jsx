@@ -10,7 +10,7 @@ const roleRoutes = {
   Architect: "/dashboard/architect",
   Client: "/dashboard/client",
   Builder: "/dashboard/builder",
-  "Site Supervisor": "/dashboard/supervisor",
+  "Site Supervisor": "/dashboard/site-supervisor",
   "Team Member": "/dashboard/team",
 };
 

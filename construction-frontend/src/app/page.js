@@ -35,7 +35,7 @@ export default function Home() {
         router.replace("/dashboard/client");
         break;
       case "site_supervisor":
-        router.replace("/dashboard/site_supervisor");
+        router.replace("/dashboard/site-supervisor");
         break;
       default:
         router.replace("/dashboard/login");

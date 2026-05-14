@@ -31,6 +31,7 @@ export const baseApi = createApi({
     "Roles",
     "Permissions",
     "Auth",
+    "BoqCategory",
   ],
   endpoints: () => ({}),
 });

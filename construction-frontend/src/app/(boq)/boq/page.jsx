@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 
 import {
   useGetBoqsQuery,
-  useCreateBoqMutation,
+  useDeleteBoqMutation,
   useGetBoqByIdQuery,
 } from "@/api/boqApi";
 
@@ -14,10 +14,8 @@ import { useGetProjectsQuery } from "@/api/projectsApi";
 
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Progress } from "@/components/ui/progress";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import {
   Select,
   SelectTrigger,
@@ -25,13 +23,6 @@ import {
   SelectItem,
   SelectValue,
 } from "@/components/ui/select";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogFooter,
-} from "@/components/ui/dialog";
 import {
   Sheet,
   SheetContent,
@@ -41,6 +32,22 @@ import {
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Separator } from "@/components/ui/separator";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 import {
   Search,
@@ -49,11 +56,14 @@ import {
   LayoutGrid,
   List,
   Plus,
-  ArrowUpRight,
-  FileText,
+  Eye,
+  Edit,
+  Trash2,
+  MoreHorizontal,
   Calendar,
   DollarSign,
   TrendingUp,
+  FileText,
   X,
   Loader2,
 } from "lucide-react";
@@ -69,11 +79,12 @@ export default function BoqsPage() {
   const [filters, setFilters] = useState({ statuses: [], projects: [] });
   const [sortBy, setSortBy] = useState("total");
   const [selectedBoqId, setSelectedBoqId] = useState(null);
+  const [boqToDelete, setBoqToDelete] = useState(null);
 
   // RTK Query
   const { data: boqs = [], isLoading, error } = useGetBoqsQuery();
   const { data: projects = [] } = useGetProjectsQuery();
-  const [createBoq, { isLoading: isCreating }] = useCreateBoqMutation();
+  const [deleteBoq, { isLoading: isDeleting }] = useDeleteBoqMutation();
   const { data: selectedBoq } = useGetBoqByIdQuery(selectedBoqId, {
     skip: !selectedBoqId,
   });
@@ -85,18 +96,16 @@ export default function BoqsPage() {
   const filteredBoqs = useMemo(() => {
     let result = [...boqs];
 
-    // Search by title
+    // Search
     if (search.trim()) {
       const term = search.toLowerCase();
       result = result.filter((b) => b.title?.toLowerCase().includes(term));
     }
 
-    // Filter by status
+    // Filters
     if (filters.statuses.length > 0) {
       result = result.filter((b) => filters.statuses.includes(b.status));
     }
-
-    // Filter by project
     if (filters.projects.length > 0) {
       result = result.filter((b) => filters.projects.includes(b.project_id));
     }
@@ -109,20 +118,23 @@ export default function BoqsPage() {
       if (sortBy === "total") {
         return Number(b.grand_total || 0) - Number(a.grand_total || 0);
       }
-      // Default: newest first
       return (
-        new Date(b.created_at || 0).getTime() -
-        new Date(a.created_at || 0).getTime()
+        new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
       );
     });
 
     return result;
   }, [boqs, search, filters, sortBy]);
 
-  const handleCreate = async () => {
-    // This part can be removed if you're navigating to /boq/create instead
-    toast.info("Redirecting to BOQ Creator...");
-    router.push("/boq/create");
+  const handleDelete = async () => {
+    if (!boqToDelete) return;
+    try {
+      await deleteBoq(boqToDelete).unwrap();
+      toast.success("BOQ deleted successfully");
+      setBoqToDelete(null);
+    } catch (err) {
+      toast.error(err?.data?.message || "Failed to delete BOQ");
+    }
   };
 
   const toggleFilter = (key, value) => {
@@ -134,9 +146,7 @@ export default function BoqsPage() {
     }));
   };
 
-  const clearFilters = () => {
-    setFilters({ statuses: [], projects: [] });
-  };
+  const clearFilters = () => setFilters({ statuses: [], projects: [] });
 
   if (isLoading) {
     return (
@@ -205,12 +215,12 @@ export default function BoqsPage() {
             <div className="flex-1 max-w-md">
               <div className="flex items-center gap-2 bg-gray-50 rounded-xl px-4 py-2.5 border focus-within:border-[#ef7f1b]">
                 <Search className="w-4 h-4 text-gray-400" />
-                <input
+                <Input
                   type="text"
                   placeholder="Search BOQs by title..."
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
-                  className="bg-transparent text-sm outline-none w-full"
+                  className="bg-transparent border-0 focus-visible:ring-0 text-sm"
                 />
               </div>
             </div>
@@ -224,7 +234,7 @@ export default function BoqsPage() {
                 <Filter className="w-4 h-4 mr-2" /> Filter
               </Button>
 
-              <Select value={sortBy} onValueChange={(v) => setSortBy(v)}>
+              <Select value={sortBy} onValueChange={setSortBy}>
                 <SelectTrigger className="w-40">
                   <ArrowUpDown className="w-4 h-4 mr-2" />
                   <SelectValue />
@@ -237,18 +247,18 @@ export default function BoqsPage() {
               </Select>
 
               <div className="flex border rounded-xl overflow-hidden">
-                {[
-                  { mode: "grid", icon: LayoutGrid },
-                  { mode: "list", icon: List },
-                ].map(({ mode, icon: Icon }) => (
-                  <button
-                    key={mode}
-                    onClick={() => setViewMode(mode)}
-                    className={`p-2.5 ${viewMode === mode ? "bg-[#ef7f1b] text-white" : "hover:bg-gray-100"}`}
-                  >
-                    <Icon className="w-4 h-4" />
-                  </button>
-                ))}
+                <button
+                  onClick={() => setViewMode("grid")}
+                  className={`p-2.5 ${viewMode === "grid" ? "bg-[#ef7f1b] text-white" : "hover:bg-gray-100"}`}
+                >
+                  <LayoutGrid className="w-4 h-4" />
+                </button>
+                <button
+                  onClick={() => setViewMode("list")}
+                  className={`p-2.5 ${viewMode === "list" ? "bg-[#ef7f1b] text-white" : "hover:bg-gray-100"}`}
+                >
+                  <List className="w-4 h-4" />
+                </button>
               </div>
 
               <Button
@@ -268,25 +278,28 @@ export default function BoqsPage() {
         {/* Content */}
         <ScrollArea className="flex-1">
           <div className="p-6">
-            {viewMode === "grid" && (
+            {viewMode === "grid" ? (
               <GridView
                 boqs={filteredBoqs}
                 projectMap={projectMap}
-                onSelect={setSelectedBoqId}
+                onView={setSelectedBoqId}
+                onEdit={(id) => router.push(`/boq/${id}/edit`)}
+                onDelete={setBoqToDelete}
               />
-            )}
-            {viewMode === "list" && (
+            ) : (
               <ListView
                 boqs={filteredBoqs}
                 projectMap={projectMap}
-                onSelect={setSelectedBoqId}
+                onView={setSelectedBoqId}
+                onEdit={(id) => router.push(`/boq/${id}/edit`)}
+                onDelete={setBoqToDelete}
               />
             )}
           </div>
         </ScrollArea>
       </div>
 
-      {/* BOQ Detail Sheet */}
+      {/* Detail Sheet */}
       <Sheet open={!!selectedBoqId} onOpenChange={() => setSelectedBoqId(null)}>
         <SheetContent className="w-[440px] sm:w-[520px]">
           {selectedBoq && (
@@ -319,10 +332,10 @@ export default function BoqsPage() {
                     icon={TrendingUp}
                     label="Items"
                     value={
-                      selectedBoq.sections?.reduce((acc, s) => {
+                      selectedBoq.sections?.reduce((acc, section) => {
                         return (
                           acc +
-                          (s.subheadings?.reduce(
+                          (section.subheadings?.reduce(
                             (a, sh) => a + (sh.items?.length || 0),
                             0,
                           ) || 0)
@@ -332,17 +345,52 @@ export default function BoqsPage() {
                   />
                 </div>
 
-                <Button
-                  className="w-full bg-[#ef7f1b] hover:bg-[#d66e15]"
-                  onClick={() => router.push(`/boq/${selectedBoq.id}`)}
-                >
-                  Open BOQ Editor
-                </Button>
+                <div className="flex gap-3 pt-4">
+                  <Button
+                    variant="outline"
+                    className="flex-1"
+                    onClick={() => router.push(`/boq/${selectedBoq.id}`)}
+                  >
+                    <Eye className="w-4 h-4 mr-2" /> View Full BOQ
+                  </Button>
+                  <Button
+                    className="flex-1 bg-[#ef7f1b] hover:bg-[#d66e15]"
+                    onClick={() => router.push(`/boq/${selectedBoq.id}/edit`)}
+                  >
+                    <Edit className="w-4 h-4 mr-2" /> Edit BOQ
+                  </Button>
+                </div>
               </div>
             </>
           )}
         </SheetContent>
       </Sheet>
+
+      {/* Delete Dialog */}
+      <AlertDialog
+        open={!!boqToDelete}
+        onOpenChange={() => setBoqToDelete(null)}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete BOQ?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This action cannot be undone. This will permanently delete the BOQ
+              and all its items.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDelete}
+              className="bg-red-600 hover:bg-red-700"
+              disabled={isDeleting}
+            >
+              {isDeleting ? "Deleting..." : "Delete BOQ"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
@@ -390,15 +438,16 @@ function FilterSection({
   );
 }
 
-function GridView({ boqs, projectMap, onSelect }) {
+/* Grid & List Views remain the same as you had */
+function GridView({ boqs, projectMap, onView, onEdit, onDelete }) {
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
       {boqs.map((b) => (
         <Card
           key={b.id}
-          className="p-5 hover:shadow-lg hover:border-[#ef7f1b]/30 transition-all cursor-pointer group"
-          onClick={() => onSelect(b.id)}
+          className="p-5 hover:shadow-lg hover:border-[#ef7f1b]/30 transition-all group cursor-pointer"
         >
+          {/* ... same as your original GridView ... */}
           <div className="flex justify-between items-start mb-4">
             <div className="min-w-0 flex-1">
               <h3 className="font-bold truncate">{b.title}</h3>
@@ -406,7 +455,27 @@ function GridView({ boqs, projectMap, onSelect }) {
                 {projectMap.get(b.project_id)}
               </p>
             </div>
-            <ArrowUpRight className="w-4 h-4 text-gray-300 group-hover:text-[#ef7f1b]" />
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <button className="p-1.5 opacity-0 group-hover:opacity-100 hover:bg-gray-100 rounded-md">
+                  <MoreHorizontal className="w-4 h-4" />
+                </button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem onClick={() => onView(b.id)}>
+                  <Eye className="w-4 h-4 mr-2" /> View
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => onEdit(b.id)}>
+                  <Edit className="w-4 h-4 mr-2" /> Edit
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  className="text-red-600"
+                  onClick={() => onDelete(b.id)}
+                >
+                  <Trash2 className="w-4 h-4 mr-2" /> Delete
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           </div>
 
           <div className="flex flex-wrap gap-2 mb-4">
@@ -435,21 +504,21 @@ function GridView({ boqs, projectMap, onSelect }) {
   );
 }
 
-function ListView({ boqs, projectMap, onSelect }) {
+function ListView({ boqs, projectMap, onView, onEdit, onDelete }) {
   return (
     <div className="bg-white rounded-xl border">
       <div className="grid grid-cols-12 gap-4 px-6 py-3 bg-gray-50 text-xs font-bold uppercase text-gray-500 border-b">
         <div className="col-span-5">BOQ Title</div>
         <div className="col-span-3">Project</div>
         <div className="col-span-2">Status</div>
-        <div className="col-span-2 text-right">Total</div>
+        <div className="col-span-1 text-right">Total</div>
+        <div className="col-span-1"></div>
       </div>
 
       {boqs.map((b) => (
         <div
           key={b.id}
-          onClick={() => onSelect(b.id)}
-          className="grid grid-cols-12 gap-4 px-6 py-4 border-b hover:bg-orange-50/50 cursor-pointer items-center"
+          className="grid grid-cols-12 gap-4 px-6 py-4 border-b hover:bg-orange-50/50 items-center"
         >
           <div className="col-span-5">
             <p className="font-medium">{b.title}</p>
@@ -469,8 +538,31 @@ function ListView({ boqs, projectMap, onSelect }) {
               {b.status}
             </Badge>
           </div>
-          <div className="col-span-2 text-right font-semibold">
+          <div className="col-span-1 text-right font-semibold">
             ₹{Number(b.grand_total || 0).toLocaleString()}
+          </div>
+          <div className="col-span-1 flex justify-end">
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <button className="p-2 hover:bg-gray-100 rounded-md">
+                  <MoreHorizontal className="w-4 h-4" />
+                </button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem onClick={() => onView(b.id)}>
+                  <Eye className="w-4 h-4 mr-2" /> View
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => onEdit(b.id)}>
+                  <Edit className="w-4 h-4 mr-2" /> Edit
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  className="text-red-600"
+                  onClick={() => onDelete(b.id)}
+                >
+                  <Trash2 className="w-4 h-4 mr-2" /> Delete
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           </div>
         </div>
       ))}

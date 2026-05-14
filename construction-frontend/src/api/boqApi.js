@@ -46,6 +46,22 @@ export const boqApi = baseApi.injectEndpoints({
       providesTags: ["Boq"],
     }),
 
+    // ✅ DELETE BOQ
+    deleteBoq: builder.mutation({
+      query: (id) => ({
+        url: `/boq/${id}`,
+        method: "DELETE",
+      }),
+      invalidatesTags: ["Boq"],
+    }),
+    updateBoq: builder.mutation({
+      query: ({ id, ...body }) => ({
+        url: `/boq/${id}`,
+        method: "PATCH",
+        body,
+      }),
+      invalidatesTags: ["Boq"],
+    }),
     calculateBoqTotal: builder.mutation({
       query: (id) => ({
         url: `/boq/${id}/calculate`,
@@ -121,7 +137,7 @@ export const boqApi = baseApi.injectEndpoints({
     }),
   }),
 
-  overrideExisting: false,
+  overrideExisting: true,
 });
 
 export const {
@@ -140,7 +156,8 @@ export const {
   useGetBoqsQuery,
   useGetBoqByIdQuery,
   useCalculateBoqTotalMutation,
-
+  useDeleteBoqMutation, // ✅ ADDED
+  useUpdateBoqMutation,
   // =====================================================
   // SECTIONS
   // =====================================================
