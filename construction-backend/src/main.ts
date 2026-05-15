@@ -15,6 +15,8 @@ async function bootstrap() {
       'http://127.0.0.1:3000',
       'https://inoside.onrender.com',
       'https://inoside.vercel.app',
+      'https://buildcon.rippotaiarchitecture.com',
+      'https://buildcon-api.rippotaiarchitecture.com',
     ],
     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization'],
