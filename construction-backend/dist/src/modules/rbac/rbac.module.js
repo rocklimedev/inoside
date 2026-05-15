@@ -1,0 +1,28 @@
+"use strict";
+var __decorate = (this && this.__decorate) || function (decorators, target, key, desc) {
+    var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
+    if (typeof Reflect === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators, target, key, desc);
+    else for (var i = decorators.length - 1; i >= 0; i--) if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
+    return c > 3 && r && Object.defineProperty(target, key, r), r;
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.RbacModule = void 0;
+const common_1 = require("@nestjs/common");
+const sequelize_1 = require("@nestjs/sequelize");
+const roles_service_1 = require("./roles.service");
+const role_model_1 = require("./models/role.model");
+const permission_model_1 = require("./models/permission.model");
+const role_permission_model_1 = require("./models/role-permission.model");
+const rbac_controller_1 = require("./rbac.controller");
+let RbacModule = class RbacModule {
+};
+exports.RbacModule = RbacModule;
+exports.RbacModule = RbacModule = __decorate([
+    (0, common_1.Module)({
+        imports: [sequelize_1.SequelizeModule.forFeature([role_model_1.Role, permission_model_1.Permission, role_permission_model_1.RolePermission])],
+        controllers: [rbac_controller_1.RbacController],
+        providers: [roles_service_1.RbacService],
+        exports: [roles_service_1.RbacService],
+    })
+], RbacModule);
+//# sourceMappingURL=rbac.module.js.map

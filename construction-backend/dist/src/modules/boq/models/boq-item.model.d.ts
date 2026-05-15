@@ -1,0 +1,36 @@
+import { Model } from 'sequelize-typescript';
+import type { InferAttributes, InferCreationAttributes, CreationOptional, NonAttribute } from 'sequelize';
+import { Boq } from './boq.model';
+import { BoqSection } from './boq-section.model';
+import { BoqSubHeading } from './boq-subheading.model';
+import { Unit } from './unit.model';
+import { InventoryItem } from '@/modules/inventory/models/inventory-item.model';
+export declare class BoqItem extends Model<InferAttributes<BoqItem>, InferCreationAttributes<BoqItem>> {
+    id: CreationOptional<string>;
+    boq_id: string;
+    section_id: string;
+    subheading_id: CreationOptional<string | null>;
+    inventory_item_id: CreationOptional<string | null>;
+    unit_id: CreationOptional<string | null>;
+    sno: CreationOptional<string | null>;
+    item_code: CreationOptional<string | null>;
+    item_name: string;
+    description: CreationOptional<string | null>;
+    specification: CreationOptional<string | null>;
+    brand: CreationOptional<string | null>;
+    qty: CreationOptional<number>;
+    rate: CreationOptional<number>;
+    wastage_percent: CreationOptional<number>;
+    discount_percent: CreationOptional<number>;
+    tax_percent: CreationOptional<number>;
+    base_amount: CreationOptional<number>;
+    tax_amount: CreationOptional<number>;
+    final_amount: CreationOptional<number>;
+    remarks: CreationOptional<string | null>;
+    sort_order: CreationOptional<number>;
+    boq?: NonAttribute<Boq>;
+    section?: NonAttribute<BoqSection>;
+    subheading?: NonAttribute<BoqSubHeading>;
+    inventory_item?: NonAttribute<InventoryItem>;
+    unit?: NonAttribute<Unit>;
+}

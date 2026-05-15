@@ -1,0 +1,41 @@
+import { ProjectsService } from './projects.service';
+import { CreateProjectDto } from './dto/create-project.dto';
+import { UpdateProjectDto } from './dto/update-project.dto';
+export declare class ProjectsController {
+    private readonly projectsService;
+    constructor(projectsService: ProjectsService);
+    create(dto: CreateProjectDto): Promise<import("./models/project.model").Project>;
+    findAll(): Promise<import("./models/project.model").Project[]>;
+    findOne(id: string): Promise<import("./models/project.model").Project>;
+    update(id: string, dto: UpdateProjectDto): Promise<import("./models/project.model").Project>;
+    remove(id: string): Promise<{
+        message: string;
+    }>;
+    updateProgress(id: string, progress: number): Promise<import("./models/project.model").Project>;
+    createBrief(id: string, dto: any): Promise<import("./models/project_brief.model").ProjectBrief>;
+    getBrief(id: string): Promise<import("./models/project_brief.model").ProjectBrief>;
+    updateBrief(id: string, dto: any): Promise<import("./models/project_brief.model").ProjectBrief>;
+    createPitch(id: string, dto: any): Promise<import("./models/project_pitch.model").ProjectPitch>;
+    getPitch(id: string): Promise<import("./models/project_pitch.model").ProjectPitch>;
+    updatePitch(id: string, dto: any): Promise<import("./models/project_pitch.model").ProjectPitch>;
+    addPitchReference(id: string, dto: any): Promise<import("./models/pitch_references.model").PitchReference>;
+    getPitchReferences(id: string): Promise<import("./models/pitch_references.model").PitchReference[]>;
+    deletePitchReference(refId: string): Promise<number>;
+    createReki(id: string, dto: any): Promise<import("./models/reki_reports.model").RekiReport>;
+    getReki(id: string): Promise<import("./models/reki_reports.model").RekiReport>;
+    updateReki(id: string, dto: any): Promise<import("./models/reki_reports.model").RekiReport>;
+    addRekiPhoto(id: string, dto: any): Promise<import("./models/reki_photos.model").RekiPhoto>;
+    getRekiPhotos(rekiId: string): Promise<import("./models/reki_photos.model").RekiPhoto[]>;
+    deleteRekiPhoto(photoId: string): Promise<number>;
+    createScope(id: string, dto: any): Promise<import("./models/scope_of_work.model").ScopeOfWork>;
+    getScope(id: string): Promise<import("./models/scope_of_work.model").ScopeOfWork>;
+    updateScope(id: string, dto: any): Promise<import("./models/scope_of_work.model").ScopeOfWork>;
+    addCostEstimate(id: string, dto: any): Promise<import("./models/project_cost_estimates.model").ProjectCostEstimate>;
+    getCostEstimates(id: string): Promise<import("./models/project_cost_estimates.model").ProjectCostEstimate[]>;
+    updateCostEstimate(estimateId: string, dto: any): Promise<import("./models/project_cost_estimates.model").ProjectCostEstimate | null>;
+    uploadDrawing(id: string, dto: any): Promise<import("./models/project-drawings.model").ProjectDrawing>;
+    getDrawings(id: string): Promise<import("./models/project-drawings.model").ProjectDrawing[]>;
+    approveDrawing(drawingId: string, user_id: string): Promise<import("./models/project-drawings.model").ProjectDrawing>;
+    addApprovalLog(drawingId: string, dto: any): Promise<import("./models/drawing_approval_logs.model").DrawingApprovalLog>;
+    getApprovalLogs(drawingId: string): Promise<import("./models/drawing_approval_logs.model").DrawingApprovalLog[]>;
+}

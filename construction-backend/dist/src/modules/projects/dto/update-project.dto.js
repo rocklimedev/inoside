@@ -1,0 +1,96 @@
+"use strict";
+var __decorate = (this && this.__decorate) || function (decorators, target, key, desc) {
+    var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
+    if (typeof Reflect === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators, target, key, desc);
+    else for (var i = decorators.length - 1; i >= 0; i--) if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
+    return c > 3 && r && Object.defineProperty(target, key, r), r;
+};
+var __metadata = (this && this.__metadata) || function (k, v) {
+    if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.UpdateProjectDto = void 0;
+const class_validator_1 = require("class-validator");
+const enums_1 = require("../../../common/enums");
+class UpdateProjectDto {
+    client_id;
+    site_id;
+    name;
+    project_type;
+    service_type;
+    purpose;
+    number_of_floors;
+    approximate_area_sqft;
+    budget_range;
+    timeline_expectation;
+    design_preference;
+    progress_percentage;
+    created_by;
+}
+exports.UpdateProjectDto = UpdateProjectDto;
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsUUID)(),
+    __metadata("design:type", String)
+], UpdateProjectDto.prototype, "client_id", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsUUID)(),
+    __metadata("design:type", String)
+], UpdateProjectDto.prototype, "site_id", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsString)(),
+    __metadata("design:type", String)
+], UpdateProjectDto.prototype, "name", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsEnum)(enums_1.ProjectType),
+    __metadata("design:type", String)
+], UpdateProjectDto.prototype, "project_type", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsEnum)(enums_1.ServiceType),
+    __metadata("design:type", String)
+], UpdateProjectDto.prototype, "service_type", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsEnum)(enums_1.PurposeType),
+    __metadata("design:type", String)
+], UpdateProjectDto.prototype, "purpose", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsNumber)(),
+    __metadata("design:type", Number)
+], UpdateProjectDto.prototype, "number_of_floors", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsNumber)(),
+    __metadata("design:type", Number)
+], UpdateProjectDto.prototype, "approximate_area_sqft", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsString)(),
+    __metadata("design:type", String)
+], UpdateProjectDto.prototype, "budget_range", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsEnum)(enums_1.TimelineExpectation),
+    __metadata("design:type", String)
+], UpdateProjectDto.prototype, "timeline_expectation", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsString)(),
+    __metadata("design:type", String)
+], UpdateProjectDto.prototype, "design_preference", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsNumber)(),
+    __metadata("design:type", Number)
+], UpdateProjectDto.prototype, "progress_percentage", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsUUID)(),
+    __metadata("design:type", String)
+], UpdateProjectDto.prototype, "created_by", void 0);
+//# sourceMappingURL=update-project.dto.js.map
