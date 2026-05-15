@@ -1,4 +1,4 @@
-name: Deploy Backend to VPS
+name: Deploy Construction Backend to VPS
 
 on:
   push:
@@ -41,7 +41,7 @@ jobs:
           script: |
             set -e
 
-            cd /root/inventory_inoside_backend
+            cd /root/construction-backend
 
             # Login to GHCR
             echo "${{ secrets.CONSTRUCTION_BACKEND_GHCR_TOKEN }}" | docker login ghcr.io \

@@ -12,7 +12,7 @@ const userRoutes = require("./routes/userRoutes");
 const projectRoutes = require("./routes/projectRoutes");
 const inventoryRoutes = require("./routes/inventoryRoutes");
 const app = express();
-
+/** */
 // Middleware
 app.use(
   cors({

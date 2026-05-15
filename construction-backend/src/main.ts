@@ -20,7 +20,7 @@ async function bootstrap() {
     allowedHeaders: ['Content-Type', 'Authorization'],
     credentials: true,
   });
-
+  /** */
   // Global Validation
   app.useGlobalPipes(
     new ValidationPipe({
