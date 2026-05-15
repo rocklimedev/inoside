@@ -3,7 +3,8 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { Menu, Bell, Search, Plus } from "lucide-react";
-
+import { X } from "lucide-react";
+import Link from "next/link";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import {
   DropdownMenu,
@@ -173,9 +174,11 @@ export default function DashboardLayout({ children }) {
                     </p>
                   </div>
                   <DropdownMenuSeparator />
-                  <DropdownMenuItem>
-                    <Settings className="w-4 h-4 mr-2" />
-                    Settings
+                  <DropdownMenuItem asChild>
+                    <Link href="/settings">
+                      <Settings className="w-4 h-4 mr-2" />
+                      Settings
+                    </Link>
                   </DropdownMenuItem>
                   <DropdownMenuItem
                     onClick={handleLogout}

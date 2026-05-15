@@ -313,9 +313,6 @@ export default function VendorsPage() {
       {/* Add & Profile Modals - unchanged */}
       <Dialog open={showAdd} onOpenChange={setShowAdd}>
         <DialogContent className="max-w-2xl rounded-2xl border-0 p-0 shadow-2xl">
-          <DialogHeader className="border-b px-6 py-4">
-            <DialogTitle className="text-lg font-bold">Add Vendor</DialogTitle>
-          </DialogHeader>
           <div className="p-6">
             <AddVendorForm
               vendorTypeId={null}

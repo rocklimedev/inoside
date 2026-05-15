@@ -2,13 +2,15 @@ import { API_URL } from "@/lib";
 import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
 
 const baseQuery = fetchBaseQuery({
-  baseUrl: `${API_URL}`, // change to your backend URL
+  baseUrl: API_URL,
 
   prepareHeaders: (headers) => {
-    const token = localStorage.getItem("access_token");
+    if (typeof window !== "undefined") {
+      const token = localStorage.getItem("access_token");
 
-    if (token) {
-      headers.set("authorization", `Bearer ${token}`);
+      if (token) {
+        headers.set("Authorization", `Bearer ${token}`);
+      }
     }
 
     headers.set("Content-Type", "application/json");
@@ -19,7 +21,9 @@ const baseQuery = fetchBaseQuery({
 
 export const baseApi = createApi({
   reducerPath: "api",
+
   baseQuery,
+
   tagTypes: [
     "Users",
     "User",
@@ -32,6 +36,8 @@ export const baseApi = createApi({
     "Permissions",
     "Auth",
     "BoqCategory",
+    "VendorsTypes",
   ],
+
   endpoints: () => ({}),
 });

@@ -1,0 +1,13 @@
+version: '3.9'
+
+services:
+  backend:
+    image: ghcr.io/rocklimedev/inoside-construction-backend:latest
+    container_name: construction-backend
+    restart: always
+
+    ports:
+      - '5000:5000'
+
+    environment:
+      NODE_ENV: production

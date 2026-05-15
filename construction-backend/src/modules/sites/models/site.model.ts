@@ -19,6 +19,8 @@ import { Project } from '../../projects/models/project.model';
 @Table({
   tableName: 'sites',
   timestamps: true,
+  createdAt: 'created_at',
+  updatedAt: 'updated_at',
 })
 export class Site extends Model<
   InferAttributes<Site>,

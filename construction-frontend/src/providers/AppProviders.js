@@ -9,7 +9,10 @@ export default function AppProviders({ children }) {
   const pathname = usePathname();
 
   const isAuthPage =
-    pathname.startsWith("/login") || pathname.startsWith("/register");
+    pathname.startsWith("/404") ||
+    pathname.startsWith("/login") ||
+    pathname.startsWith("/register") ||
+    pathname === "/not-found";
 
   return (
     <ReduxProvider>
