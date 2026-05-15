@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { Suspense, useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
@@ -12,7 +12,7 @@ import AppearanceTab from "@/components/settings/AppearanceTab";
 
 const VALID_TABS = ["profile", "security", "notifications", "appearance"];
 
-export default function SettingsPage() {
+function SettingsContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
 
@@ -21,24 +21,25 @@ export default function SettingsPage() {
 
   const [tab, setTab] = useState(initialTab);
 
-  // sync state -> URL
-  const handleTabChange = (value) => {
-    setTab(value);
-    router.replace(`?tab=${value}`, { scroll: false });
-  };
-
-  // sync URL -> state (back/forward navigation support)
+  // sync URL -> state
   useEffect(() => {
     if (urlTab && VALID_TABS.includes(urlTab)) {
       setTab(urlTab);
     }
   }, [urlTab]);
 
+  // sync state -> URL
+  const handleTabChange = (value) => {
+    setTab(value);
+    router.replace(`?tab=${value}`, { scroll: false });
+  };
+
   return (
     <div className="flex flex-col h-full">
       {/* Header */}
       <div className="p-4 md:p-6 border-b bg-white">
         <h1 className="text-xl font-black">Settings</h1>
+
         <p className="text-xs text-gray-400 mt-1">
           Manage your account and system preferences
         </p>
@@ -51,8 +52,11 @@ export default function SettingsPage() {
       >
         <TabsList className="mx-4 mt-4 w-fit bg-gray-100">
           <TabsTrigger value="profile">Profile</TabsTrigger>
+
           <TabsTrigger value="security">Security</TabsTrigger>
+
           <TabsTrigger value="notifications">Notifications</TabsTrigger>
+
           <TabsTrigger value="appearance">Appearance</TabsTrigger>
         </TabsList>
 
@@ -73,5 +77,13 @@ export default function SettingsPage() {
         </TabsContent>
       </Tabs>
     </div>
+  );
+}
+
+export default function SettingsPage() {
+  return (
+    <Suspense fallback={<div className="p-6">Loading...</div>}>
+      <SettingsContent />
+    </Suspense>
   );
 }
