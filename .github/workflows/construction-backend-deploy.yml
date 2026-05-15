@@ -41,7 +41,7 @@ jobs:
           script: |
             set -e
 
-            cd /root/construction-backend
+            cd /root/constrcution-backend
 
             # Login to GHCR
             echo "${{ secrets.CONSTRUCTION_BACKEND_GHCR_TOKEN }}" | docker login ghcr.io \
