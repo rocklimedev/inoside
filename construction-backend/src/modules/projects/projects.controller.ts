@@ -83,7 +83,22 @@ export class ProjectsController {
   updateBrief(@Param('id') id: string, @Body() dto: any) {
     return this.projectsService.updateBrief(id, dto);
   }
+  // =================================================
+  // 🧠 GET ALL BRIEFS
+  // =================================================
 
+  @Get('briefs/all')
+  getAllBriefs() {
+    return this.projectsService.getAllBriefs();
+  }
+  // =================================================
+  // 🧠 GET BRIEF BY BRIEF ID
+  // =================================================
+
+  @Get('briefs/:briefId')
+  getBriefById(@Param('briefId') briefId: string) {
+    return this.projectsService.getBriefById(briefId);
+  }
   // =================================================
   // 🎨 PROJECT PITCH
   // =================================================

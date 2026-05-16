@@ -208,7 +208,55 @@ export class ProjectsService {
 
     return this.getPitch(project_id);
   }
+  // =================================================
+  // 🧠 GET ALL BRIEFS
+  // =================================================
+  async getAllBriefs() {
+    return this.briefModel.findAll({
+      include: [
+        {
+          model: Project,
+          attributes: ['id', 'name', 'status'],
+          include: [
+            {
+              model: Client,
+              attributes: ['id', 'name', 'email', 'contact_number'],
+            },
+          ],
+        },
+      ],
+      order: [['created_at', 'DESC']],
+    });
+  }
+  // =================================================
+  // 🧠 GET BRIEF BY BRIEF ID
+  // =================================================
+  async getBriefById(id: string) {
+    const brief = await this.briefModel.findByPk(id, {
+      include: [
+        {
+          model: Project,
+          attributes: ['id', 'name', 'status'],
+          include: [
+            {
+              model: Client,
+              attributes: ['id', 'name', 'email', 'contact_number'],
+            },
+            {
+              model: Site,
+              attributes: ['id', 'address', 'city'],
+            },
+          ],
+        },
+      ],
+    });
 
+    if (!brief) {
+      throw new NotFoundException(`Brief with ID ${id} not found`);
+    }
+
+    return brief;
+  }
   // =================================================
   // 🧩 PITCH REFERENCES
   // =================================================

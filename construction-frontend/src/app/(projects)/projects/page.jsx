@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { toast } from "sonner";
 import {
   useGetProjectsQuery,
@@ -9,7 +9,6 @@ import {
 
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Progress } from "@/components/ui/progress";
 import { Button } from "@/components/ui/button";
 import {
   Select,
@@ -18,12 +17,6 @@ import {
   SelectItem,
   SelectValue,
 } from "@/components/ui/select";
-import {
-  Sheet,
-  SheetContent,
-  SheetHeader,
-  SheetTitle,
-} from "@/components/ui/sheet";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
 
@@ -35,9 +28,9 @@ import {
   List,
   GanttChart,
   Plus,
-  ArrowUpRight,
   X,
   Loader2,
+  Trash2,
 } from "lucide-react";
 
 import { CreateProjectModal } from "@/components/projects/CreateProjectModal";
@@ -87,6 +80,9 @@ export default function ProjectsPage() {
   const [sortBy, setSortBy] = useState("stage");
   const [selectedProject, setSelectedProject] = useState(null);
   const [showCreateModal, setShowCreateModal] = useState(false);
+
+  // Bulk selection
+  const [selectedIds, setSelectedIds] = useState([]);
 
   const { data: projects = [], isLoading, error } = useGetProjectsQuery();
   const [deleteProject] = useDeleteProjectMutation();
@@ -146,6 +142,35 @@ export default function ProjectsPage() {
     return result;
   }, [mappedProjects, search, filters, sortBy]);
 
+  // Bulk selection helpers
+  const toggleSelect = (id) => {
+    setSelectedIds((prev) =>
+      prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id],
+    );
+  };
+
+  const toggleSelectAll = () => {
+    if (selectedIds.length === filteredProjects.length) {
+      setSelectedIds([]);
+    } else {
+      setSelectedIds(filteredProjects.map((p) => p.id));
+    }
+  };
+
+  const clearSelection = () => setSelectedIds([]);
+
+  const handleBulkDelete = async () => {
+    if (!confirm(`Delete ${selectedIds.length} projects?`)) return;
+
+    try {
+      await Promise.all(selectedIds.map((id) => deleteProject(id).unwrap()));
+      toast.success(`${selectedIds.length} projects deleted successfully`);
+      clearSelection();
+    } catch (err) {
+      toast.error(err?.data?.message || "Failed to delete projects");
+    }
+  };
+
   const handleDelete = async (id) => {
     if (!confirm("Are you sure you want to delete this project?")) return;
     try {
@@ -169,6 +194,27 @@ export default function ProjectsPage() {
   const clearFilters = () => {
     setFilters({ stages: [], types: [], statuses: [] });
   };
+
+  // Keyboard shortcuts
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (e.key === "/" && !showCreateModal) {
+        e.preventDefault();
+        const searchInput = document.querySelector(
+          'input[placeholder="Search projects..."]',
+        );
+        searchInput?.focus();
+      }
+
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "n") {
+        e.preventDefault();
+        setShowCreateModal(true);
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [showCreateModal]);
 
   if (isLoading) {
     return (
@@ -250,7 +296,7 @@ export default function ProjectsPage() {
                 <Search className="w-4 h-4 text-gray-400" />
                 <input
                   type="text"
-                  placeholder="Search projects..."
+                  placeholder="Search projects... (Press /)"
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
                   className="bg-transparent text-sm outline-none w-full"
@@ -259,6 +305,25 @@ export default function ProjectsPage() {
             </div>
 
             <div className="flex items-center gap-3">
+              {selectedIds.length > 0 && (
+                <div className="flex items-center gap-2 bg-white border rounded-xl px-4 py-1.5">
+                  <span className="text-sm font-medium text-gray-700">
+                    {selectedIds.length} selected
+                  </span>
+                  <Button
+                    variant="destructive"
+                    size="sm"
+                    onClick={handleBulkDelete}
+                  >
+                    <Trash2 className="w-4 h-4 mr-1" />
+                    Delete
+                  </Button>
+                  <Button variant="outline" size="sm" onClick={clearSelection}>
+                    Cancel
+                  </Button>
+                </div>
+              )}
+
               <Button
                 variant="outline"
                 onClick={() => setShowFilters(!showFilters)}
@@ -316,12 +381,18 @@ export default function ProjectsPage() {
               <GridView
                 projects={filteredProjects}
                 onSelect={setSelectedProject}
+                selectedIds={selectedIds}
+                onToggleSelect={toggleSelect}
+                onToggleSelectAll={toggleSelectAll}
               />
             )}
             {viewMode === "list" && (
               <ListView
                 projects={filteredProjects}
                 onSelect={setSelectedProject}
+                selectedIds={selectedIds}
+                onToggleSelect={toggleSelect}
+                onToggleSelectAll={toggleSelectAll}
               />
             )}
             {viewMode === "timeline" && (
@@ -334,7 +405,7 @@ export default function ProjectsPage() {
         </ScrollArea>
       </div>
 
-      {/* Modals */}
+      {/* Modals & Sheets */}
       <CreateProjectModal
         open={showCreateModal}
         onClose={() => setShowCreateModal(false)}

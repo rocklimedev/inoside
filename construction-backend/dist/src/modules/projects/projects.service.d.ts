@@ -40,6 +40,8 @@ export declare class ProjectsService {
     createPitch(dto: any): Promise<ProjectPitch>;
     getPitch(project_id: string): Promise<ProjectPitch>;
     updatePitch(project_id: string, dto: any): Promise<ProjectPitch>;
+    getAllBriefs(): Promise<ProjectBrief[]>;
+    getBriefById(id: string): Promise<ProjectBrief>;
     addPitchReference(dto: any): Promise<PitchReference>;
     getPitchReferences(project_id: string): Promise<PitchReference[]>;
     deletePitchReference(id: string): Promise<number>;

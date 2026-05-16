@@ -67,7 +67,22 @@ export const projectsApi = baseApi.injectEndpoints({
     getBrief: builder.query({
       query: (projectId) => `/projects/${projectId}/brief`,
     }),
+    // =================================================
+    // 📄 GET ALL BRIEFS
+    // =================================================
 
+    getAllBriefs: builder.query({
+      query: () => "/projects/briefs/all",
+      providesTags: ["Projects"],
+    }),
+    // =================================================
+    // 📄 GET BRIEF BY BRIEF ID
+    // =================================================
+
+    getBriefById: builder.query({
+      query: (briefId) => `/projects/briefs/${briefId}`,
+      providesTags: ["Projects"],
+    }),
     updateBrief: builder.mutation({
       query: ({ projectId, ...body }) => ({
         url: `/projects/${projectId}/brief`,
@@ -311,9 +326,23 @@ export const projectsApi = baseApi.injectEndpoints({
       }),
       invalidatesTags: ["Projects"],
     }),
-  }),
+    archiveProject: builder.mutation({
+      query: (id) => ({
+        url: `/projects/${id}/archive`,
+        method: "POST",
+      }),
+      invalidatesTags: ["Projects"],
+    }),
 
-  overrideExisting: false,
+    restoreProject: builder.mutation({
+      query: (id) => ({
+        url: `/projects/${id}/restore`,
+        method: "POST",
+      }),
+      invalidatesTags: ["Projects"],
+    }),
+  }),
+  overrideExisting: true,
 });
 
 export const {
@@ -331,7 +360,9 @@ export const {
   useCreateBriefMutation,
   useGetBriefQuery,
   useUpdateBriefMutation,
-
+  useArchiveProjectMutation,
+  useRestoreProjectMutation,
+  useGetBriefByIdQuery,
   // pitch
   useCreatePitchMutation,
   useGetPitchQuery,
@@ -356,7 +387,7 @@ export const {
   useCreateScopeMutation,
   useGetScopeQuery,
   useUpdateScopeMutation,
-
+  useGetAllBriefsQuery,
   // cost
   useAddCostEstimateMutation,
   useGetCostEstimatesQuery,

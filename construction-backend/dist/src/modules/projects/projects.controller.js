@@ -55,6 +55,12 @@ let ProjectsController = class ProjectsController {
     updateBrief(id, dto) {
         return this.projectsService.updateBrief(id, dto);
     }
+    getAllBriefs() {
+        return this.projectsService.getAllBriefs();
+    }
+    getBriefById(briefId) {
+        return this.projectsService.getBriefById(briefId);
+    }
     createPitch(id, dto) {
         return this.projectsService.createPitch({
             ...dto,
@@ -222,6 +228,19 @@ __decorate([
     __metadata("design:paramtypes", [String, Object]),
     __metadata("design:returntype", void 0)
 ], ProjectsController.prototype, "updateBrief", null);
+__decorate([
+    (0, common_1.Get)('briefs/all'),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", []),
+    __metadata("design:returntype", void 0)
+], ProjectsController.prototype, "getAllBriefs", null);
+__decorate([
+    (0, common_1.Get)('briefs/:briefId'),
+    __param(0, (0, common_1.Param)('briefId')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String]),
+    __metadata("design:returntype", void 0)
+], ProjectsController.prototype, "getBriefById", null);
 __decorate([
     (0, common_1.Post)(':id/pitch'),
     __param(0, (0, common_1.Param)('id')),

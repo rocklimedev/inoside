@@ -13,6 +13,9 @@ exports.AppModule = void 0;
 const common_1 = require("@nestjs/common");
 const config_1 = require("@nestjs/config");
 const sequelize_1 = require("@nestjs/sequelize");
+const throttler_1 = require("@nestjs/throttler");
+const core_1 = require("@nestjs/core");
+const throttler_2 = require("@nestjs/throttler");
 const auth_module_1 = require("./modules/auth/auth.module");
 const users_module_1 = require("./modules/users/users.module");
 const rbac_module_1 = require("./modules/rbac/rbac.module");
@@ -33,6 +36,12 @@ exports.AppModule = AppModule = __decorate([
                 isGlobal: true,
                 envFilePath: `.env.${process.env.NODE_ENV || 'development'}`,
             }),
+            throttler_1.ThrottlerModule.forRoot([
+                {
+                    ttl: 60,
+                    limit: 100,
+                },
+            ]),
             sequelize_1.SequelizeModule.forRootAsync({
                 imports: [config_1.ConfigModule],
                 inject: [config_1.ConfigService],
@@ -47,6 +56,12 @@ exports.AppModule = AppModule = __decorate([
             sites_module_1.SitesModule,
             vendors_module_1.VendorsModule,
             inventory_module_1.InventoryModule,
+        ],
+        providers: [
+            {
+                provide: core_1.APP_GUARD,
+                useClass: throttler_2.ThrottlerGuard,
+            },
         ],
     })
 ], AppModule);

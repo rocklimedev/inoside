@@ -15,6 +15,8 @@ export declare class ProjectsController {
     createBrief(id: string, dto: any): Promise<import("./models/project_brief.model").ProjectBrief>;
     getBrief(id: string): Promise<import("./models/project_brief.model").ProjectBrief>;
     updateBrief(id: string, dto: any): Promise<import("./models/project_brief.model").ProjectBrief>;
+    getAllBriefs(): Promise<import("./models/project_brief.model").ProjectBrief[]>;
+    getBriefById(briefId: string): Promise<import("./models/project_brief.model").ProjectBrief>;
     createPitch(id: string, dto: any): Promise<import("./models/project_pitch.model").ProjectPitch>;
     getPitch(id: string): Promise<import("./models/project_pitch.model").ProjectPitch>;
     updatePitch(id: string, dto: any): Promise<import("./models/project_pitch.model").ProjectPitch>;

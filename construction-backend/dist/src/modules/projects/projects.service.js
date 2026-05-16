@@ -165,6 +165,47 @@ let ProjectsService = class ProjectsService {
         await this.pitchModel.update(dto, { where: { project_id } });
         return this.getPitch(project_id);
     }
+    async getAllBriefs() {
+        return this.briefModel.findAll({
+            include: [
+                {
+                    model: project_model_1.Project,
+                    attributes: ['id', 'name', 'status'],
+                    include: [
+                        {
+                            model: client_model_1.Client,
+                            attributes: ['id', 'name', 'email', 'contact_number'],
+                        },
+                    ],
+                },
+            ],
+            order: [['created_at', 'DESC']],
+        });
+    }
+    async getBriefById(id) {
+        const brief = await this.briefModel.findByPk(id, {
+            include: [
+                {
+                    model: project_model_1.Project,
+                    attributes: ['id', 'name', 'status'],
+                    include: [
+                        {
+                            model: client_model_1.Client,
+                            attributes: ['id', 'name', 'email', 'contact_number'],
+                        },
+                        {
+                            model: site_model_1.Site,
+                            attributes: ['id', 'address', 'city'],
+                        },
+                    ],
+                },
+            ],
+        });
+        if (!brief) {
+            throw new common_1.NotFoundException(`Brief with ID ${id} not found`);
+        }
+        return brief;
+    }
     async addPitchReference(dto) {
         await this.findOne(dto.project_id);
         return this.pitchRefModel.create(dto);

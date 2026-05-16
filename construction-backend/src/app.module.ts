@@ -1,6 +1,9 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { SequelizeModule } from '@nestjs/sequelize';
+import { ThrottlerModule } from '@nestjs/throttler';
+import { APP_GUARD } from '@nestjs/core';
+import { ThrottlerGuard } from '@nestjs/throttler';
 
 // Modules
 import { AuthModule } from './modules/auth/auth.module';
@@ -13,25 +16,29 @@ import { VendorsModule } from './modules/vendors/vendors.module';
 import { ClientsModule } from './modules/clients/client.module';
 import { SitesModule } from './modules/sites/sites.module';
 
-// Database Config
 import databaseConfig from './config/database.config';
 
 @Module({
   imports: [
-    // Global Configuration
     ConfigModule.forRoot({
       isGlobal: true,
       envFilePath: `.env.${process.env.NODE_ENV || 'development'}`,
     }),
 
-    // Sequelize Database Connection
+    // RATE LIMITING
+    ThrottlerModule.forRoot([
+      {
+        ttl: 60,
+        limit: 100,
+      },
+    ]),
+
     SequelizeModule.forRootAsync({
       imports: [ConfigModule],
       inject: [ConfigService],
       useFactory: databaseConfig,
     }),
 
-    // Feature Modules
     AuthModule,
     UsersModule,
     RbacModule,
@@ -41,6 +48,14 @@ import databaseConfig from './config/database.config';
     SitesModule,
     VendorsModule,
     InventoryModule,
+  ],
+
+  // 🔥 GLOBAL GUARD (THIS ENABLES RATE LIMITING)
+  providers: [
+    {
+      provide: APP_GUARD,
+      useClass: ThrottlerGuard,
+    },
   ],
 })
 export class AppModule {}

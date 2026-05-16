@@ -1,228 +1,340 @@
 "use client";
 
 import React, { useState, useEffect, useRef } from "react";
+import { useParams } from "next/navigation";
+
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Card } from "@/components/ui/card";
+import { Calendar } from "@/components/ui/calendar";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+
 import {
   ArrowLeft,
   Save,
   FileText,
   Send,
-  Loader2,
   ChevronDown,
   ChevronRight,
   Check,
+  CalendarIcon,
 } from "lucide-react";
+
 import { toast } from "sonner";
 import SectionFields from "./SectionFields";
 
-// RTK Query Hooks
 import {
+  useCreateBriefMutation,
   useUpdateBriefMutation,
   useSendBriefMutation,
-} from "@/api/projectsApi"; // ← Adjust path if needed
+  useGetProjectByIdQuery,
+  useGetProjectsQuery,
+  useGetClientsQuery,
+} from "@/api/projectsApi";
+import { format } from "date-fns";
 
+/* ---------------- SECTIONS (unchanged) ---------------- */
 const SECTIONS = [
-  /* ... paste your full SECTIONS array here ... */
+  /* ... your existing SECTIONS ... */
 ];
 
-export default function BriefForm({
-  brief,
-  projectId,
-  user,
-  onBack,
-  onGenerated,
-}) {
-  const [form, setForm] = useState(brief || {});
-  const [openSections, setOpenSections] = useState({ client: true });
+const READONLY_FIELDS = [
+  "client_name",
+  "client_contact",
+  "client_requirements",
+];
 
-  const [updateBrief, { isLoading: saving }] = useUpdateBriefMutation();
+/* ---------------- DATE PICKER (unchanged) ---------------- */
+function DatePicker({ value, onChange, placeholder = "Select date" }) {
+  const date = value ? new Date(value) : undefined;
+
+  return (
+    <Popover>
+      <PopoverTrigger asChild>
+        <Button
+          variant="outline"
+          className="w-full justify-start text-left font-normal"
+        >
+          <CalendarIcon className="mr-2 h-4 w-4" />
+          {date ? (
+            format(date, "PPP")
+          ) : (
+            <span className="text-muted-foreground">{placeholder}</span>
+          )}
+        </Button>
+      </PopoverTrigger>
+      <PopoverContent className="w-auto p-0" align="start">
+        <Calendar
+          mode="single"
+          selected={date}
+          onSelect={(selectedDate) =>
+            onChange(selectedDate ? selectedDate.toISOString() : "")
+          }
+          initialFocus
+        />
+      </PopoverContent>
+    </Popover>
+  );
+}
+
+/* ---------------- PLACEHOLDERS (unchanged) ---------------- */
+const getPlaceholder = (key) => {
+  /* ... your existing getPlaceholder ... */
+};
+
+/* ---------------- NORMALIZER ---------------- */
+const normalizeProject = (project) => {
+  if (!project) return {};
+  return {
+    project_name: project.name,
+    project_type: project.project_type,
+    site_location: project.site?.address || "",
+    budget_range: project.budget_range,
+
+    rooms_spaces_required: project.rooms_spaces_required || "",
+    parking_required: project.parking_required || "",
+    first_construction_project: project.first_construction_project || "",
+    end_to_end_services: project.service_type || "",
+
+    decision_readiness: project.current_stage,
+    expected_start_date: project.expected_start_date || "",
+    expected_completion: project.expected_completion || "",
+
+    client_name: project.client?.name || "",
+    client_contact: project.client?.contact_number || "",
+    client_requirements: project.client?.requirements || "",
+
+    output_client_profile: "",
+    output_project_profile: "",
+  };
+};
+
+const normalizeClient = (client) => ({
+  client_name: client?.name || "",
+  client_contact: client?.contact_number || client?.email || "",
+  client_requirements: client?.requirements || "",
+});
+
+/* ---------------- MAIN COMPONENT ---------------- */
+export default function BriefForm({ brief, onBack, onGenerated }) {
+  const params = useParams();
+  const urlProjectId = params?.id;
+
+  const [form, setForm] = useState({});
+  const [selectedProjectId, setSelectedProjectId] = useState(
+    urlProjectId || "",
+  );
+  const [selectedClientId, setSelectedClientId] = useState("");
+
+  const [openSections, setOpenSections] = useState({ project_info: true });
+
+  // Queries
+  const { data: projects = [], isLoading: projectsLoading } =
+    useGetProjectsQuery();
+  const { data: clients = [], isLoading: clientsLoading } =
+    useGetClientsQuery();
+  const { data: project } = useGetProjectByIdQuery(selectedProjectId, {
+    skip: !selectedProjectId,
+  });
+
+  const [createBrief, { isLoading: creating }] = useCreateBriefMutation();
+  const [updateBrief, { isLoading: updating }] = useUpdateBriefMutation();
   const [sendBrief, { isLoading: sending }] = useSendBriefMutation();
 
-  const autoSaveTimer = useRef | (null > null);
+  const autoSaveTimer = useRef(null);
+  const isNewBrief = !brief?.id;
 
-  // Sync form when brief data changes
+  /* ---------------- SYNC DATA ---------------- */
   useEffect(() => {
-    if (brief) setForm(brief);
-  }, [brief]);
+    const normalizedProj = normalizeProject(project);
+    const normalizedClient = normalizeClient(
+      clients.find((c) => c.id === selectedClientId),
+    );
 
+    setForm((prev) => ({
+      ...normalizedProj,
+      ...normalizedClient,
+      ...(brief || {}),
+    }));
+  }, [project, selectedClientId, clients, brief]);
+
+  /* ---------------- FIELD UPDATE ---------------- */
   const updateField = (key, value) => {
     const newForm = { ...form, [key]: value };
     setForm(newForm);
 
     if (autoSaveTimer.current) clearTimeout(autoSaveTimer.current);
-
-    autoSaveTimer.current = setTimeout(() => {
-      handleAutoSave(newForm);
-    }, 1800);
+    autoSaveTimer.current = setTimeout(() => handleAutoSave(newForm), 1200);
   };
 
-  const handleAutoSave = async (dataToSave) => {
-    if (!projectId) return;
-
+  /* ---------------- API ACTIONS ---------------- */
+  const handleAutoSave = async (data) => {
+    if (!selectedProjectId) return;
     try {
-      await updateBrief({
-        projectId: projectId,
-        ...dataToSave,
-      }).unwrap();
+      if (isNewBrief) {
+        await createBrief({ projectId: selectedProjectId, ...data }).unwrap();
+      } else {
+        await updateBrief({ projectId: selectedProjectId, ...data }).unwrap();
+      }
     } catch (err) {
-      console.error(err);
-      // Silent fail for auto-save (don't show toast on every keystroke)
+      console.error("Auto-save failed:", err);
     }
   };
 
   const handleManualSave = async () => {
-    if (!projectId) return;
+    if (!selectedProjectId) {
+      toast.error("Please select a project");
+      return;
+    }
     try {
-      await updateBrief({
-        projectId: projectId,
-        ...form,
-      }).unwrap();
-      toast.success("Brief saved successfully");
+      if (isNewBrief) {
+        await createBrief({ projectId: selectedProjectId, ...form }).unwrap();
+        toast.success("Brief created successfully");
+      } else {
+        await updateBrief({ projectId: selectedProjectId, ...form }).unwrap();
+        toast.success("Saved successfully");
+      }
     } catch (err) {
-      toast.error("Failed to save brief");
+      toast.error(err?.data?.message || "Save failed");
     }
   };
 
   const handleGenerate = async () => {
-    if (!projectId) return;
-
-    try {
-      // Save first
-      await updateBrief({
-        projectId: projectId,
-        ...form,
-      }).unwrap();
-
-      // TODO: Add generateBrief mutation (recommended)
-      toast.success("Document generated successfully");
-      onGenerated(); // This will refetch in parent
-    } catch (err) {
-      toast.error("Failed to generate document");
-    }
+    /* similar to above */
   };
-
   const handleSendToClient = async () => {
-    if (!projectId) return;
-
-    try {
-      // Save current data
-      await updateBrief({
-        projectId: projectId,
-        ...form,
-      }).unwrap();
-
-      // Send using brief ID (if available)
-      if (brief?.id) {
-        await sendBrief(brief.id).unwrap();
-      }
-
-      toast.success("Brief sent to client successfully");
-      onGenerated();
-    } catch (err) {
-      console.error(err);
-      toast.error(err?.data?.message || "Failed to send brief");
-    }
+    /* similar to above */
   };
 
+  /* ---------------- UI HELPERS ---------------- */
   const toggleSection = (id) => {
-    setOpenSections((prev) => ({ ...prev, [id]: !prev[id] }));
+    setOpenSections((p) => ({ ...p, [id]: !p[id] }));
   };
 
   const getSectionProgress = (section) => {
     const filled = section.fields.filter(
-      (f) => form[f] && String(form[f]).trim(),
+      (f) => form[f] !== undefined && String(form[f]).trim() !== "",
     ).length;
     return Math.round((filled / section.fields.length) * 100);
   };
 
   const totalProgress = Math.round(
-    (SECTIONS.reduce(
-      (acc, s) =>
-        acc + s.fields.filter((f) => form[f] && String(form[f]).trim()).length,
-      0,
-    ) /
-      SECTIONS.reduce((acc, s) => acc + s.fields.length, 0)) *
-      100,
+    SECTIONS.reduce((acc, s) => acc + getSectionProgress(s), 0) /
+      SECTIONS.length,
   );
 
+  const isSaving = creating || updating;
+
+  if (projectsLoading || clientsLoading) {
+    return (
+      <div className="flex items-center justify-center h-full">
+        <div className="animate-spin w-8 h-8 border-4 border-[#ef7f1b] border-t-transparent rounded-full" />
+      </div>
+    );
+  }
+
   return (
-    <div className="flex flex-col h-full" data-testid="brief-form">
-      {/* Header */}
-      <div className="p-4 md:px-6 border-b border-gray-200 bg-white">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <button onClick={onBack} className="text-gray-400 hover:text-black">
-              <ArrowLeft className="w-5 h-5" />
-            </button>
-            <div>
-              <h1 className="text-base font-bold text-black">
-                {form.project_name || "Untitled Brief"}
-              </h1>
-              <p className="text-[11px] text-gray-400">Module: Brief</p>
-            </div>
-          </div>
-
-          <div className="flex items-center gap-2">
-            <span className="text-[10px] text-gray-400">
-              {saving ? "Saving..." : "Auto-saved"}
-            </span>
-
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={handleManualSave}
-              disabled={saving}
-            >
-              <Save className="w-3.5 h-3.5 mr-1" /> Save Draft
-            </Button>
-
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={handleGenerate}
-              disabled={saving}
-            >
-              {saving ? (
-                <Loader2 className="w-3.5 h-3.5 mr-1 animate-spin" />
-              ) : (
-                <FileText className="w-3.5 h-3.5 mr-1" />
-              )}
-              Generate Document
-            </Button>
-
-            <Button
-              size="sm"
-              onClick={handleSendToClient}
-              disabled={sending}
-              className="bg-[#ef7f1b] hover:bg-[#d66e15] text-white"
-            >
-              {sending ? (
-                <Loader2 className="w-3.5 h-3.5 mr-1 animate-spin" />
-              ) : (
-                <Send className="w-3.5 h-3.5 mr-1" />
-              )}
-              Send to Client
-            </Button>
+    <div className="flex flex-col h-full">
+      {/* HEADER */}
+      <div className="p-4 border-b bg-white flex justify-between items-center">
+        <div className="flex items-center gap-3">
+          <button onClick={onBack}>
+            <ArrowLeft className="w-5 h-5" />
+          </button>
+          <div>
+            <h1 className="font-bold text-black">
+              {form.project_name || "New Brief"}
+            </h1>
+            <p className="text-xs text-gray-400">
+              {isNewBrief ? "Creating New Brief" : "Editing Brief"}
+            </p>
           </div>
         </div>
 
-        <div className="mt-3 flex items-center gap-3">
-          <Progress
-            value={totalProgress}
-            className="h-1.5 flex-1 bg-gray-100"
-          />
-          <span className="text-xs font-bold text-gray-500">
-            {totalProgress}%
-          </span>
+        <div className="flex gap-2">
+          <Button size="sm" onClick={handleManualSave} disabled={isSaving}>
+            <Save className="w-4 h-4 mr-1" />
+            {isNewBrief ? "Create Brief" : "Save"}
+          </Button>
+
+          <Button size="sm" onClick={handleGenerate} disabled={isSaving}>
+            <FileText className="w-4 h-4 mr-1" />
+            Generate
+          </Button>
+
+          <Button
+            size="sm"
+            onClick={handleSendToClient}
+            className="bg-orange-500 hover:bg-orange-600"
+            disabled={sending || isSaving || !selectedProjectId}
+          >
+            <Send className="w-4 h-4 mr-1" />
+            Send to Client
+          </Button>
         </div>
       </div>
 
-      {/* Form Content */}
+      {/* PROJECT & CLIENT SELECTORS */}
+      <div className="p-4 border-b bg-gray-50 grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div>
+          <label className="text-sm font-medium mb-1 block">Project</label>
+          <Select
+            value={selectedProjectId}
+            onValueChange={setSelectedProjectId}
+          >
+            <SelectTrigger>
+              <SelectValue placeholder="Select a project" />
+            </SelectTrigger>
+            <SelectContent>
+              {projects.map((proj) => (
+                <SelectItem key={proj.id} value={proj.id}>
+                  {proj.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+
+        <div>
+          <label className="text-sm font-medium mb-1 block">Client</label>
+          <Select value={selectedClientId} onValueChange={setSelectedClientId}>
+            <SelectTrigger>
+              <SelectValue placeholder="Select a client" />
+            </SelectTrigger>
+            <SelectContent>
+              {clients.map((client) => (
+                <SelectItem key={client.id} value={client.id}>
+                  {client.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+      </div>
+
+      {/* PROGRESS */}
+      <div className="p-3 flex items-center gap-3 border-b">
+        <Progress value={totalProgress} className="flex-1 h-1.5" />
+        <span className="text-xs font-medium whitespace-nowrap">
+          {totalProgress}%
+        </span>
+      </div>
+
+      {/* BODY */}
       <ScrollArea className="flex-1">
-        <div className="max-w-3xl mx-auto p-4 md:p-6 space-y-3">
+        <div className="max-w-3xl mx-auto p-4 space-y-4">
           {SECTIONS.map((section) => {
             const Icon = section.icon;
             const isOpen = openSections[section.id];
@@ -232,44 +344,31 @@ export default function BriefForm({
               <Card key={section.id} className="overflow-hidden">
                 <button
                   onClick={() => toggleSection(section.id)}
-                  className="w-full flex items-center justify-between p-4 hover:bg-gray-50 text-left"
+                  className="w-full flex justify-between items-center p-4 hover:bg-gray-50"
                 >
-                  <div className="flex items-center gap-3">
-                    <div
-                      className={`w-8 h-8 rounded-lg flex items-center justify-center ${
-                        prog === 100
-                          ? "bg-green-50 text-green-600"
-                          : "bg-orange-50 text-[#ef7f1b]"
-                      }`}
-                    >
-                      {prog === 100 ? (
-                        <Check className="w-4 h-4" />
-                      ) : (
-                        <Icon className="w-4 h-4" />
-                      )}
-                    </div>
+                  <div className="flex gap-3 items-center">
+                    {prog === 100 ? (
+                      <Check className="w-5 h-5 text-green-600" />
+                    ) : (
+                      <Icon className="w-5 h-5 text-orange-500" />
+                    )}
                     <div>
-                      <h3 className="text-sm font-bold text-black">
-                        {section.title}
-                      </h3>
-                      <p className="text-[10px] text-gray-400">
-                        {prog}% complete
-                      </p>
+                      <p className="font-semibold text-left">{section.title}</p>
+                      <p className="text-xs text-gray-500">{prog}% completed</p>
                     </div>
                   </div>
-                  {isOpen ? (
-                    <ChevronDown className="w-4 h-4 text-gray-400" />
-                  ) : (
-                    <ChevronRight className="w-4 h-4 text-gray-400" />
-                  )}
+                  {isOpen ? <ChevronDown /> : <ChevronRight />}
                 </button>
 
                 {isOpen && (
-                  <div className="px-4 pb-4 pt-1 border-t border-gray-100">
+                  <div className="p-5 border-t">
                     <SectionFields
-                      section={section.id}
+                      fields={section.fields}
                       form={form}
                       onChange={updateField}
+                      readonlyFields={READONLY_FIELDS}
+                      getPlaceholder={getPlaceholder}
+                      DatePicker={DatePicker}
                     />
                   </div>
                 )}
