@@ -32,6 +32,7 @@ export const baseApi = createApi({
     "Boq",
     "Sites",
     "Vendors",
+    "Project",
     "Roles",
     "Permissions",
     "Auth",

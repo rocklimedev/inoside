@@ -26,7 +26,6 @@ export class ClientsController {
 
   @Post()
   @UseGuards(RolesGuard)
-  @Roles('admin', 'project_manager')
   create(@Body() dto: CreateClientDto) {
     return this.clientsService.create(dto);
   }
@@ -49,7 +48,6 @@ export class ClientsController {
 
   @Patch(':id')
   @UseGuards(RolesGuard)
-  @Roles('admin', 'project_manager')
   update(@Param('id') id: string, @Body() dto: UpdateClientDto) {
     return this.clientsService.update(id, dto);
   }

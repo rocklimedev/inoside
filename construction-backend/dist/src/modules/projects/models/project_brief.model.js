@@ -12,17 +12,25 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.ProjectBrief = void 0;
 const sequelize_typescript_1 = require("sequelize-typescript");
 const project_model_1 = require("./project.model");
+const user_model_1 = require("../../users/models/user.model");
 let ProjectBrief = class ProjectBrief extends sequelize_typescript_1.Model {
 };
 exports.ProjectBrief = ProjectBrief;
 __decorate([
     (0, sequelize_typescript_1.Default)(sequelize_typescript_1.DataType.UUIDV4),
-    (0, sequelize_typescript_1.Column)({ type: sequelize_typescript_1.DataType.UUID, primaryKey: true }),
+    (0, sequelize_typescript_1.Column)({
+        type: sequelize_typescript_1.DataType.UUID,
+        primaryKey: true,
+    }),
     __metadata("design:type", Object)
 ], ProjectBrief.prototype, "id", void 0);
 __decorate([
     (0, sequelize_typescript_1.ForeignKey)(() => project_model_1.Project),
-    (0, sequelize_typescript_1.Column)({ type: sequelize_typescript_1.DataType.UUID, allowNull: false, unique: true }),
+    (0, sequelize_typescript_1.Column)({
+        type: sequelize_typescript_1.DataType.UUID,
+        allowNull: false,
+        unique: true,
+    }),
     __metadata("design:type", String)
 ], ProjectBrief.prototype, "project_id", void 0);
 __decorate([
@@ -54,9 +62,72 @@ __decorate([
     __metadata("design:type", Object)
 ], ProjectBrief.prototype, "output_project_profile", void 0);
 __decorate([
+    (0, sequelize_typescript_1.Default)('Pending'),
+    (0, sequelize_typescript_1.Column)({
+        type: sequelize_typescript_1.DataType.STRING(50),
+        allowNull: false,
+        defaultValue: 'Pending',
+    }),
+    __metadata("design:type", Object)
+], ProjectBrief.prototype, "status", void 0);
+__decorate([
+    (0, sequelize_typescript_1.Default)(false),
+    (0, sequelize_typescript_1.Column)({
+        type: sequelize_typescript_1.DataType.BOOLEAN,
+        allowNull: false,
+        defaultValue: false,
+    }),
+    __metadata("design:type", Object)
+], ProjectBrief.prototype, "is_approved", void 0);
+__decorate([
+    (0, sequelize_typescript_1.ForeignKey)(() => user_model_1.User),
+    (0, sequelize_typescript_1.Column)({
+        type: sequelize_typescript_1.DataType.UUID,
+        allowNull: true,
+    }),
+    __metadata("design:type", Object)
+], ProjectBrief.prototype, "approved_by", void 0);
+__decorate([
+    (0, sequelize_typescript_1.Column)({
+        type: sequelize_typescript_1.DataType.DATE,
+        allowNull: true,
+    }),
+    __metadata("design:type", Object)
+], ProjectBrief.prototype, "approved_at", void 0);
+__decorate([
+    (0, sequelize_typescript_1.Column)({
+        type: sequelize_typescript_1.DataType.TEXT,
+        allowNull: true,
+    }),
+    __metadata("design:type", Object)
+], ProjectBrief.prototype, "changes_note", void 0);
+__decorate([
+    (0, sequelize_typescript_1.ForeignKey)(() => user_model_1.User),
+    (0, sequelize_typescript_1.Column)({
+        type: sequelize_typescript_1.DataType.UUID,
+        allowNull: true,
+    }),
+    __metadata("design:type", Object)
+], ProjectBrief.prototype, "changes_requested_by", void 0);
+__decorate([
+    (0, sequelize_typescript_1.Column)({
+        type: sequelize_typescript_1.DataType.DATE,
+        allowNull: true,
+    }),
+    __metadata("design:type", Object)
+], ProjectBrief.prototype, "changes_requested_at", void 0);
+__decorate([
     (0, sequelize_typescript_1.BelongsTo)(() => project_model_1.Project),
     __metadata("design:type", Object)
 ], ProjectBrief.prototype, "project", void 0);
+__decorate([
+    (0, sequelize_typescript_1.BelongsTo)(() => user_model_1.User, 'approved_by'),
+    __metadata("design:type", Object)
+], ProjectBrief.prototype, "approvedByUser", void 0);
+__decorate([
+    (0, sequelize_typescript_1.BelongsTo)(() => user_model_1.User, 'changes_requested_by'),
+    __metadata("design:type", Object)
+], ProjectBrief.prototype, "changesRequestedByUser", void 0);
 exports.ProjectBrief = ProjectBrief = __decorate([
     (0, sequelize_typescript_1.Table)({
         tableName: 'project_brief',

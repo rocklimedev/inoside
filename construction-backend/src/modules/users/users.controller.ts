@@ -27,7 +27,6 @@ export class UsersController {
 
   @Post()
   @UseGuards(RolesGuard)
-  @Roles('admin')
   create(@Body() dto: CreateUserDto) {
     return this.usersService.create(dto);
   }
@@ -36,7 +35,6 @@ export class UsersController {
 
   @Get()
   @UseGuards(RolesGuard)
-  @Roles('admin')
   findAll() {
     return this.usersService.findAll();
   }
@@ -52,7 +50,6 @@ export class UsersController {
 
   @Patch(':id')
   @UseGuards(RolesGuard)
-  @Roles('admin')
   update(@Param('id') id: string, @Body() dto: UpdateUserDto) {
     return this.usersService.update(id, dto);
   }
@@ -61,7 +58,6 @@ export class UsersController {
 
   @Delete(':id')
   @UseGuards(RolesGuard)
-  @Roles('admin')
   remove(@Param('id') id: string) {
     return this.usersService.remove(id);
   }
@@ -70,7 +66,6 @@ export class UsersController {
 
   @Patch(':id/toggle-active')
   @UseGuards(RolesGuard)
-  @Roles('admin')
   toggleActive(@Param('id') id: string) {
     return this.usersService.toggleActive(id);
   }

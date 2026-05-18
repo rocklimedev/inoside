@@ -1,23 +1,39 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React from "react";
+
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
+
 import { ArrowLeft, Download, Send, Loader2, Edit3 } from "lucide-react";
+
 import { toast } from "sonner";
 
 // RTK Query
-import { useSendBriefMutation } from "@/api/projectsApi"; // Adjust import path
+import { useSendBriefMutation } from "@/api/projectsApi";
 
 const STATUS_MAP = {
-  draft: { label: "Draft", color: "bg-gray-100 text-gray-600" },
-  completed: { label: "Document Ready", color: "bg-blue-50 text-blue-600" },
+  draft: {
+    label: "Draft",
+    color: "bg-gray-100 text-gray-600",
+  },
+
+  completed: {
+    label: "Document Ready",
+    color: "bg-blue-50 text-blue-600",
+  },
+
   sent_to_client: {
     label: "Sent to Client",
     color: "bg-orange-50 text-[#ef7f1b]",
   },
-  approved: { label: "Approved", color: "bg-green-50 text-green-600" },
+
+  approved: {
+    label: "Approved",
+    color: "bg-green-50 text-green-600",
+  },
+
   changes_requested: {
     label: "Changes Requested",
     color: "bg-red-50 text-[#e31d3b]",
@@ -31,17 +47,16 @@ export default function BriefDocument({
   onBack,
   onEdit,
 }) {
-  const [data, setData] = useState(brief);
-  const [sendBrief, { isLoading: sending }] = useSendBriefMutation();
+  const data = brief;
 
-  // Sync data when brief prop updates
-  useEffect(() => {
-    if (brief) setData(brief);
-  }, [brief]);
+  const [sendBrief, { isLoading: sending }] = useSendBriefMutation();
 
   const handleDownload = () => {
     if (data?.document_url) {
-      const fullUrl = `${process.env.NEXT_PUBLIC_BACKEND_URL || ""}${data.document_url}`;
+      const fullUrl = `${
+        process.env.NEXT_PUBLIC_BACKEND_URL || ""
+      }${data.document_url}`;
+
       window.open(fullUrl, "_blank");
     } else {
       toast.error("Document not available yet");
@@ -57,19 +72,36 @@ export default function BriefDocument({
     try {
       await sendBrief(data.id).unwrap();
 
-      setData((prev) => ({ ...prev, status: "sent_to_client" }));
       toast.success("Brief sent to client successfully");
     } catch (err) {
       console.error(err);
+
       toast.error(err?.data?.message || "Failed to send brief");
     }
   };
 
   const st = STATUS_MAP[data?.status] || STATUS_MAP.draft;
 
+  const formatValue = (value) => {
+    if (value === true) return "Yes";
+
+    if (value === false) return "No";
+
+    if (value === null || value === undefined || value === "") {
+      return "—";
+    }
+
+    return value;
+  };
+
+  const isEmpty = (value) => {
+    return value === null || value === undefined || value === "";
+  };
+
   const docSections = [
     {
       title: "Client Information",
+
       fields: [
         ["Client Name", data.client_name],
         ["Phone", data.client_phone],
@@ -78,47 +110,84 @@ export default function BriefDocument({
         ["Communication", data.comm_preference],
       ],
     },
+
     {
       title: "Project Overview",
+
       fields: [
+        ["Project Name", data.project_name],
         ["Project Type", data.project_type],
         ["Address", data.project_address],
+        ["City", data.project_city],
         ["Area", data.project_area],
         ["Timeline", data.timeline_expectations],
       ],
     },
+
+    {
+      title: "Project Understanding",
+
+      fields: [
+        ["Decision Readiness", data.decision_readiness],
+
+        ["Parking Required", data.parking_required],
+
+        ["First Construction Project", data.first_construction_project],
+
+        ["End To End Services", data.end_to_end_services],
+      ],
+    },
+
     {
       title: "Client Lifestyle & Needs",
+
       fields: [
         ["Family Members", data.family_members],
+
         ["Usage Requirements", data.usage_requirements],
+
         ["Special Needs", data.special_needs],
+
         ["Future Expansion", data.future_expansion],
       ],
     },
+
     {
       title: "Design Preferences",
+
       fields: [
         ["Style", data.design_style],
+
         ["Materials", data.material_preferences],
+
         ["Lighting", data.lighting_preference],
+
         ["Colors", data.color_preferences],
       ],
     },
+
     {
       title: "Budget Understanding",
+
       fields: [
         ["Range", data.budget_range],
+
         ["Flexibility", data.budget_flexibility],
+
         ["Priority Areas", data.priority_areas],
+
         ["Optimization Areas", data.cost_optimization_areas],
       ],
     },
+
     {
       title: "References & Inspirations",
+
       fields: [
         ["Reference Links", data.reference_links],
+
         ["Likes", data.client_likes],
+
         ["Dislikes", data.client_dislikes],
       ],
     },
@@ -136,12 +205,15 @@ export default function BriefDocument({
             >
               <ArrowLeft className="w-5 h-5" />
             </button>
+
             <div>
               <h1 className="text-base font-bold text-black">
-                {data.project_name}
+                {formatValue(data.project_name)}
               </h1>
+
               <p className="text-[11px] text-gray-400">Brief Document</p>
             </div>
+
             <Badge className={`${st.color} text-[10px] border-0 ml-2`}>
               {st.label}
             </Badge>
@@ -154,7 +226,8 @@ export default function BriefDocument({
               onClick={onEdit}
               data-testid="brief-edit-btn"
             >
-              <Edit3 className="w-3.5 h-3.5 mr-1" /> Edit Form
+              <Edit3 className="w-3.5 h-3.5 mr-1" />
+              Edit Form
             </Button>
 
             <Button
@@ -163,7 +236,8 @@ export default function BriefDocument({
               onClick={handleDownload}
               data-testid="brief-download-btn"
             >
-              <Download className="w-3.5 h-3.5 mr-1" /> Download PDF
+              <Download className="w-3.5 h-3.5 mr-1" />
+              Download PDF
             </Button>
 
             <Button
@@ -192,14 +266,19 @@ export default function BriefDocument({
             <div className="p-8 border-b-2 border-[#ef7f1b]">
               <div className="flex items-baseline gap-1 mb-1">
                 <span className="text-lg font-black text-black">BUILD</span>
+
                 <span className="text-lg font-black text-[#ef7f1b]">CON</span>
               </div>
+
               <h2 className="text-2xl font-bold text-black mt-4">
                 Project Brief Document
               </h2>
+
               <p className="text-sm text-gray-500 mt-1">
-                {data.project_name} •{" "}
-                {new Date(data.created_at).toLocaleDateString()}
+                {formatValue(data.project_name)} •{" "}
+                {data?.created_at
+                  ? new Date(data.created_at).toLocaleDateString()
+                  : "N/A"}
               </p>
             </div>
 
@@ -210,14 +289,19 @@ export default function BriefDocument({
                   <h3 className="text-xs font-bold uppercase tracking-wider text-[#ef7f1b] mb-4">
                     {i + 1}. {sec.title}
                   </h3>
+
                   <div className="grid grid-cols-2 gap-4">
                     {sec.fields.map(([label, value], j) => (
-                      <div key={j} className={!value ? "opacity-40" : ""}>
+                      <div
+                        key={j}
+                        className={isEmpty(value) ? "opacity-40" : ""}
+                      >
                         <p className="text-[10px] uppercase tracking-wider text-gray-400 font-bold">
                           {label}
                         </p>
+
                         <p className="text-sm text-black mt-0.5 break-words">
-                          {value || "—"}
+                          {formatValue(value)}
                         </p>
                       </div>
                     ))}

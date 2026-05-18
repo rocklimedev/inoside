@@ -1,8 +1,19 @@
 import { Module } from '@nestjs/common';
 import { SequelizeModule } from '@nestjs/sequelize';
 
-import { ProjectsService } from './projects.service';
 import { ProjectsController } from './projects.controller';
+
+// ================= SERVICES =================
+import { ProjectsService } from './projects.service';
+import { ProjectBriefService } from './services/project-brief.service';
+import { PitchReferenceService } from './services/pitch-reference.service';
+import { RekiReportService } from './services/reki-report.service';
+import { RekiPhotoService } from './services/reki-photo.service';
+import { ScopeOfWorkService } from './services/scope-of-work.service';
+import { ProjectCostEstimateService } from './services/project-cost-estimate.service';
+import { ProjectDrawingService } from './services/project-drawing.service';
+import { DrawingApprovalLogService } from './services/drawing-approval-log.service';
+import { ProjectPitchService } from './services/project-pitch.service';
 
 // ================= CORE MODELS =================
 import { Project } from './models/project.model';
@@ -20,7 +31,7 @@ import { ScopeOfWork } from './models/scope_of_work.model';
 import { ProjectCostEstimate } from './models/project_cost_estimates.model';
 import { ProjectDrawing } from './models/project-drawings.model';
 import { DrawingApprovalLog } from './models/drawing_approval_logs.model';
-
+import { PitchComment } from './models/pitch-comment.model';
 @Module({
   imports: [
     SequelizeModule.forFeature([
@@ -37,13 +48,36 @@ import { DrawingApprovalLog } from './models/drawing_approval_logs.model';
       RekiReport,
       RekiPhoto,
       ScopeOfWork,
+      PitchComment, // ✅ ADD THIS
       ProjectCostEstimate,
       ProjectDrawing,
       DrawingApprovalLog,
     ]),
   ],
   controllers: [ProjectsController],
-  providers: [ProjectsService],
-  exports: [ProjectsService],
+  providers: [
+    ProjectsService,
+    ProjectBriefService,
+    ProjectPitchService,
+    PitchReferenceService,
+    RekiReportService,
+    RekiPhotoService,
+    ScopeOfWorkService,
+    ProjectCostEstimateService,
+    ProjectDrawingService,
+    DrawingApprovalLogService,
+  ],
+  exports: [
+    ProjectsService,
+    ProjectBriefService,
+    PitchReferenceService,
+    RekiReportService,
+    RekiPhotoService,
+    ScopeOfWorkService,
+    ProjectPitchService,
+    ProjectCostEstimateService,
+    ProjectDrawingService,
+    DrawingApprovalLogService,
+  ],
 })
 export class ProjectsModule {}

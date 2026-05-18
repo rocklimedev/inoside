@@ -1,3 +1,7 @@
+// ======================================================
+// 📁 project_pitch.model.ts
+// ======================================================
+
 import {
   Table,
   Column,
@@ -6,14 +10,20 @@ import {
   ForeignKey,
   BelongsTo,
   Default,
+  HasMany,
 } from 'sequelize-typescript';
-import { Project } from './project.model';
+
 import type {
   InferAttributes,
   InferCreationAttributes,
   CreationOptional,
   NonAttribute,
 } from 'sequelize';
+
+import { Project } from './project.model';
+import { User } from '@/modules/users/models/user.model';
+import { PitchComment } from './pitch-comment.model';
+
 @Table({
   tableName: 'project_pitch',
   timestamps: true,
@@ -24,47 +34,140 @@ export class ProjectPitch extends Model<
   InferAttributes<ProjectPitch>,
   InferCreationAttributes<ProjectPitch>
 > {
+  // ======================================================
+  // PRIMARY KEY
+  // ======================================================
+
   @Default(DataType.UUIDV4)
-  @Column({ type: DataType.UUID, primaryKey: true })
+  @Column({
+    type: DataType.UUID,
+    primaryKey: true,
+  })
   declare id: CreationOptional<string>;
 
+  // ======================================================
+  // RELATIONS
+  // ======================================================
+
   @ForeignKey(() => Project)
-  @Column({ type: DataType.UUID, allowNull: false, unique: true })
+  @Column({
+    type: DataType.UUID,
+    allowNull: false,
+    unique: true,
+  })
   declare project_id: string;
 
-  @Column(DataType.STRING)
-  declare preferred_design_style: string;
+  @ForeignKey(() => User)
+  @Column({
+    type: DataType.UUID,
+    allowNull: true,
+  })
+  declare created_by: CreationOptional<string | null>;
 
-  @Column(DataType.ENUM('Light', 'Dark', 'Mixed', 'Not Sure'))
-  declare color_tone: 'Light' | 'Dark' | 'Mixed' | 'Not Sure';
+  // ======================================================
+  // BASIC DETAILS
+  // ======================================================
 
-  @Column(DataType.ENUM('Low', 'Medium', 'High'))
-  declare luxury_level: 'Low' | 'Medium' | 'High';
+  @Column({
+    type: DataType.STRING(100),
+    allowNull: true,
+  })
+  declare preferred_design_style: CreationOptional<string | null>;
 
-  @Column(DataType.TEXT)
-  declare functional_vs_aesthetic: string;
+  @Column({
+    type: DataType.ENUM('Light', 'Dark', 'Mixed', 'Not Sure'),
+    allowNull: true,
+  })
+  declare color_tone: 'Light' | 'Dark' | 'Mixed' | 'Not Sure' | null;
 
-  @Column(DataType.BOOLEAN)
-  declare budget_flexibility: boolean;
+  @Column({
+    type: DataType.ENUM('Low', 'Medium', 'High'),
+    allowNull: true,
+  })
+  declare luxury_level: 'Low' | 'Medium' | 'High' | null;
 
-  @Column(DataType.JSON)
-  declare priority_areas: any;
+  @Column({
+    type: DataType.TEXT,
+    allowNull: true,
+  })
+  declare functional_vs_aesthetic: CreationOptional<string | null>;
 
-  @Column(DataType.TEXT)
-  declare likes_dislikes: string;
+  @Default(false)
+  @Column({
+    type: DataType.BOOLEAN,
+    allowNull: true,
+  })
+  declare budget_flexibility: CreationOptional<boolean | null>;
 
-  @Column(DataType.TEXT)
-  declare non_negotiables: string;
+  // ======================================================
+  // JSON FIELDS
+  // ======================================================
 
-  @Column(DataType.TEXT)
-  declare special_requirements: string;
+  @Column({
+    type: DataType.JSON,
+    allowNull: true,
+  })
+  declare priority_areas: CreationOptional<any | null>;
 
-  @Column(DataType.STRING)
-  declare moodboard_pdf_url: string;
+  // ======================================================
+  // NOTES
+  // ======================================================
 
-  @Column(DataType.STRING)
-  declare pitch_pdf_url: string;
+  @Column({
+    type: DataType.TEXT,
+    allowNull: true,
+  })
+  declare likes_dislikes: CreationOptional<string | null>;
+
+  @Column({
+    type: DataType.TEXT,
+    allowNull: true,
+  })
+  declare non_negotiables: CreationOptional<string | null>;
+
+  @Column({
+    type: DataType.TEXT,
+    allowNull: true,
+  })
+  declare special_requirements: CreationOptional<string | null>;
+
+  // ======================================================
+  // FILES
+  // ======================================================
+
+  @Column({
+    type: DataType.STRING(500),
+    allowNull: true,
+  })
+  declare moodboard_pdf_url: CreationOptional<string | null>;
+
+  @Column({
+    type: DataType.STRING(500),
+    allowNull: true,
+  })
+  declare pitch_pdf_url: CreationOptional<string | null>;
+
+  // ======================================================
+  // STATUS
+  // ======================================================
+
+  @Default('Draft')
+  @Column({
+    type: DataType.ENUM('Draft', 'Pending Review', 'Approved', 'Rejected'),
+    allowNull: false,
+  })
+  declare status: 'Draft' | 'Pending Review' | 'Approved' | 'Rejected';
+
+  // ======================================================
+  // ASSOCIATIONS
+  // ======================================================
 
   @BelongsTo(() => Project)
   declare project?: NonAttribute<Project>;
+
+  @BelongsTo(() => User, 'created_by')
+  declare createdByUser?: NonAttribute<User>;
+
+  @HasMany(() => PitchComment)
+  declare comments?: NonAttribute<PitchComment[]>;
 }

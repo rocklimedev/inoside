@@ -12,67 +12,134 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.ProjectPitch = void 0;
 const sequelize_typescript_1 = require("sequelize-typescript");
 const project_model_1 = require("./project.model");
+const user_model_1 = require("../../users/models/user.model");
+const pitch_comment_model_1 = require("./pitch-comment.model");
 let ProjectPitch = class ProjectPitch extends sequelize_typescript_1.Model {
 };
 exports.ProjectPitch = ProjectPitch;
 __decorate([
     (0, sequelize_typescript_1.Default)(sequelize_typescript_1.DataType.UUIDV4),
-    (0, sequelize_typescript_1.Column)({ type: sequelize_typescript_1.DataType.UUID, primaryKey: true }),
+    (0, sequelize_typescript_1.Column)({
+        type: sequelize_typescript_1.DataType.UUID,
+        primaryKey: true,
+    }),
     __metadata("design:type", Object)
 ], ProjectPitch.prototype, "id", void 0);
 __decorate([
     (0, sequelize_typescript_1.ForeignKey)(() => project_model_1.Project),
-    (0, sequelize_typescript_1.Column)({ type: sequelize_typescript_1.DataType.UUID, allowNull: false, unique: true }),
+    (0, sequelize_typescript_1.Column)({
+        type: sequelize_typescript_1.DataType.UUID,
+        allowNull: false,
+        unique: true,
+    }),
     __metadata("design:type", String)
 ], ProjectPitch.prototype, "project_id", void 0);
 __decorate([
-    (0, sequelize_typescript_1.Column)(sequelize_typescript_1.DataType.STRING),
-    __metadata("design:type", String)
+    (0, sequelize_typescript_1.ForeignKey)(() => user_model_1.User),
+    (0, sequelize_typescript_1.Column)({
+        type: sequelize_typescript_1.DataType.UUID,
+        allowNull: true,
+    }),
+    __metadata("design:type", Object)
+], ProjectPitch.prototype, "created_by", void 0);
+__decorate([
+    (0, sequelize_typescript_1.Column)({
+        type: sequelize_typescript_1.DataType.STRING(100),
+        allowNull: true,
+    }),
+    __metadata("design:type", Object)
 ], ProjectPitch.prototype, "preferred_design_style", void 0);
 __decorate([
-    (0, sequelize_typescript_1.Column)(sequelize_typescript_1.DataType.ENUM('Light', 'Dark', 'Mixed', 'Not Sure')),
-    __metadata("design:type", String)
+    (0, sequelize_typescript_1.Column)({
+        type: sequelize_typescript_1.DataType.ENUM('Light', 'Dark', 'Mixed', 'Not Sure'),
+        allowNull: true,
+    }),
+    __metadata("design:type", Object)
 ], ProjectPitch.prototype, "color_tone", void 0);
 __decorate([
-    (0, sequelize_typescript_1.Column)(sequelize_typescript_1.DataType.ENUM('Low', 'Medium', 'High')),
-    __metadata("design:type", String)
+    (0, sequelize_typescript_1.Column)({
+        type: sequelize_typescript_1.DataType.ENUM('Low', 'Medium', 'High'),
+        allowNull: true,
+    }),
+    __metadata("design:type", Object)
 ], ProjectPitch.prototype, "luxury_level", void 0);
 __decorate([
-    (0, sequelize_typescript_1.Column)(sequelize_typescript_1.DataType.TEXT),
-    __metadata("design:type", String)
+    (0, sequelize_typescript_1.Column)({
+        type: sequelize_typescript_1.DataType.TEXT,
+        allowNull: true,
+    }),
+    __metadata("design:type", Object)
 ], ProjectPitch.prototype, "functional_vs_aesthetic", void 0);
 __decorate([
-    (0, sequelize_typescript_1.Column)(sequelize_typescript_1.DataType.BOOLEAN),
-    __metadata("design:type", Boolean)
+    (0, sequelize_typescript_1.Default)(false),
+    (0, sequelize_typescript_1.Column)({
+        type: sequelize_typescript_1.DataType.BOOLEAN,
+        allowNull: true,
+    }),
+    __metadata("design:type", Object)
 ], ProjectPitch.prototype, "budget_flexibility", void 0);
 __decorate([
-    (0, sequelize_typescript_1.Column)(sequelize_typescript_1.DataType.JSON),
+    (0, sequelize_typescript_1.Column)({
+        type: sequelize_typescript_1.DataType.JSON,
+        allowNull: true,
+    }),
     __metadata("design:type", Object)
 ], ProjectPitch.prototype, "priority_areas", void 0);
 __decorate([
-    (0, sequelize_typescript_1.Column)(sequelize_typescript_1.DataType.TEXT),
-    __metadata("design:type", String)
+    (0, sequelize_typescript_1.Column)({
+        type: sequelize_typescript_1.DataType.TEXT,
+        allowNull: true,
+    }),
+    __metadata("design:type", Object)
 ], ProjectPitch.prototype, "likes_dislikes", void 0);
 __decorate([
-    (0, sequelize_typescript_1.Column)(sequelize_typescript_1.DataType.TEXT),
-    __metadata("design:type", String)
+    (0, sequelize_typescript_1.Column)({
+        type: sequelize_typescript_1.DataType.TEXT,
+        allowNull: true,
+    }),
+    __metadata("design:type", Object)
 ], ProjectPitch.prototype, "non_negotiables", void 0);
 __decorate([
-    (0, sequelize_typescript_1.Column)(sequelize_typescript_1.DataType.TEXT),
-    __metadata("design:type", String)
+    (0, sequelize_typescript_1.Column)({
+        type: sequelize_typescript_1.DataType.TEXT,
+        allowNull: true,
+    }),
+    __metadata("design:type", Object)
 ], ProjectPitch.prototype, "special_requirements", void 0);
 __decorate([
-    (0, sequelize_typescript_1.Column)(sequelize_typescript_1.DataType.STRING),
-    __metadata("design:type", String)
+    (0, sequelize_typescript_1.Column)({
+        type: sequelize_typescript_1.DataType.STRING(500),
+        allowNull: true,
+    }),
+    __metadata("design:type", Object)
 ], ProjectPitch.prototype, "moodboard_pdf_url", void 0);
 __decorate([
-    (0, sequelize_typescript_1.Column)(sequelize_typescript_1.DataType.STRING),
-    __metadata("design:type", String)
+    (0, sequelize_typescript_1.Column)({
+        type: sequelize_typescript_1.DataType.STRING(500),
+        allowNull: true,
+    }),
+    __metadata("design:type", Object)
 ], ProjectPitch.prototype, "pitch_pdf_url", void 0);
+__decorate([
+    (0, sequelize_typescript_1.Default)('Draft'),
+    (0, sequelize_typescript_1.Column)({
+        type: sequelize_typescript_1.DataType.ENUM('Draft', 'Pending Review', 'Approved', 'Rejected'),
+        allowNull: false,
+    }),
+    __metadata("design:type", String)
+], ProjectPitch.prototype, "status", void 0);
 __decorate([
     (0, sequelize_typescript_1.BelongsTo)(() => project_model_1.Project),
     __metadata("design:type", Object)
 ], ProjectPitch.prototype, "project", void 0);
+__decorate([
+    (0, sequelize_typescript_1.BelongsTo)(() => user_model_1.User, 'created_by'),
+    __metadata("design:type", Object)
+], ProjectPitch.prototype, "createdByUser", void 0);
+__decorate([
+    (0, sequelize_typescript_1.HasMany)(() => pitch_comment_model_1.PitchComment),
+    __metadata("design:type", Object)
+], ProjectPitch.prototype, "comments", void 0);
 exports.ProjectPitch = ProjectPitch = __decorate([
     (0, sequelize_typescript_1.Table)({
         tableName: 'project_pitch',

@@ -3,15 +3,10 @@ import { baseApi } from "./baseApi";
 export const projectsApi = baseApi.injectEndpoints({
   endpoints: (builder) => ({
     // =================================================
-    // 🧱 PROJECT CORE
+    // 🧱 CORE PROJECT
     // =================================================
-
     createProject: builder.mutation({
-      query: (body) => ({
-        url: "/projects",
-        method: "POST",
-        body,
-      }),
+      query: (body) => ({ url: "/projects", method: "POST", body }),
       invalidatesTags: ["Projects"],
     }),
 
@@ -22,7 +17,7 @@ export const projectsApi = baseApi.injectEndpoints({
 
     getProjectById: builder.query({
       query: (id) => `/projects/${id}`,
-      providesTags: ["Projects"],
+      providesTags: ["Project"],
     }),
 
     updateProject: builder.mutation({
@@ -31,7 +26,7 @@ export const projectsApi = baseApi.injectEndpoints({
         method: "PATCH",
         body,
       }),
-      invalidatesTags: ["Projects"],
+      invalidatesTags: ["Projects", "Project"],
     }),
 
     updateProjectProgress: builder.mutation({
@@ -40,21 +35,17 @@ export const projectsApi = baseApi.injectEndpoints({
         method: "PATCH",
         body: { progress },
       }),
-      invalidatesTags: ["Projects"],
+      invalidatesTags: ["Projects", "Project"],
     }),
 
     deleteProject: builder.mutation({
-      query: (id) => ({
-        url: `/projects/${id}`,
-        method: "DELETE",
-      }),
+      query: (id) => ({ url: `/projects/${id}`, method: "DELETE" }),
       invalidatesTags: ["Projects"],
     }),
 
     // =================================================
     // 📄 PROJECT BRIEF
     // =================================================
-
     createBrief: builder.mutation({
       query: ({ projectId, ...body }) => ({
         url: `/projects/${projectId}/brief`,
@@ -67,22 +58,7 @@ export const projectsApi = baseApi.injectEndpoints({
     getBrief: builder.query({
       query: (projectId) => `/projects/${projectId}/brief`,
     }),
-    // =================================================
-    // 📄 GET ALL BRIEFS
-    // =================================================
 
-    getAllBriefs: builder.query({
-      query: () => "/projects/briefs/all",
-      providesTags: ["Projects"],
-    }),
-    // =================================================
-    // 📄 GET BRIEF BY BRIEF ID
-    // =================================================
-
-    getBriefById: builder.query({
-      query: (briefId) => `/projects/briefs/${briefId}`,
-      providesTags: ["Projects"],
-    }),
     updateBrief: builder.mutation({
       query: ({ projectId, ...body }) => ({
         url: `/projects/${projectId}/brief`,
@@ -91,17 +67,66 @@ export const projectsApi = baseApi.injectEndpoints({
       }),
       invalidatesTags: ["Projects"],
     }),
-    deleteProjectBrief: builder.mutation({
-      query: (projectId) => ({
-        url: `/projects/${projectId}/brief`,
-        method: "DELETE",
+
+    getAllBriefs: builder.query({
+      query: () => "/projects/briefs/all",
+      providesTags: ["Projects"],
+    }),
+
+    getBriefById: builder.query({
+      query: (briefId) => `/projects/briefs/${briefId}`,
+    }),
+
+    // Brief Workflow
+    approveBrief: builder.mutation({
+      query: (briefId) => ({
+        url: `/projects/briefs/${briefId}/approve`,
+        method: "PATCH",
       }),
       invalidatesTags: ["Projects"],
     }),
-    // =================================================
-    // 🎨 PROJECT PITCH
-    // =================================================
 
+    unapproveBrief: builder.mutation({
+      query: (briefId) => ({
+        url: `/projects/briefs/${briefId}/unapprove`,
+        method: "PATCH",
+      }),
+      invalidatesTags: ["Projects"],
+    }),
+
+    requestBriefChanges: builder.mutation({
+      query: ({ briefId, ...body }) => ({
+        url: `/projects/briefs/${briefId}/request-changes`,
+        method: "PATCH",
+        body,
+      }),
+      invalidatesTags: ["Projects"],
+    }),
+    sendBrief: builder.mutation({
+      query: (id) => ({
+        url: `/brief/${id}/send`,
+        method: "POST",
+      }),
+    }),
+    sendBriefToClient: builder.mutation({
+      query: (briefId) => ({
+        url: `/projects/briefs/${briefId}/send-to-client`,
+        method: "PATCH",
+      }),
+      invalidatesTags: ["Projects"],
+    }),
+
+    markBriefAsDraft: builder.mutation({
+      query: (briefId) => ({
+        url: `/projects/briefs/${briefId}/draft`,
+        method: "PATCH",
+      }),
+      invalidatesTags: ["Projects"],
+    }),
+
+    // =================================================
+    // 🎨 PROJECT PITCH (Added)
+    // =================================================
     createPitch: builder.mutation({
       query: ({ projectId, ...body }) => ({
         url: `/projects/${projectId}/pitch`,
@@ -123,11 +148,51 @@ export const projectsApi = baseApi.injectEndpoints({
       }),
       invalidatesTags: ["Projects"],
     }),
+    // =================================================
+    // 📊 GLOBAL PITCH MANAGEMENT (New)
+    // =================================================
+    getAllPitches: builder.query({
+      query: () => "/pitches",
+      providesTags: ["Pitches"],
+    }),
 
+    deletePitch: builder.mutation({
+      query: (id) => ({
+        url: `/pitches/${id}`,
+        method: "DELETE",
+      }),
+      invalidatesTags: ["Pitches"],
+    }),
+
+    createPitchGlobal: builder.mutation({
+      query: (body) => ({
+        url: "/pitches",
+        method: "POST",
+        body,
+      }),
+      invalidatesTags: ["Pitches"],
+    }),
+
+    addPitchComment: builder.mutation({
+      query: ({ pitchId, content }) => ({
+        url: `/pitches/${pitchId}/comments`,
+        method: "POST",
+        body: { content },
+      }),
+      invalidatesTags: ["Pitches"],
+    }),
+
+    replacePitchFile: builder.mutation({
+      query: ({ pitchId, ...body }) => ({
+        url: `/pitches/${pitchId}`,
+        method: "PUT",
+        body,
+      }),
+      invalidatesTags: ["Pitches"],
+    }),
     // =================================================
     // 🧩 PITCH REFERENCES
     // =================================================
-
     addPitchReference: builder.mutation({
       query: ({ projectId, ...body }) => ({
         url: `/projects/${projectId}/pitch-references`,
@@ -150,9 +215,8 @@ export const projectsApi = baseApi.injectEndpoints({
     }),
 
     // =================================================
-    // 🏗️ REKI
+    // 🏗️ REKI REPORT
     // =================================================
-
     createReki: builder.mutation({
       query: ({ projectId, ...body }) => ({
         url: `/projects/${projectId}/reki`,
@@ -178,7 +242,6 @@ export const projectsApi = baseApi.injectEndpoints({
     // =================================================
     // 📸 REKI PHOTOS
     // =================================================
-
     addRekiPhoto: builder.mutation({
       query: ({ projectId, ...body }) => ({
         url: `/projects/${projectId}/reki/photos`,
@@ -203,7 +266,6 @@ export const projectsApi = baseApi.injectEndpoints({
     // =================================================
     // 📐 SCOPE OF WORK
     // =================================================
-
     createScope: builder.mutation({
       query: ({ projectId, ...body }) => ({
         url: `/projects/${projectId}/scope`,
@@ -229,7 +291,6 @@ export const projectsApi = baseApi.injectEndpoints({
     // =================================================
     // 💰 COST ESTIMATES
     // =================================================
-
     addCostEstimate: builder.mutation({
       query: ({ projectId, ...body }) => ({
         url: `/projects/${projectId}/cost-estimates`,
@@ -251,17 +312,10 @@ export const projectsApi = baseApi.injectEndpoints({
       }),
       invalidatesTags: ["Projects"],
     }),
-    sendBrief: builder.mutation({
-      query: (briefId) => ({
-        url: `/briefs/${briefId}/send`,
-        method: "POST",
-      }),
-      invalidatesTags: ["Projects"],
-    }),
+
     // =================================================
     // 🧾 DRAWINGS
     // =================================================
-
     uploadDrawing: builder.mutation({
       query: ({ projectId, ...body }) => ({
         url: `/projects/${projectId}/drawings`,
@@ -287,7 +341,6 @@ export const projectsApi = baseApi.injectEndpoints({
     // =================================================
     // 📊 APPROVAL LOGS
     // =================================================
-
     addApprovalLog: builder.mutation({
       query: ({ drawingId, ...body }) => ({
         url: `/projects/drawings/${drawingId}/logs`,
@@ -300,105 +353,72 @@ export const projectsApi = baseApi.injectEndpoints({
     getApprovalLogs: builder.query({
       query: (drawingId) => `/projects/drawings/${drawingId}/logs`,
     }),
-    // Inside endpoints
-    approveBrief: builder.mutation({
-      query: (briefId) => ({
-        url: `/briefs/${briefId}/approve`,
-        method: "POST",
-      }),
-      invalidatesTags: ["Projects"],
-    }),
-
-    requestBriefChanges: builder.mutation({
-      query: ({ briefId, note }) => ({
-        url: `/briefs/${briefId}/request-changes`,
-        method: "POST",
-        body: { note },
-      }),
-      invalidatesTags: ["Projects"],
-    }),
-
-    addBriefComment: builder.mutation({
-      query: ({ briefId, content }) => ({
-        url: `/briefs/${briefId}/comments`,
-        method: "POST",
-        body: { content },
-      }),
-      invalidatesTags: ["Projects"],
-    }),
-    archiveProject: builder.mutation({
-      query: (id) => ({
-        url: `/projects/${id}/archive`,
-        method: "POST",
-      }),
-      invalidatesTags: ["Projects"],
-    }),
-
-    restoreProject: builder.mutation({
-      query: (id) => ({
-        url: `/projects/${id}/restore`,
-        method: "POST",
-      }),
-      invalidatesTags: ["Projects"],
-    }),
   }),
+
   overrideExisting: true,
 });
 
 export const {
-  // core
+  // Core Project
   useCreateProjectMutation,
   useGetProjectsQuery,
   useGetProjectByIdQuery,
   useUpdateProjectMutation,
   useUpdateProjectProgressMutation,
   useDeleteProjectMutation,
-  useApproveBriefMutation,
-  useRequestBriefChangesMutation,
-  useAddBriefCommentMutation,
-  // brief
+
+  // Brief
   useCreateBriefMutation,
   useGetBriefQuery,
   useUpdateBriefMutation,
-  useArchiveProjectMutation,
-  useRestoreProjectMutation,
+  useGetAllBriefsQuery,
   useGetBriefByIdQuery,
-  // pitch
+  useApproveBriefMutation,
+  useUnapproveBriefMutation,
+  useRequestBriefChangesMutation,
+  useSendBriefToClientMutation,
+  useMarkBriefAsDraftMutation,
+  useSendBriefMutation,
+  // Pitch
   useCreatePitchMutation,
   useGetPitchQuery,
   useUpdatePitchMutation,
-
-  // pitch refs
+  useGetAllPitchesQuery,
+  useDeletePitchMutation,
+  useCreatePitchGlobalMutation,
+  useAddPitchCommentMutation,
+  useReplacePitchFileMutation,
+  // Pitch References
   useAddPitchReferenceMutation,
   useGetPitchReferencesQuery,
   useDeletePitchReferenceMutation,
-  useSendBriefMutation,
-  // reki
+
+  // Reki
   useCreateRekiMutation,
   useGetRekiQuery,
   useUpdateRekiMutation,
 
-  // reki photos
+  // Reki Photos
   useAddRekiPhotoMutation,
   useGetRekiPhotosQuery,
   useDeleteRekiPhotoMutation,
 
-  // scope
+  // Scope
   useCreateScopeMutation,
   useGetScopeQuery,
   useUpdateScopeMutation,
-  useGetAllBriefsQuery,
-  // cost
+
+  // Cost Estimates
   useAddCostEstimateMutation,
   useGetCostEstimatesQuery,
   useUpdateCostEstimateMutation,
 
-  // drawings
+  // Drawings
   useUploadDrawingMutation,
   useGetDrawingsQuery,
   useApproveDrawingMutation,
-  useDeleteProjectBriefMutation,
-  // logs
+
+  // Approval Logs
   useAddApprovalLogMutation,
   useGetApprovalLogsQuery,
 } = projectsApi;

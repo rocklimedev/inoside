@@ -21,14 +21,9 @@ const defaultValues = {
   contact_number: "",
   email: "",
   preferred_communication: "",
-  is_owner: false,
+  is_owner: true,
   representative_involved: false,
   representative_comment: "",
-  location: "",
-  budget_comfort: "",
-  design_style: "",
-  material_preference: "",
-  special_requirements: "",
 };
 
 export default function ClientForm({
@@ -94,6 +89,7 @@ export default function ClientForm({
             </Label>
 
             <Input
+              type="email"
               value={form.email}
               onChange={(e) => handleChange("email", e.target.value)}
               className="mt-1"
@@ -107,7 +103,7 @@ export default function ClientForm({
             </Label>
 
             <Select
-              value={form.preferred_communication}
+              value={form.preferred_communication || undefined}
               onValueChange={(v) => handleChange("preferred_communication", v)}
               disabled={disabled}
             >
@@ -187,90 +183,6 @@ export default function ClientForm({
             />
           </div>
         )}
-      </div>
-
-      {/* PROJECT PREFERENCES */}
-      <div className="space-y-4 border-t pt-4">
-        <p className="text-xs font-bold uppercase tracking-wider text-gray-400">
-          Project Preferences
-        </p>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div>
-            <Label className="text-xs font-bold uppercase tracking-wider text-gray-500">
-              Location
-            </Label>
-
-            <Input
-              value={form.location}
-              onChange={(e) => handleChange("location", e.target.value)}
-              className="mt-1"
-              disabled={disabled}
-              placeholder="Project location"
-            />
-          </div>
-
-          <div>
-            <Label className="text-xs font-bold uppercase tracking-wider text-gray-500">
-              Budget Comfort
-            </Label>
-
-            <Input
-              value={form.budget_comfort}
-              onChange={(e) => handleChange("budget_comfort", e.target.value)}
-              className="mt-1"
-              disabled={disabled}
-              placeholder="Premium / Mid-range"
-            />
-          </div>
-        </div>
-
-        <div>
-          <Label className="text-xs font-bold uppercase tracking-wider text-gray-500">
-            Design Style Preference
-          </Label>
-
-          <Input
-            value={form.design_style}
-            onChange={(e) => handleChange("design_style", e.target.value)}
-            className="mt-1"
-            disabled={disabled}
-            placeholder="Minimalist / Contemporary"
-          />
-        </div>
-
-        <div>
-          <Label className="text-xs font-bold uppercase tracking-wider text-gray-500">
-            Material Preference
-          </Label>
-
-          <Input
-            value={form.material_preference}
-            onChange={(e) =>
-              handleChange("material_preference", e.target.value)
-            }
-            className="mt-1"
-            disabled={disabled}
-            placeholder="Marble / Wood / Concrete"
-          />
-        </div>
-
-        <div>
-          <Label className="text-xs font-bold uppercase tracking-wider text-gray-500">
-            Special Requirements
-          </Label>
-
-          <Textarea
-            value={form.special_requirements}
-            onChange={(e) =>
-              handleChange("special_requirements", e.target.value)
-            }
-            className="mt-1"
-            rows={4}
-            disabled={disabled}
-            placeholder="Any specific requirements..."
-          />
-        </div>
       </div>
 
       {/* ACTIONS */}

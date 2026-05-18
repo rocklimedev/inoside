@@ -7,11 +7,30 @@ import {
   Param,
   Delete,
   UseGuards,
+  Req,
 } from '@nestjs/common';
 
+import type { Request } from 'express'; // ← Use 'import type'
+
 import { ProjectsService } from './projects.service';
+import { ProjectBriefService } from './services/project-brief.service';
+import { PitchReferenceService } from './services/pitch-reference.service';
+import { RekiReportService } from './services/reki-report.service';
+import { RekiPhotoService } from './services/reki-photo.service';
+import { ScopeOfWorkService } from './services/scope-of-work.service';
+import { ProjectCostEstimateService } from './services/project-cost-estimate.service';
+import { ProjectDrawingService } from './services/project-drawing.service';
+import { DrawingApprovalLogService } from './services/drawing-approval-log.service';
+import { ProjectPitchService } from './services/project-pitch.service';
+
+// DTOs
 import { CreateProjectDto } from './dto/create-project.dto';
 import { UpdateProjectDto } from './dto/update-project.dto';
+import { CreateProjectBriefDto } from './dto/create-project-brief.dto';
+import { UpdateProjectBriefDto } from './dto/update-project-brief.dto';
+import { RequestBriefChangesDto } from './dto/request-brief-changes.dto';
+import { CreateProjectPitchDto } from './dto/create-project-pitch.dto';
+import { UpdateProjectPitchDto } from './dto/update-project-pitch.dto';
 
 import { JwtAuthGuard } from '@/common/guards/jwt-auth.guard';
 import { RolesGuard } from '@/common/guards/roles.guard';
@@ -20,7 +39,18 @@ import { Roles } from '@/common/decorators/roles.decorator';
 @Controller('projects')
 @UseGuards(JwtAuthGuard)
 export class ProjectsController {
-  constructor(private readonly projectsService: ProjectsService) {}
+  constructor(
+    private readonly projectsService: ProjectsService,
+    private readonly briefService: ProjectBriefService,
+    private readonly pitchRefService: PitchReferenceService,
+    private readonly rekiService: RekiReportService,
+    private readonly rekiPhotoService: RekiPhotoService,
+    private readonly scopeService: ScopeOfWorkService,
+    private readonly costService: ProjectCostEstimateService,
+    private readonly drawingService: ProjectDrawingService,
+    private readonly approvalLogService: DrawingApprovalLogService,
+    private readonly pitchService: ProjectPitchService,
+  ) {}
 
   // =================================================
   // 🧱 CORE PROJECT CRUD
@@ -67,80 +97,201 @@ export class ProjectsController {
   // =================================================
 
   @Post(':id/brief')
-  createBrief(@Param('id') id: string, @Body() dto: any) {
-    return this.projectsService.createBrief({
-      ...dto,
-      project_id: id,
-    });
+  createBrief(@Param('id') id: string, @Body() dto: CreateProjectBriefDto) {
+    return this.briefService.create({ ...dto, project_id: id });
   }
 
   @Get(':id/brief')
   getBrief(@Param('id') id: string) {
-    return this.projectsService.getBrief(id);
+    return this.briefService.getBrief(id);
   }
 
   @Patch(':id/brief')
-  updateBrief(@Param('id') id: string, @Body() dto: any) {
-    return this.projectsService.updateBrief(id, dto);
+  updateBrief(@Param('id') id: string, @Body() dto: UpdateProjectBriefDto) {
+    return this.briefService.updateBrief(id, dto);
   }
+
   // =================================================
-  // 🧠 GET ALL BRIEFS
+  // ✅ BRIEF WORKFLOW
   // =================================================
+
+  @Patch('briefs/:briefId/approve')
+  @UseGuards(RolesGuard)
+  @Roles('admin', 'project_manager')
+  approveBrief(@Param('briefId') briefId: string, @Req() req: Request) {
+    const user = req.user as any;
+    return this.briefService.approveBrief(briefId, user.id);
+  }
+
+  @Patch('briefs/:briefId/unapprove')
+  @UseGuards(RolesGuard)
+  @Roles('admin', 'project_manager')
+  unapproveBrief(@Param('briefId') briefId: string) {
+    return this.briefService.unapproveBrief(briefId);
+  }
+
+  @Patch('briefs/:briefId/request-changes')
+  @UseGuards(RolesGuard)
+  @Roles('admin', 'project_manager')
+  requestBriefChanges(
+    @Param('briefId') briefId: string,
+    @Body() dto: RequestBriefChangesDto,
+    @Req() req: Request,
+  ) {
+    const user = req.user as any;
+    return this.briefService.requestBriefChanges(briefId, {
+      note: dto.note,
+      requested_by: user.id,
+    });
+  }
+
+  @Patch('briefs/:briefId/send-to-client')
+  @UseGuards(RolesGuard)
+  @Roles('admin', 'project_manager')
+  sendBriefToClient(@Param('briefId') briefId: string) {
+    return this.briefService.sendBriefToClient(briefId);
+  }
+
+  @Patch('briefs/:briefId/draft')
+  @UseGuards(RolesGuard)
+  @Roles('admin', 'project_manager')
+  markBriefAsDraft(@Param('briefId') briefId: string) {
+    return this.briefService.markBriefAsDraft(briefId);
+  }
 
   @Get('briefs/all')
   getAllBriefs() {
-    return this.projectsService.getAllBriefs();
+    return this.briefService.getAllBriefs();
   }
-  // =================================================
-  // 🧠 GET BRIEF BY BRIEF ID
-  // =================================================
 
   @Get('briefs/:briefId')
   getBriefById(@Param('briefId') briefId: string) {
-    return this.projectsService.getBriefById(briefId);
+    return this.briefService.getBriefById(briefId);
   }
+
   // =================================================
   // 🎨 PROJECT PITCH
   // =================================================
 
+  // CREATE PITCH
   @Post(':id/pitch')
-  createPitch(@Param('id') id: string, @Body() dto: any) {
-    return this.projectsService.createPitch({
+  createPitch(
+    @Param('id') id: string,
+    @Body() dto: CreateProjectPitchDto,
+    @Req() req: Request,
+  ) {
+    const user = req.user as any;
+
+    return this.pitchService.createPitch(id, {
       ...dto,
-      project_id: id,
+      created_by: user.id,
     });
   }
 
+  // GET PITCH BY PROJECT
   @Get(':id/pitch')
   getPitch(@Param('id') id: string) {
-    return this.projectsService.getPitch(id);
+    return this.pitchService.getPitch(id);
   }
 
+  // UPDATE PITCH
   @Patch(':id/pitch')
-  updatePitch(@Param('id') id: string, @Body() dto: any) {
-    return this.projectsService.updatePitch(id, dto);
+  updatePitch(@Param('id') id: string, @Body() dto: UpdateProjectPitchDto) {
+    return this.pitchService.updatePitch(id, dto);
   }
 
+  // =================================================
+  // 📊 GLOBAL PITCH MANAGEMENT
+  // =================================================
+
+  // GET ALL PITCHES
+  @Get('pitches/all')
+  getAllPitches() {
+    return this.pitchService.getAllPitches();
+  }
+
+  // GET SINGLE PITCH
+  @Get('pitches/:pitchId')
+  getPitchById(@Param('pitchId') pitchId: string) {
+    return this.pitchService.getPitchById(pitchId);
+  }
+
+  // DELETE PITCH
+  @Delete('pitches/:pitchId')
+  @UseGuards(RolesGuard)
+  @Roles('admin', 'project_manager')
+  deletePitch(@Param('pitchId') pitchId: string) {
+    return this.pitchService.deletePitch(pitchId);
+  }
+
+  // =================================================
+  // 💬 PITCH COMMENTS
+  // =================================================
+
+  // ADD COMMENT
+  @Post('pitches/:pitchId/comments')
+  addPitchComment(
+    @Param('pitchId') pitchId: string,
+    @Body('content') content: string,
+    @Req() req: Request,
+  ) {
+    const user = req.user as any;
+
+    return this.pitchService.addComment(pitchId, {
+      content,
+      user_id: user.id,
+    });
+  }
+
+  // =================================================
+  // 📎 REPLACE PITCH FILES
+  // =================================================
+
+  // REPLACE FILES
+  @Patch('pitches/:pitchId/files')
+  replacePitchFile(
+    @Param('pitchId') pitchId: string,
+    @Body()
+    dto: {
+      pitch_pdf_url?: string;
+      moodboard_pdf_url?: string;
+    },
+  ) {
+    return this.pitchService.replacePitchFile(pitchId, dto);
+  }
+
+  // =================================================
+  // ✅ PITCH APPROVAL
+  // =================================================
+
+  // APPROVE
+  @Patch('pitches/:pitchId/approve')
+  approvePitch(@Param('pitchId') pitchId: string) {
+    return this.pitchService.approvePitch(pitchId);
+  }
+
+  // REJECT
+  @Patch('pitches/:pitchId/reject')
+  rejectPitch(@Param('pitchId') pitchId: string) {
+    return this.pitchService.rejectPitch(pitchId);
+  }
   // =================================================
   // 🧩 PITCH REFERENCES
   // =================================================
 
   @Post(':id/pitch-references')
   addPitchReference(@Param('id') id: string, @Body() dto: any) {
-    return this.projectsService.addPitchReference({
-      ...dto,
-      project_id: id,
-    });
+    return this.pitchRefService.add({ ...dto, project_id: id });
   }
 
   @Get(':id/pitch-references')
   getPitchReferences(@Param('id') id: string) {
-    return this.projectsService.getPitchReferences(id);
+    return this.pitchRefService.findByProject(id);
   }
 
   @Delete('pitch-references/:refId')
   deletePitchReference(@Param('refId') refId: string) {
-    return this.projectsService.deletePitchReference(refId);
+    return this.pitchRefService.delete(refId);
   }
 
   // =================================================
@@ -149,20 +300,17 @@ export class ProjectsController {
 
   @Post(':id/reki')
   createReki(@Param('id') id: string, @Body() dto: any) {
-    return this.projectsService.createReki({
-      ...dto,
-      project_id: id,
-    });
+    return this.rekiService.create({ ...dto, project_id: id });
   }
 
   @Get(':id/reki')
   getReki(@Param('id') id: string) {
-    return this.projectsService.getReki(id);
+    return this.rekiService.findOne(id);
   }
 
   @Patch(':id/reki')
   updateReki(@Param('id') id: string, @Body() dto: any) {
-    return this.projectsService.updateReki(id, dto);
+    return this.rekiService.update(id, dto);
   }
 
   // =================================================
@@ -171,20 +319,17 @@ export class ProjectsController {
 
   @Post(':id/reki/photos')
   addRekiPhoto(@Param('id') id: string, @Body() dto: any) {
-    return this.projectsService.addRekiPhoto({
-      ...dto,
-      project_id: id,
-    });
+    return this.rekiPhotoService.add({ ...dto, project_id: id });
   }
 
   @Get('reki/:rekiId/photos')
   getRekiPhotos(@Param('rekiId') rekiId: string) {
-    return this.projectsService.getRekiPhotos(rekiId);
+    return this.rekiPhotoService.findByReki(rekiId);
   }
 
   @Delete('reki/photos/:photoId')
   deleteRekiPhoto(@Param('photoId') photoId: string) {
-    return this.projectsService.deleteRekiPhoto(photoId);
+    return this.rekiPhotoService.delete(photoId);
   }
 
   // =================================================
@@ -193,20 +338,17 @@ export class ProjectsController {
 
   @Post(':id/scope')
   createScope(@Param('id') id: string, @Body() dto: any) {
-    return this.projectsService.createScope({
-      ...dto,
-      project_id: id,
-    });
+    return this.scopeService.create({ ...dto, project_id: id });
   }
 
   @Get(':id/scope')
   getScope(@Param('id') id: string) {
-    return this.projectsService.getScope(id);
+    return this.scopeService.findOne(id);
   }
 
   @Patch(':id/scope')
   updateScope(@Param('id') id: string, @Body() dto: any) {
-    return this.projectsService.updateScope(id, dto);
+    return this.scopeService.update(id, dto);
   }
 
   // =================================================
@@ -215,15 +357,12 @@ export class ProjectsController {
 
   @Post(':id/cost-estimates')
   addCostEstimate(@Param('id') id: string, @Body() dto: any) {
-    return this.projectsService.addCostEstimate({
-      ...dto,
-      project_id: id,
-    });
+    return this.costService.add({ ...dto, project_id: id });
   }
 
   @Get(':id/cost-estimates')
   getCostEstimates(@Param('id') id: string) {
-    return this.projectsService.getCostEstimates(id);
+    return this.costService.findByProject(id);
   }
 
   @Patch('cost-estimates/:estimateId')
@@ -231,7 +370,7 @@ export class ProjectsController {
     @Param('estimateId') estimateId: string,
     @Body() dto: any,
   ) {
-    return this.projectsService.updateCostEstimate(estimateId, dto);
+    return this.costService.update(estimateId, dto);
   }
 
   // =================================================
@@ -240,15 +379,12 @@ export class ProjectsController {
 
   @Post(':id/drawings')
   uploadDrawing(@Param('id') id: string, @Body() dto: any) {
-    return this.projectsService.uploadDrawing({
-      ...dto,
-      project_id: id,
-    });
+    return this.drawingService.upload({ ...dto, project_id: id });
   }
 
   @Get(':id/drawings')
   getDrawings(@Param('id') id: string) {
-    return this.projectsService.getDrawings(id);
+    return this.drawingService.findByProject(id);
   }
 
   @Patch('drawings/:drawingId/approve')
@@ -256,7 +392,7 @@ export class ProjectsController {
     @Param('drawingId') drawingId: string,
     @Body('user_id') user_id: string,
   ) {
-    return this.projectsService.approveDrawing(drawingId, user_id);
+    return this.drawingService.approve(drawingId, user_id);
   }
 
   // =================================================
@@ -265,14 +401,11 @@ export class ProjectsController {
 
   @Post('drawings/:drawingId/logs')
   addApprovalLog(@Param('drawingId') drawingId: string, @Body() dto: any) {
-    return this.projectsService.addApprovalLog({
-      ...dto,
-      drawing_id: drawingId,
-    });
+    return this.approvalLogService.create({ ...dto, drawing_id: drawingId });
   }
 
   @Get('drawings/:drawingId/logs')
   getApprovalLogs(@Param('drawingId') drawingId: string) {
-    return this.projectsService.getApprovalLogs(drawingId);
+    return this.approvalLogService.findByDrawing(drawingId);
   }
 }

@@ -1,3 +1,7 @@
+// ======================================================
+// project_brief.model.ts
+// ======================================================
+
 import {
   Table,
   Column,
@@ -7,13 +11,17 @@ import {
   BelongsTo,
   Default,
 } from 'sequelize-typescript';
-import { Project } from './project.model';
+
 import type {
   InferAttributes,
   InferCreationAttributes,
   CreationOptional,
   NonAttribute,
 } from 'sequelize';
+
+import { Project } from './project.model';
+import { User } from '../../users/models/user.model';
+
 @Table({
   tableName: 'project_brief',
   timestamps: true,
@@ -25,12 +33,27 @@ export class ProjectBrief extends Model<
   InferCreationAttributes<ProjectBrief>
 > {
   @Default(DataType.UUIDV4)
-  @Column({ type: DataType.UUID, primaryKey: true })
+  @Column({
+    type: DataType.UUID,
+    primaryKey: true,
+  })
   declare id: CreationOptional<string>;
 
+  // ======================================================
+  // PROJECT
+  // ======================================================
+
   @ForeignKey(() => Project)
-  @Column({ type: DataType.UUID, allowNull: false, unique: true })
+  @Column({
+    type: DataType.UUID,
+    allowNull: false,
+    unique: true,
+  })
   declare project_id: string;
+
+  // ======================================================
+  // BRIEF DATA
+  // ======================================================
 
   @Column(DataType.JSON)
   declare rooms_spaces_required: any;
@@ -53,6 +76,76 @@ export class ProjectBrief extends Model<
   @Column(DataType.JSON)
   declare output_project_profile: any;
 
+  // ======================================================
+  // STATUS
+  // ======================================================
+
+  @Default('Pending')
+  @Column({
+    type: DataType.STRING(50),
+    allowNull: false,
+    defaultValue: 'Pending',
+  })
+  declare status: CreationOptional<string>;
+
+  // ======================================================
+  // APPROVAL
+  // ======================================================
+
+  @Default(false)
+  @Column({
+    type: DataType.BOOLEAN,
+    allowNull: false,
+    defaultValue: false,
+  })
+  declare is_approved: CreationOptional<boolean>;
+
+  @ForeignKey(() => User)
+  @Column({
+    type: DataType.UUID,
+    allowNull: true,
+  })
+  declare approved_by: CreationOptional<string | null>;
+
+  @Column({
+    type: DataType.DATE,
+    allowNull: true,
+  })
+  declare approved_at: CreationOptional<Date | null>;
+
+  // ======================================================
+  // CHANGES REQUESTED
+  // ======================================================
+
+  @Column({
+    type: DataType.TEXT,
+    allowNull: true,
+  })
+  declare changes_note: CreationOptional<string | null>;
+
+  @ForeignKey(() => User)
+  @Column({
+    type: DataType.UUID,
+    allowNull: true,
+  })
+  declare changes_requested_by: CreationOptional<string | null>;
+
+  @Column({
+    type: DataType.DATE,
+    allowNull: true,
+  })
+  declare changes_requested_at: CreationOptional<Date | null>;
+
+  // ======================================================
+  // RELATIONS
+  // ======================================================
+
   @BelongsTo(() => Project)
   declare project?: NonAttribute<Project>;
+
+  @BelongsTo(() => User, 'approved_by')
+  declare approvedByUser?: NonAttribute<User>;
+
+  @BelongsTo(() => User, 'changes_requested_by')
+  declare changesRequestedByUser?: NonAttribute<User>;
 }
