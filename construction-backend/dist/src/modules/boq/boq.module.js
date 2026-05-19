@@ -17,7 +17,8 @@ const boq_model_1 = require("./models/boq.model");
 const boq_section_model_1 = require("./models/boq-section.model");
 const boq_subheading_model_1 = require("./models/boq-subheading.model");
 const boq_item_model_1 = require("./models/boq-item.model");
-const inventory_item_model_1 = require("../inventory/models/inventory-item.model");
+const inventory_master_model_1 = require("../inventory/models/inventory-master.model");
+const brand_model_1 = require("../inventory/models/brand.model");
 let BoqModule = class BoqModule {
 };
 exports.BoqModule = BoqModule;
@@ -31,7 +32,8 @@ exports.BoqModule = BoqModule = __decorate([
                 boq_section_model_1.BoqSection,
                 boq_subheading_model_1.BoqSubHeading,
                 boq_item_model_1.BoqItem,
-                inventory_item_model_1.InventoryItem,
+                inventory_master_model_1.InventoryMaster,
+                brand_model_1.Brand,
             ]),
         ],
         controllers: [boq_controller_1.BoqController],

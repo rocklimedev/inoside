@@ -9,7 +9,8 @@ import { BoqItem } from './models/boq-item.model';
 import { Unit } from './models/unit.model';
 
 import { InventoryItem } from '@/modules/inventory/models/inventory-item.model';
-
+import { InventoryMaster } from '../inventory/models/inventory-master.model';
+import { Brand } from '../inventory/models/brand.model';
 import { CreateBoqDto } from './dto/create-boq.dto';
 import { CreateBoqSectionDto } from './dto/create-boq-section.dto';
 import { CreateBoqItemDto } from './dto/create-boq-item.dto';
@@ -37,8 +38,8 @@ export class BoqService {
     @InjectModel(Unit)
     private unitModel: typeof Unit,
 
-    @InjectModel(InventoryItem)
-    private inventoryItemModel: typeof InventoryItem,
+    @InjectModel(InventoryMaster)
+    private inventoryMasterModel: typeof InventoryMaster,
   ) {}
 
   // ====================== BOQ CATEGORY ======================
@@ -84,7 +85,13 @@ export class BoqService {
               include: [
                 {
                   model: BoqItem,
-                  include: [Unit, InventoryItem],
+                  include: [
+                    Unit,
+                    {
+                      model: InventoryMaster,
+                      include: [Brand],
+                    },
+                  ],
                 },
               ],
             },
@@ -110,7 +117,13 @@ export class BoqService {
               include: [
                 {
                   model: BoqItem,
-                  include: [Unit, InventoryItem],
+                  include: [
+                    Unit,
+                    {
+                      model: InventoryMaster,
+                      include: [Brand],
+                    },
+                  ],
                 },
               ],
             },
@@ -154,7 +167,13 @@ export class BoqService {
           include: [
             {
               model: BoqItem,
-              include: [Unit, InventoryItem],
+              include: [
+                Unit,
+                {
+                  model: InventoryMaster,
+                  include: [Brand],
+                },
+              ],
             },
           ],
         },
@@ -189,7 +208,13 @@ export class BoqService {
       include: [
         {
           model: BoqItem,
-          include: [Unit, InventoryItem],
+          include: [
+            Unit,
+            {
+              model: InventoryMaster,
+              include: [Brand],
+            },
+          ],
         },
       ],
 
@@ -201,40 +226,28 @@ export class BoqService {
 
   async createItem(dto: CreateBoqItemDto) {
     const boq = await this.boqModel.findByPk(dto.boq_id);
-
-    if (!boq) {
-      throw new NotFoundException('BOQ not found');
-    }
+    if (!boq) throw new NotFoundException('BOQ not found');
 
     const section = await this.boqSectionModel.findByPk(dto.section_id);
-
-    if (!section) {
-      throw new NotFoundException('Section not found');
-    }
+    if (!section) throw new NotFoundException('Section not found');
 
     if (dto.subheading_id) {
       const subheading = await this.boqSubHeadingModel.findByPk(
         dto.subheading_id,
       );
-
-      if (!subheading) {
-        throw new NotFoundException('Subheading not found');
-      }
+      if (!subheading) throw new NotFoundException('Subheading not found');
     }
 
-    let inventoryItem: InventoryItem | null = null;
+    let inventory: InventoryMaster | null = null;
 
     if (dto.inventory_item_id) {
-      inventoryItem = await this.inventoryItemModel.findByPk(
+      inventory = await this.inventoryMasterModel.findByPk(
         dto.inventory_item_id,
       );
-
-      if (!inventoryItem) {
-        throw new NotFoundException('Inventory item not found');
-      }
+      if (!inventory) throw new NotFoundException('Inventory item not found');
     }
 
-    const itemName = dto.item_name || inventoryItem?.item_name;
+    const itemName = dto.item_name || inventory?.item_name;
 
     if (!itemName) {
       throw new NotFoundException('Item name is required');
@@ -243,25 +256,25 @@ export class BoqService {
     const item = await this.boqItemModel.create({
       ...dto,
 
-      item_code: dto.item_code || inventoryItem?.item_code,
-
+      item_code: dto.item_code || inventory?.item_code,
       item_name: itemName,
-
-      description: dto.description || inventoryItem?.description,
-
-      specification: dto.specification || inventoryItem?.specification,
-
-      brand: dto.brand || inventoryItem?.brand,
-
-      unit_id: dto.unit_id || inventoryItem?.unit_id,
-
-      rate: dto.rate || inventoryItem?.default_rate,
+      description: dto.description || inventory?.description,
+      specification: dto.specification || inventory?.specification,
+      brand: dto.brand || inventory?.brand_id, // ⚠️ FIXED (was wrong)
+      unit_id: dto.unit_id || inventory?.unit_id,
+      rate: dto.rate || inventory?.default_rate,
     });
 
     await this.calculateBoqTotal(dto.boq_id);
 
     return this.boqItemModel.findByPk(item.id, {
-      include: [Unit, InventoryItem],
+      include: [
+        Unit,
+        {
+          model: InventoryMaster,
+          include: [Brand],
+        },
+      ],
     });
   }
 
@@ -273,7 +286,7 @@ export class BoqService {
     }
 
     if (updateData.inventory_item_id) {
-      const inventoryItem = await this.inventoryItemModel.findByPk(
+      const inventoryItem = await this.inventoryMasterModel.findByPk(
         updateData.inventory_item_id,
       );
 
@@ -287,7 +300,13 @@ export class BoqService {
     await this.calculateBoqTotal(item.boq_id);
 
     return this.boqItemModel.findByPk(id, {
-      include: [Unit, InventoryItem],
+      include: [
+        Unit,
+        {
+          model: InventoryMaster,
+          include: [Brand],
+        },
+      ],
     });
   }
 

@@ -12,10 +12,12 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.AppModule = void 0;
 const common_1 = require("@nestjs/common");
 const config_1 = require("@nestjs/config");
+const core_1 = require("@nestjs/core");
 const sequelize_1 = require("@nestjs/sequelize");
 const throttler_1 = require("@nestjs/throttler");
-const core_1 = require("@nestjs/core");
-const throttler_2 = require("@nestjs/throttler");
+const app_controller_1 = require("./app.controller");
+const app_service_1 = require("./app.service");
+const database_config_1 = __importDefault(require("./config/database.config"));
 const auth_module_1 = require("./modules/auth/auth.module");
 const users_module_1 = require("./modules/users/users.module");
 const rbac_module_1 = require("./modules/rbac/rbac.module");
@@ -25,7 +27,7 @@ const boq_module_1 = require("./modules/boq/boq.module");
 const vendors_module_1 = require("./modules/vendors/vendors.module");
 const client_module_1 = require("./modules/clients/client.module");
 const sites_module_1 = require("./modules/sites/sites.module");
-const database_config_1 = __importDefault(require("./config/database.config"));
+const cdn_module_1 = require("./modules/cdn/cdn.module");
 let AppModule = class AppModule {
 };
 exports.AppModule = AppModule;
@@ -34,7 +36,7 @@ exports.AppModule = AppModule = __decorate([
         imports: [
             config_1.ConfigModule.forRoot({
                 isGlobal: true,
-                envFilePath: `.env.${process.env.NODE_ENV || 'development'}`,
+                envFilePath: [`.env.${process.env.NODE_ENV || 'development'}`, '.env'],
             }),
             throttler_1.ThrottlerModule.forRoot([
                 {
@@ -51,16 +53,19 @@ exports.AppModule = AppModule = __decorate([
             users_module_1.UsersModule,
             rbac_module_1.RbacModule,
             projects_module_1.ProjectsModule,
+            inventory_module_1.InventoryModule,
             boq_module_1.BoqModule,
+            vendors_module_1.VendorsModule,
             client_module_1.ClientsModule,
             sites_module_1.SitesModule,
-            vendors_module_1.VendorsModule,
-            inventory_module_1.InventoryModule,
+            cdn_module_1.CdnModule,
         ],
+        controllers: [app_controller_1.AppController],
         providers: [
+            app_service_1.AppService,
             {
                 provide: core_1.APP_GUARD,
-                useClass: throttler_2.ThrottlerGuard,
+                useClass: throttler_1.ThrottlerGuard,
             },
         ],
     })

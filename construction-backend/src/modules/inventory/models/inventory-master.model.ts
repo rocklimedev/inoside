@@ -10,6 +10,7 @@ import {
 } from 'sequelize-typescript';
 
 import { Unit } from '@/modules/boq/models/unit.model';
+import { Brand } from './brand.model';
 
 @Table({
   tableName: 'inventory_master',
@@ -43,6 +44,8 @@ export class InventoryMaster extends Model<InventoryMaster> {
   })
   declare description: string;
 
+  // ================= UNIT =================
+
   @ForeignKey(() => Unit)
   @Column({
     type: DataType.CHAR(36),
@@ -51,7 +54,21 @@ export class InventoryMaster extends Model<InventoryMaster> {
   declare unit_id: string;
 
   @BelongsTo(() => Unit)
-  declare unit: Unit;
+  declare unit?: Unit;
+
+  // ================= BRAND =================
+
+  @ForeignKey(() => Brand)
+  @Column({
+    type: DataType.CHAR(36),
+    allowNull: true,
+  })
+  declare brand_id: string;
+
+  @BelongsTo(() => Brand)
+  declare brand?: Brand;
+
+  // ================= PRICING =================
 
   @Default(0)
   @Column({
@@ -60,17 +77,15 @@ export class InventoryMaster extends Model<InventoryMaster> {
   })
   declare default_rate: number;
 
-  @Column({
-    type: DataType.STRING(255),
-    allowNull: true,
-  })
-  declare brand: string;
+  // ================= SPEC =================
 
   @Column({
     type: DataType.TEXT,
     allowNull: true,
   })
   declare specification: string;
+
+  // ================= STATUS =================
 
   @Default(true)
   @Column({
@@ -79,13 +94,11 @@ export class InventoryMaster extends Model<InventoryMaster> {
   })
   declare is_active: boolean;
 
-  @Column({
-    type: DataType.DATE,
-  })
+  // ================= TIMESTAMPS =================
+
+  @Column({ type: DataType.DATE })
   declare created_at: Date;
 
-  @Column({
-    type: DataType.DATE,
-  })
+  @Column({ type: DataType.DATE })
   declare updated_at: Date;
 }

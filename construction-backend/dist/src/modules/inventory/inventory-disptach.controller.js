@@ -11,6 +11,7 @@ var __metadata = (this && this.__metadata) || function (k, v) {
 var __param = (this && this.__param) || function (paramIndex, decorator) {
     return function (target, key) { decorator(target, key, paramIndex); }
 };
+var _a, _b;
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.InventoryDispatchController = void 0;
 const common_1 = require("@nestjs/common");
@@ -33,7 +34,7 @@ __decorate([
     (0, common_1.Post)(),
     __param(0, (0, common_1.Body)()),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [dispatch_material_dto_1.DispatchMaterialDto]),
+    __metadata("design:paramtypes", [typeof (_b = typeof dispatch_material_dto_1.DispatchMaterialDto !== "undefined" && dispatch_material_dto_1.DispatchMaterialDto) === "function" ? _b : Object]),
     __metadata("design:returntype", void 0)
 ], InventoryDispatchController.prototype, "dispatch", null);
 __decorate([
@@ -46,6 +47,6 @@ __decorate([
 ], InventoryDispatchController.prototype, "markDelivered", null);
 exports.InventoryDispatchController = InventoryDispatchController = __decorate([
     (0, common_1.Controller)('inventory/dispatch'),
-    __metadata("design:paramtypes", [inventory_dispatch_service_1.InventoryDispatchService])
+    __metadata("design:paramtypes", [typeof (_a = typeof inventory_dispatch_service_1.InventoryDispatchService !== "undefined" && inventory_dispatch_service_1.InventoryDispatchService) === "function" ? _a : Object])
 ], InventoryDispatchController);
 //# sourceMappingURL=inventory-disptach.controller.js.map

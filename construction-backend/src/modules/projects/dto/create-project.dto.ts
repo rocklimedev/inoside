@@ -5,6 +5,7 @@ import {
   IsEnum,
   IsNumber,
   IsUUID,
+  IsBoolean,
 } from 'class-validator';
 
 import {
@@ -13,6 +14,7 @@ import {
   PurposeType,
   TimelineExpectation,
 } from '@/common/enums';
+
 export class CreateProjectDto {
   @IsNotEmpty()
   @IsUUID()
@@ -57,6 +59,16 @@ export class CreateProjectDto {
   @IsOptional()
   @IsString()
   design_preference?: string;
+
+  // ✅ ADD THESE (they exist in model)
+
+  @IsOptional()
+  @IsString()
+  current_stage?: string;
+
+  @IsOptional()
+  @IsBoolean()
+  token_received?: boolean;
 
   @IsOptional()
   @IsUUID()

@@ -14,8 +14,7 @@ var __param = (this && this.__param) || function (paramIndex, decorator) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.InventoryMasterService = void 0;
 const common_1 = require("@nestjs/common");
-const typeorm_1 = require("@nestjs/typeorm");
-const typeorm_2 = require("typeorm");
+const sequelize_1 = require("@nestjs/sequelize");
 const inventory_master_model_1 = require("../models/inventory-master.model");
 const uuid_1 = require("uuid");
 let InventoryMasterService = class InventoryMasterService {
@@ -24,29 +23,28 @@ let InventoryMasterService = class InventoryMasterService {
         this.repo = repo;
     }
     async create(dto) {
-        const item = this.repo.create({
+        return this.repo.create({
             id: (0, uuid_1.v4)(),
             ...dto,
         });
-        return this.repo.save(item);
     }
     async findAll() {
-        return this.repo.find({
-            order: {
-                item_name: 'ASC',
-            },
+        return this.repo.findAll({
+            order: [['item_name', 'ASC']],
+            include: { all: true },
         });
     }
     async findOne(id) {
         return this.repo.findOne({
             where: { id },
+            include: { all: true },
         });
     }
 };
 exports.InventoryMasterService = InventoryMasterService;
 exports.InventoryMasterService = InventoryMasterService = __decorate([
     (0, common_1.Injectable)(),
-    __param(0, (0, typeorm_1.InjectRepository)(inventory_master_model_1.InventoryMaster)),
-    __metadata("design:paramtypes", [typeorm_2.Repository])
+    __param(0, (0, sequelize_1.InjectModel)(inventory_master_model_1.InventoryMaster)),
+    __metadata("design:paramtypes", [Object])
 ], InventoryMasterService);
 //# sourceMappingURL=inventory-master.service.js.map

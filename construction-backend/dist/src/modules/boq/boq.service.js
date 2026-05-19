@@ -21,7 +21,8 @@ const boq_section_model_1 = require("./models/boq-section.model");
 const boq_subheading_model_1 = require("./models/boq-subheading.model");
 const boq_item_model_1 = require("./models/boq-item.model");
 const unit_model_1 = require("./models/unit.model");
-const inventory_item_model_1 = require("../inventory/models/inventory-item.model");
+const inventory_master_model_1 = require("../inventory/models/inventory-master.model");
+const brand_model_1 = require("../inventory/models/brand.model");
 let BoqService = class BoqService {
     boqModel;
     boqCategoryModel;
@@ -29,15 +30,15 @@ let BoqService = class BoqService {
     boqSubHeadingModel;
     boqItemModel;
     unitModel;
-    inventoryItemModel;
-    constructor(boqModel, boqCategoryModel, boqSectionModel, boqSubHeadingModel, boqItemModel, unitModel, inventoryItemModel) {
+    inventoryMasterModel;
+    constructor(boqModel, boqCategoryModel, boqSectionModel, boqSubHeadingModel, boqItemModel, unitModel, inventoryMasterModel) {
         this.boqModel = boqModel;
         this.boqCategoryModel = boqCategoryModel;
         this.boqSectionModel = boqSectionModel;
         this.boqSubHeadingModel = boqSubHeadingModel;
         this.boqItemModel = boqItemModel;
         this.unitModel = unitModel;
-        this.inventoryItemModel = inventoryItemModel;
+        this.inventoryMasterModel = inventoryMasterModel;
     }
     async findAllCategories() {
         return this.boqCategoryModel.findAll({
@@ -74,7 +75,13 @@ let BoqService = class BoqService {
                             include: [
                                 {
                                     model: boq_item_model_1.BoqItem,
-                                    include: [unit_model_1.Unit, inventory_item_model_1.InventoryItem],
+                                    include: [
+                                        unit_model_1.Unit,
+                                        {
+                                            model: inventory_master_model_1.InventoryMaster,
+                                            include: [brand_model_1.Brand],
+                                        },
+                                    ],
                                 },
                             ],
                         },
@@ -99,7 +106,13 @@ let BoqService = class BoqService {
                             include: [
                                 {
                                     model: boq_item_model_1.BoqItem,
-                                    include: [unit_model_1.Unit, inventory_item_model_1.InventoryItem],
+                                    include: [
+                                        unit_model_1.Unit,
+                                        {
+                                            model: inventory_master_model_1.InventoryMaster,
+                                            include: [brand_model_1.Brand],
+                                        },
+                                    ],
                                 },
                             ],
                         },
@@ -132,7 +145,13 @@ let BoqService = class BoqService {
                     include: [
                         {
                             model: boq_item_model_1.BoqItem,
-                            include: [unit_model_1.Unit, inventory_item_model_1.InventoryItem],
+                            include: [
+                                unit_model_1.Unit,
+                                {
+                                    model: inventory_master_model_1.InventoryMaster,
+                                    include: [brand_model_1.Brand],
+                                },
+                            ],
                         },
                     ],
                 },
@@ -159,7 +178,13 @@ let BoqService = class BoqService {
             include: [
                 {
                     model: boq_item_model_1.BoqItem,
-                    include: [unit_model_1.Unit, inventory_item_model_1.InventoryItem],
+                    include: [
+                        unit_model_1.Unit,
+                        {
+                            model: inventory_master_model_1.InventoryMaster,
+                            include: [brand_model_1.Brand],
+                        },
+                    ],
                 },
             ],
             order: [['sort_order', 'ASC']],
@@ -167,43 +192,45 @@ let BoqService = class BoqService {
     }
     async createItem(dto) {
         const boq = await this.boqModel.findByPk(dto.boq_id);
-        if (!boq) {
+        if (!boq)
             throw new common_1.NotFoundException('BOQ not found');
-        }
         const section = await this.boqSectionModel.findByPk(dto.section_id);
-        if (!section) {
+        if (!section)
             throw new common_1.NotFoundException('Section not found');
-        }
         if (dto.subheading_id) {
             const subheading = await this.boqSubHeadingModel.findByPk(dto.subheading_id);
-            if (!subheading) {
+            if (!subheading)
                 throw new common_1.NotFoundException('Subheading not found');
-            }
         }
-        let inventoryItem = null;
+        let inventory = null;
         if (dto.inventory_item_id) {
-            inventoryItem = await this.inventoryItemModel.findByPk(dto.inventory_item_id);
-            if (!inventoryItem) {
+            inventory = await this.inventoryMasterModel.findByPk(dto.inventory_item_id);
+            if (!inventory)
                 throw new common_1.NotFoundException('Inventory item not found');
-            }
         }
-        const itemName = dto.item_name || inventoryItem?.item_name;
+        const itemName = dto.item_name || inventory?.item_name;
         if (!itemName) {
             throw new common_1.NotFoundException('Item name is required');
         }
         const item = await this.boqItemModel.create({
             ...dto,
-            item_code: dto.item_code || inventoryItem?.item_code,
+            item_code: dto.item_code || inventory?.item_code,
             item_name: itemName,
-            description: dto.description || inventoryItem?.description,
-            specification: dto.specification || inventoryItem?.specification,
-            brand: dto.brand || inventoryItem?.brand,
-            unit_id: dto.unit_id || inventoryItem?.unit_id,
-            rate: dto.rate || inventoryItem?.default_rate,
+            description: dto.description || inventory?.description,
+            specification: dto.specification || inventory?.specification,
+            brand: dto.brand || inventory?.brand_id,
+            unit_id: dto.unit_id || inventory?.unit_id,
+            rate: dto.rate || inventory?.default_rate,
         });
         await this.calculateBoqTotal(dto.boq_id);
         return this.boqItemModel.findByPk(item.id, {
-            include: [unit_model_1.Unit, inventory_item_model_1.InventoryItem],
+            include: [
+                unit_model_1.Unit,
+                {
+                    model: inventory_master_model_1.InventoryMaster,
+                    include: [brand_model_1.Brand],
+                },
+            ],
         });
     }
     async updateItem(id, updateData) {
@@ -212,7 +239,7 @@ let BoqService = class BoqService {
             throw new common_1.NotFoundException('Item not found');
         }
         if (updateData.inventory_item_id) {
-            const inventoryItem = await this.inventoryItemModel.findByPk(updateData.inventory_item_id);
+            const inventoryItem = await this.inventoryMasterModel.findByPk(updateData.inventory_item_id);
             if (!inventoryItem) {
                 throw new common_1.NotFoundException('Inventory item not found');
             }
@@ -220,7 +247,13 @@ let BoqService = class BoqService {
         await item.update(updateData);
         await this.calculateBoqTotal(item.boq_id);
         return this.boqItemModel.findByPk(id, {
-            include: [unit_model_1.Unit, inventory_item_model_1.InventoryItem],
+            include: [
+                unit_model_1.Unit,
+                {
+                    model: inventory_master_model_1.InventoryMaster,
+                    include: [brand_model_1.Brand],
+                },
+            ],
         });
     }
     async deleteItem(id) {
@@ -273,7 +306,7 @@ exports.BoqService = BoqService = __decorate([
     __param(3, (0, sequelize_1.InjectModel)(boq_subheading_model_1.BoqSubHeading)),
     __param(4, (0, sequelize_1.InjectModel)(boq_item_model_1.BoqItem)),
     __param(5, (0, sequelize_1.InjectModel)(unit_model_1.Unit)),
-    __param(6, (0, sequelize_1.InjectModel)(inventory_item_model_1.InventoryItem)),
+    __param(6, (0, sequelize_1.InjectModel)(inventory_master_model_1.InventoryMaster)),
     __metadata("design:paramtypes", [Object, Object, Object, Object, Object, Object, Object])
 ], BoqService);
 //# sourceMappingURL=boq.service.js.map

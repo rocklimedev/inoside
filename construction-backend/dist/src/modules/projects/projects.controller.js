@@ -32,8 +32,6 @@ const request_brief_changes_dto_1 = require("./dto/request-brief-changes.dto");
 const create_project_pitch_dto_1 = require("./dto/create-project-pitch.dto");
 const update_project_pitch_dto_1 = require("./dto/update-project-pitch.dto");
 const jwt_auth_guard_1 = require("../../common/guards/jwt-auth.guard");
-const roles_guard_1 = require("../../common/guards/roles.guard");
-const roles_decorator_1 = require("../../common/decorators/roles.decorator");
 let ProjectsController = class ProjectsController {
     projectsService;
     briefService;
@@ -212,8 +210,6 @@ let ProjectsController = class ProjectsController {
 exports.ProjectsController = ProjectsController;
 __decorate([
     (0, common_1.Post)(),
-    (0, common_1.UseGuards)(roles_guard_1.RolesGuard),
-    (0, roles_decorator_1.Roles)('admin', 'project_manager'),
     __param(0, (0, common_1.Body)()),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [create_project_dto_1.CreateProjectDto]),
@@ -234,8 +230,6 @@ __decorate([
 ], ProjectsController.prototype, "findOne", null);
 __decorate([
     (0, common_1.Patch)(':id'),
-    (0, common_1.UseGuards)(roles_guard_1.RolesGuard),
-    (0, roles_decorator_1.Roles)('admin', 'project_manager'),
     __param(0, (0, common_1.Param)('id')),
     __param(1, (0, common_1.Body)()),
     __metadata("design:type", Function),
@@ -244,8 +238,6 @@ __decorate([
 ], ProjectsController.prototype, "update", null);
 __decorate([
     (0, common_1.Delete)(':id'),
-    (0, common_1.UseGuards)(roles_guard_1.RolesGuard),
-    (0, roles_decorator_1.Roles)('admin'),
     __param(0, (0, common_1.Param)('id')),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [String]),
@@ -284,8 +276,6 @@ __decorate([
 ], ProjectsController.prototype, "updateBrief", null);
 __decorate([
     (0, common_1.Patch)('briefs/:briefId/approve'),
-    (0, common_1.UseGuards)(roles_guard_1.RolesGuard),
-    (0, roles_decorator_1.Roles)('admin', 'project_manager'),
     __param(0, (0, common_1.Param)('briefId')),
     __param(1, (0, common_1.Req)()),
     __metadata("design:type", Function),
@@ -294,8 +284,6 @@ __decorate([
 ], ProjectsController.prototype, "approveBrief", null);
 __decorate([
     (0, common_1.Patch)('briefs/:briefId/unapprove'),
-    (0, common_1.UseGuards)(roles_guard_1.RolesGuard),
-    (0, roles_decorator_1.Roles)('admin', 'project_manager'),
     __param(0, (0, common_1.Param)('briefId')),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [String]),
@@ -303,8 +291,6 @@ __decorate([
 ], ProjectsController.prototype, "unapproveBrief", null);
 __decorate([
     (0, common_1.Patch)('briefs/:briefId/request-changes'),
-    (0, common_1.UseGuards)(roles_guard_1.RolesGuard),
-    (0, roles_decorator_1.Roles)('admin', 'project_manager'),
     __param(0, (0, common_1.Param)('briefId')),
     __param(1, (0, common_1.Body)()),
     __param(2, (0, common_1.Req)()),
@@ -314,8 +300,6 @@ __decorate([
 ], ProjectsController.prototype, "requestBriefChanges", null);
 __decorate([
     (0, common_1.Patch)('briefs/:briefId/send-to-client'),
-    (0, common_1.UseGuards)(roles_guard_1.RolesGuard),
-    (0, roles_decorator_1.Roles)('admin', 'project_manager'),
     __param(0, (0, common_1.Param)('briefId')),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [String]),
@@ -323,8 +307,6 @@ __decorate([
 ], ProjectsController.prototype, "sendBriefToClient", null);
 __decorate([
     (0, common_1.Patch)('briefs/:briefId/draft'),
-    (0, common_1.UseGuards)(roles_guard_1.RolesGuard),
-    (0, roles_decorator_1.Roles)('admin', 'project_manager'),
     __param(0, (0, common_1.Param)('briefId')),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [String]),
@@ -382,8 +364,6 @@ __decorate([
 ], ProjectsController.prototype, "getPitchById", null);
 __decorate([
     (0, common_1.Delete)('pitches/:pitchId'),
-    (0, common_1.UseGuards)(roles_guard_1.RolesGuard),
-    (0, roles_decorator_1.Roles)('admin', 'project_manager'),
     __param(0, (0, common_1.Param)('pitchId')),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [String]),

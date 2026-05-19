@@ -3,15 +3,18 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-const core_1 = require("@nestjs/core");
-const app_module_1 = require("./app.module");
 const common_1 = require("@nestjs/common");
+const core_1 = require("@nestjs/core");
 const helmet_1 = __importDefault(require("helmet"));
 const compression_1 = __importDefault(require("compression"));
 const swagger_1 = require("@nestjs/swagger");
+const app_module_1 = require("./app.module");
 async function bootstrap() {
     const app = await core_1.NestFactory.create(app_module_1.AppModule);
-    app.use((0, helmet_1.default)());
+    app.getHttpAdapter().getInstance().set('trust proxy', 1);
+    app.use((0, helmet_1.default)({
+        crossOriginResourcePolicy: false,
+    }));
     app.use((0, compression_1.default)());
     app.setGlobalPrefix('api');
     app.enableCors({
@@ -20,19 +23,23 @@ async function bootstrap() {
             'https://inoside.vercel.app',
             'https://buildcon.rippotaiarchitecture.com',
             'https://buildcon-api.rippotaiarchitecture.com',
+            'https://media-buildcon.rippotaiarchitecture.com',
         ],
         methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
-        allowedHeaders: ['Content-Type', 'Authorization'],
+        allowedHeaders: ['Content-Type', 'Authorization', 'x-cdn-key'],
         credentials: true,
     });
     app.useGlobalPipes(new common_1.ValidationPipe({
         whitelist: true,
         forbidNonWhitelisted: true,
         transform: true,
+        transformOptions: {
+            enableImplicitConversion: true,
+        },
     }));
     const config = new swagger_1.DocumentBuilder()
-        .setTitle('Construction API')
-        .setDescription('Construction Project Management API Documentation')
+        .setTitle('Buildcon API')
+        .setDescription('Construction Project Management API')
         .setVersion('1.0.0')
         .addBearerAuth()
         .build();
@@ -45,7 +52,7 @@ async function bootstrap() {
     const port = process.env.PORT || 5000;
     await app.listen(port);
     console.log(`🚀 Server running on port ${port}`);
-    console.log(`📄 API Docs: http://localhost:${port}/api/api-docs`);
+    console.log(`📄 Swagger Docs: http://localhost:${port}/api-docs`);
 }
 bootstrap();
 //# sourceMappingURL=main.js.map

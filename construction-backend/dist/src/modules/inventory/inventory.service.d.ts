@@ -1,0 +1,35 @@
+import { InventoryRequest } from './models/inventory-request.model';
+import { InventoryDispatch } from './models/inventory-dispatch.model';
+import { InventoryMaster } from './models/inventory-master.model';
+import { Material } from './models/materials.model';
+import { Brand } from './models/brand.model';
+import { CreateInventoryRequestDto } from './dto/create-inventory-request.dto';
+import { UpdateInventoryRequestDto } from './dto/update-inventory-request.dto';
+import { CreateInventoryDispatchDto } from './dto/create-inventory-dispatch.dto';
+import { UpdateInventoryDispatchDto } from './dto/update-inventory-dispatch.dto';
+import { CreateInventoryMasterDto } from './dto/create-inventory-master.dto';
+import { UpdateInventoryMasterDto } from './dto/update-inventory-master.dto';
+export declare class InventoryService {
+    private requestModel;
+    private dispatchModel;
+    private masterModel;
+    private materialModel;
+    private brandModel;
+    constructor(requestModel: typeof InventoryRequest, dispatchModel: typeof InventoryDispatch, masterModel: typeof InventoryMaster, materialModel: typeof Material, brandModel: typeof Brand);
+    createRequest(dto: CreateInventoryRequestDto): Promise<InventoryRequest>;
+    findAllRequests(): Promise<InventoryRequest[]>;
+    findRequestById(id: string): Promise<InventoryRequest>;
+    updateRequest(id: string, dto: UpdateInventoryRequestDto): Promise<InventoryRequest>;
+    deleteRequest(id: string): Promise<void>;
+    createDispatch(dto: CreateInventoryDispatchDto): Promise<InventoryDispatch>;
+    findAllDispatches(): Promise<InventoryDispatch[]>;
+    updateDispatch(id: string, dto: UpdateInventoryDispatchDto): Promise<InventoryDispatch>;
+    createMaster(dto: CreateInventoryMasterDto): Promise<InventoryMaster>;
+    findAllMaster(): Promise<InventoryMaster[]>;
+    updateMaster(id: string, dto: UpdateInventoryMasterDto): Promise<InventoryMaster>;
+    deleteMaster(id: string): Promise<void>;
+    findAllMaterials(): Promise<Material[]>;
+    findAllBrands(): Promise<Brand[]>;
+    createBrand(name: string): Promise<Brand>;
+    deleteBrand(id: string): Promise<void>;
+}

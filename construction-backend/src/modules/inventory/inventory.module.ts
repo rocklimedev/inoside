@@ -1,40 +1,26 @@
 import { Module } from '@nestjs/common';
 import { SequelizeModule } from '@nestjs/sequelize';
 
-import { InventoryMaster } from './models/inventory-master.model';
+import { InventoryService } from './inventory.service';
+import { InventoryController } from './inventory.controller';
+
 import { InventoryRequest } from './models/inventory-request.model';
 import { InventoryDispatch } from './models/inventory-dispatch.model';
+import { InventoryMaster } from './models/inventory-master.model';
 import { Material } from './models/materials.model';
-
-import { InventoryMasterService } from './services/inventory-master.service';
-import { InventoryRequestService } from './services/inventory-request.service';
-import { InventoryDispatchService } from './services/inventory-dispatch.service';
-
-import { InventoryRequestController } from './inventory-request.controller';
-import { InventoryDispatchController } from './inventory-disptach.controller';
-
+import { Brand } from './models/brand.model';
 @Module({
   imports: [
     SequelizeModule.forFeature([
-      InventoryMaster,
       InventoryRequest,
       InventoryDispatch,
+      InventoryMaster,
       Material,
+      Brand,
     ]),
   ],
-
-  controllers: [InventoryRequestController, InventoryDispatchController],
-
-  providers: [
-    InventoryMasterService,
-    InventoryRequestService,
-    InventoryDispatchService,
-  ],
-
-  exports: [
-    InventoryMasterService,
-    InventoryRequestService,
-    InventoryDispatchService,
-  ],
+  controllers: [InventoryController],
+  providers: [InventoryService],
+  exports: [InventoryService],
 })
 export class InventoryModule {}

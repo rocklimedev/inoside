@@ -11,5 +11,7 @@ export declare class CreateProjectDto {
     budget_range?: string;
     timeline_expectation?: TimelineExpectation;
     design_preference?: string;
+    current_stage?: string;
+    token_received?: boolean;
     created_by?: string;
 }

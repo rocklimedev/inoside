@@ -23,7 +23,7 @@ __decorate([
     (0, sequelize_typescript_1.Column)({
         type: sequelize_typescript_1.DataType.CHAR(36),
     }),
-    __metadata("design:type", String)
+    __metadata("design:type", Object)
 ], InventoryRequest.prototype, "id", void 0);
 __decorate([
     (0, sequelize_typescript_1.ForeignKey)(() => project_model_1.Project),
@@ -61,7 +61,7 @@ __decorate([
         type: sequelize_typescript_1.DataType.DATEONLY,
         allowNull: true,
     }),
-    __metadata("design:type", Date)
+    __metadata("design:type", String)
 ], InventoryRequest.prototype, "required_date", void 0);
 __decorate([
     (0, sequelize_typescript_1.ForeignKey)(() => vendor_model_1.Vendor),
@@ -120,7 +120,7 @@ __decorate([
         allowNull: false,
         defaultValue: sequelize_typescript_1.DataType.NOW,
     }),
-    __metadata("design:type", Date)
+    __metadata("design:type", Object)
 ], InventoryRequest.prototype, "created_at", void 0);
 exports.InventoryRequest = InventoryRequest = __decorate([
     (0, sequelize_typescript_1.Table)({

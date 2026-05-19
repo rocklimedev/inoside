@@ -11,6 +11,7 @@ var __metadata = (this && this.__metadata) || function (k, v) {
 var __param = (this && this.__param) || function (paramIndex, decorator) {
     return function (target, key) { decorator(target, key, paramIndex); }
 };
+var _a, _b;
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.InventoryRequestController = void 0;
 const common_1 = require("@nestjs/common");
@@ -36,7 +37,7 @@ __decorate([
     (0, common_1.Post)(),
     __param(0, (0, common_1.Body)()),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [create_request_dto_1.CreateRequestDto]),
+    __metadata("design:paramtypes", [typeof (_b = typeof create_request_dto_1.CreateRequestDto !== "undefined" && create_request_dto_1.CreateRequestDto) === "function" ? _b : Object]),
     __metadata("design:returntype", void 0)
 ], InventoryRequestController.prototype, "create", null);
 __decorate([
@@ -54,6 +55,6 @@ __decorate([
 ], InventoryRequestController.prototype, "getAll", null);
 exports.InventoryRequestController = InventoryRequestController = __decorate([
     (0, common_1.Controller)('inventory/requests'),
-    __metadata("design:paramtypes", [inventory_request_service_1.InventoryRequestService])
+    __metadata("design:paramtypes", [typeof (_a = typeof inventory_request_service_1.InventoryRequestService !== "undefined" && inventory_request_service_1.InventoryRequestService) === "function" ? _a : Object])
 ], InventoryRequestController);
 //# sourceMappingURL=inventory-request.controller.js.map

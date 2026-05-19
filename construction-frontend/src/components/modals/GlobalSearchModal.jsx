@@ -1,4 +1,3 @@
-// components/modals/GlobalSearchModal.tsx
 "use client";
 
 import { useMemo, useState } from "react";
@@ -8,14 +7,14 @@ import {
   Search,
   Command,
   ArrowRight,
+  LayoutDashboard,
   FolderKanban,
   Users,
   MessageCircle,
-  LayoutDashboard,
-  FileText,
+  Sparkles,
   ClipboardList,
   BarChart3,
-  Sparkles,
+  FileText,
 } from "lucide-react";
 
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
@@ -35,278 +34,143 @@ const quickLinks = [
     icon: FolderKanban,
     category: "Workspace",
   },
-  {
-    label: "Clients",
-    path: "/clients",
-    icon: Users,
-    category: "CRM",
-  },
+  { label: "Clients", path: "/clients", icon: Users, category: "CRM" },
   {
     label: "Chat",
     path: "/chat",
     icon: MessageCircle,
     category: "Communication",
   },
-  {
-    label: "Designs",
-    path: "/designs",
-    icon: Sparkles,
-    category: "Creative",
-  },
-  {
-    label: "BOQ",
-    path: "/boq",
-    icon: ClipboardList,
-    category: "Operations",
-  },
+  { label: "Designs", path: "/designs", icon: Sparkles, category: "Creative" },
+  { label: "BOQ", path: "/boq", icon: ClipboardList, category: "Operations" },
   {
     label: "Reports",
     path: "/reports",
     icon: BarChart3,
     category: "Analytics",
   },
-  {
-    label: "Documents",
-    path: "/documents",
-    icon: FileText,
-    category: "Files",
-  },
+  { label: "Documents", path: "/documents", icon: FileText, category: "Files" },
 ];
 
 export default function GlobalSearchModal({ open, onOpenChange }) {
-  const [searchQuery, setSearchQuery] = useState("");
-
+  const [q, setQ] = useState("");
   const router = useRouter();
 
-  const filteredItems = useMemo(() => {
-    if (!searchQuery.trim()) return quickLinks;
+  const results = useMemo(() => {
+    if (!q.trim()) return quickLinks;
 
-    return quickLinks.filter((item) =>
-      `${item.label} ${item.category}`
-        .toLowerCase()
-        .includes(searchQuery.toLowerCase()),
+    return quickLinks.filter((i) =>
+      `${i.label} ${i.category}`.toLowerCase().includes(q.toLowerCase()),
     );
-  }, [searchQuery]);
+  }, [q]);
 
-  const handleQuickNav = (path) => {
+  const go = (path) => {
     router.push(path);
+    setQ("");
     onOpenChange(false);
-    setSearchQuery("");
   };
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent
         className="
-          p-0
-          overflow-hidden
-          border-border/60
-          bg-card/95
-          backdrop-blur-xl
-          shadow-glow
-          sm:max-w-3xl
-        "
+    w-[640px]
+    max-w-[92vw]
+    p-0
+    overflow-hidden
+    rounded-2xl
+    border border-border/60
+    bg-card/90
+    backdrop-blur-2xl
+    shadow-glow
+    animate-fadeIn
+  "
       >
-        <DialogTitle className="sr-only">Global Search</DialogTitle>
+        <DialogTitle className="sr-only">Command Palette</DialogTitle>
 
-        <div className="relative">
-          {/* Top Glow */}
-          <div className="absolute inset-x-0 top-0 h-24 bg-gradient-to-b from-brand-orange/10 to-transparent pointer-events-none" />
+        {/* SEARCH BAR */}
+        <div className="flex items-center gap-3 px-4 py-3 border-b border-border/60 bg-background/60">
+          <Search className="h-4 w-4 text-muted-foreground" />
 
-          {/* Search Header */}
-          <div className="relative border-b border-border/60 px-5 py-4">
-            <div
-              className="
-                flex items-center gap-3
-                rounded-2xl
-                border border-border/70
-                bg-background/80
-                px-4 py-3
-                shadow-sm
-                transition-all
-                focus-within:border-primary/40
-                focus-within:shadow-glow
-              "
-            >
-              <div
-                className="
-                  flex h-10 w-10 items-center justify-center
-                  rounded-xl
-                  bg-primary/10
-                  text-primary
-                "
-              >
-                <Search className="h-5 w-5" />
-              </div>
+          <input
+            autoFocus
+            value={q}
+            onChange={(e) => setQ(e.target.value)}
+            placeholder="Search anything…"
+            className="
+              flex-1
+              bg-transparent
+              outline-none
+              text-sm
+              text-foreground
+              placeholder:text-muted-foreground
+            "
+          />
 
-              <input
-                type="text"
-                autoFocus
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Search projects, clients, BOQ, reports..."
-                className="
-                  flex-1
-                  border-none
-                  bg-transparent
-                  p-0
-                  text-base
-                  text-foreground
-                  placeholder:text-muted-foreground
-                  focus-visible:ring-0
-                "
-              />
-
-              <div
-                className="
-                  hidden sm:flex items-center gap-1
-                  rounded-lg
-                  border border-border/70
-                  bg-muted/60
-                  px-2 py-1
-                  text-xs text-muted-foreground
-                "
-              >
-                <Command className="h-3.5 w-3.5" />K
-              </div>
-            </div>
-
-            <div className="mt-3 flex items-center justify-between px-1">
-              <p className="text-xs text-muted-foreground">
-                Jump anywhere across your workspace
-              </p>
-
-              <p className="text-xs text-muted-foreground">
-                Press ESC to close
-              </p>
-            </div>
+          <div className="flex items-center gap-1 text-xs text-muted-foreground">
+            <Command className="h-3.5 w-3.5" />K
           </div>
+        </div>
 
-          {/* Results */}
-          <ScrollArea className="max-h-[70vh]">
-            <div className="p-4">
-              {filteredItems.length === 0 ? (
-                <div
-                  className="
-                    flex flex-col items-center justify-center
-                    py-16 text-center animate-fadeIn
-                  "
-                >
-                  <div
+        {/* RESULTS */}
+        <ScrollArea className="max-h-[420px]">
+          <div className="p-2">
+            {results.length === 0 ? (
+              <div className="py-14 text-center text-sm text-muted-foreground">
+                No results found
+              </div>
+            ) : (
+              results.map((item) => {
+                const Icon = item.icon;
+
+                return (
+                  <button
+                    key={item.path}
+                    onClick={() => go(item.path)}
                     className="
-                      mb-4 flex h-16 w-16 items-center justify-center
-                      rounded-2xl
-                      bg-muted
+                      group
+                      w-full
+                      flex items-center gap-3
+                      rounded-xl
+                      px-3 py-2
+                      text-left
+                      transition
+                      hover:bg-muted
                     "
                   >
-                    <Search className="h-7 w-7 text-muted-foreground" />
-                  </div>
+                    {/* icon */}
+                    <div
+                      className="
+                        flex h-9 w-9 items-center justify-center
+                        rounded-lg
+                        bg-muted
+                        group-hover:bg-primary/10
+                        transition
+                      "
+                    >
+                      <Icon className="h-4 w-4 text-muted-foreground group-hover:text-primary" />
+                    </div>
 
-                  <h3 className="text-lg font-semibold">No results found</h3>
-
-                  <p className="mt-2 max-w-sm text-sm text-muted-foreground">
-                    We couldn&apos;t find anything matching{" "}
-                    <span className="font-medium text-foreground">
-                      "{searchQuery}"
-                    </span>
-                  </p>
-                </div>
-              ) : (
-                <>
-                  <div className="mb-4 flex items-center justify-between px-1">
-                    <div>
-                      <p className="text-xs font-semibold uppercase tracking-[0.2em] text-muted-foreground">
-                        Quick Navigation
-                      </p>
-
-                      <p className="mt-1 text-sm text-muted-foreground">
-                        {filteredItems.length} result
-                        {filteredItems.length > 1 ? "s" : ""}
+                    {/* text */}
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium">{item.label}</p>
+                      <p className="text-xs text-muted-foreground">
+                        {item.category}
                       </p>
                     </div>
-                  </div>
 
-                  <div className="grid gap-2">
-                    {filteredItems.map((item, i) => {
-                      const Icon = item.icon;
+                    <ArrowRight className="h-4 w-4 text-muted-foreground group-hover:text-primary group-hover:translate-x-1 transition" />
+                  </button>
+                );
+              })
+            )}
+          </div>
+        </ScrollArea>
 
-                      return (
-                        <button
-                          key={i}
-                          onClick={() => handleQuickNav(item.path)}
-                          className="
-                            group
-                            relative
-                            overflow-hidden
-                            rounded-2xl
-                            border border-border/60
-                            bg-card/70
-                            p-4
-                            text-left
-                            transition-all duration-200
-                            hover:-translate-y-0.5
-                            hover:border-primary/30
-                            hover:bg-accent/40
-                            hover:shadow-soft
-                            animate-fadeInUp
-                          "
-                        >
-                          {/* Hover Gradient */}
-                          <div
-                            className="
-                              absolute inset-0 opacity-0
-                              transition-opacity duration-300
-                              group-hover:opacity-100
-                              bg-gradient-to-r
-                              from-primary/5
-                              via-transparent
-                              to-primary/5
-                            "
-                          />
-
-                          <div className="relative flex items-center gap-4">
-                            <div
-                              className="
-                                flex h-12 w-12 shrink-0
-                                items-center justify-center
-                                rounded-2xl
-                                bg-primary/10
-                                text-primary
-                                transition-transform
-                                group-hover:scale-105
-                              "
-                            >
-                              <Icon className="h-5 w-5" />
-                            </div>
-
-                            <div className="min-w-0 flex-1">
-                              <h3 className="font-semibold text-foreground">
-                                {item.label}
-                              </h3>
-
-                              <p className="mt-1 text-sm text-muted-foreground">
-                                {item.category}
-                              </p>
-                            </div>
-
-                            <ArrowRight
-                              className="
-                                h-4 w-4 shrink-0
-                                text-muted-foreground
-                                transition-all
-                                group-hover:translate-x-1
-                                group-hover:text-primary
-                              "
-                            />
-                          </div>
-                        </button>
-                      );
-                    })}
-                  </div>
-                </>
-              )}
-            </div>
-          </ScrollArea>
+        {/* FOOTER HINT */}
+        <div className="flex items-center justify-between px-4 py-2 border-t border-border/60 bg-background/40 text-xs text-muted-foreground">
+          <span>Navigate with ↑ ↓ Enter</span>
+          <span>ESC to close</span>
         </div>
       </DialogContent>
     </Dialog>

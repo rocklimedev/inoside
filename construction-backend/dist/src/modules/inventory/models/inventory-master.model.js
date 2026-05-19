@@ -12,6 +12,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.InventoryMaster = void 0;
 const sequelize_typescript_1 = require("sequelize-typescript");
 const unit_model_1 = require("../../boq/models/unit.model");
+const brand_model_1 = require("./brand.model");
 let InventoryMaster = class InventoryMaster extends sequelize_typescript_1.Model {
 };
 exports.InventoryMaster = InventoryMaster;
@@ -57,6 +58,18 @@ __decorate([
     __metadata("design:type", unit_model_1.Unit)
 ], InventoryMaster.prototype, "unit", void 0);
 __decorate([
+    (0, sequelize_typescript_1.ForeignKey)(() => brand_model_1.Brand),
+    (0, sequelize_typescript_1.Column)({
+        type: sequelize_typescript_1.DataType.CHAR(36),
+        allowNull: true,
+    }),
+    __metadata("design:type", String)
+], InventoryMaster.prototype, "brand_id", void 0);
+__decorate([
+    (0, sequelize_typescript_1.BelongsTo)(() => brand_model_1.Brand),
+    __metadata("design:type", brand_model_1.Brand)
+], InventoryMaster.prototype, "brand", void 0);
+__decorate([
     (0, sequelize_typescript_1.Default)(0),
     (0, sequelize_typescript_1.Column)({
         type: sequelize_typescript_1.DataType.DECIMAL(14, 2),
@@ -64,13 +77,6 @@ __decorate([
     }),
     __metadata("design:type", Number)
 ], InventoryMaster.prototype, "default_rate", void 0);
-__decorate([
-    (0, sequelize_typescript_1.Column)({
-        type: sequelize_typescript_1.DataType.STRING(255),
-        allowNull: true,
-    }),
-    __metadata("design:type", String)
-], InventoryMaster.prototype, "brand", void 0);
 __decorate([
     (0, sequelize_typescript_1.Column)({
         type: sequelize_typescript_1.DataType.TEXT,
@@ -87,15 +93,11 @@ __decorate([
     __metadata("design:type", Boolean)
 ], InventoryMaster.prototype, "is_active", void 0);
 __decorate([
-    (0, sequelize_typescript_1.Column)({
-        type: sequelize_typescript_1.DataType.DATE,
-    }),
+    (0, sequelize_typescript_1.Column)({ type: sequelize_typescript_1.DataType.DATE }),
     __metadata("design:type", Date)
 ], InventoryMaster.prototype, "created_at", void 0);
 __decorate([
-    (0, sequelize_typescript_1.Column)({
-        type: sequelize_typescript_1.DataType.DATE,
-    }),
+    (0, sequelize_typescript_1.Column)({ type: sequelize_typescript_1.DataType.DATE }),
     __metadata("design:type", Date)
 ], InventoryMaster.prototype, "updated_at", void 0);
 exports.InventoryMaster = InventoryMaster = __decorate([

@@ -1,618 +1,602 @@
 "use client";
 
-import { useState, useMemo } from "react";
-import { useRouter } from "next/navigation";
-
+import { useMemo, useState } from "react";
 import { toast } from "sonner";
 
 import {
-  useGetAllBriefsQuery,
-  useApproveBriefMutation,
-  useRequestBriefChangesMutation,
-} from "@/api/projectsApi";
+  useGetClientsQuery,
+  useCreateClientMutation,
+  useUpdateClientMutation,
+  useDeleteClientMutation,
+} from "@/api/clientsApi";
+
+import ClientForm from "@/components/client/ClientForm";
 
 import { Card } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { Input } from "@/components/ui/input";
 
 import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+
+import {
+  DropdownMenu,
+  DropdownMenuTrigger,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+} from "@/components/ui/dropdown-menu";
+
+import {
+  Users,
+  Plus,
   Search,
+  MoreVertical,
+  Pencil,
+  Trash2,
+  Phone,
+  Mail,
+  Building2,
+  UserCheck,
+  MessageSquare,
+  Loader2,
+  X,
   LayoutGrid,
   Table2,
-  Plus,
-  Filter,
-  CheckCircle2,
-  AlertTriangle,
-  Clock3,
-  ArrowUpRight,
-  Edit,
-  Eye,
-  Loader2,
-  FileText,
 } from "lucide-react";
 
-export default function BriefList() {
-  const router = useRouter();
+const COMMUNICATION_COLORS = {
+  Call: "bg-blue-100 text-blue-700 border-blue-200",
+  WhatsApp: "bg-green-100 text-green-700 border-green-200",
+  Email: "bg-violet-100 text-violet-700 border-violet-200",
+};
+
+export default function ClientsPage() {
+  const { data: clients = [], isLoading } = useGetClientsQuery();
+
+  const [createClient, { isLoading: creating }] = useCreateClientMutation();
+
+  const [updateClient, { isLoading: updating }] = useUpdateClientMutation();
+
+  const [deleteClient] = useDeleteClientMutation();
 
   const [search, setSearch] = useState("");
-  const [viewMode, setViewMode] = useState("grid");
-  const [statusFilter, setStatusFilter] = useState("all");
 
-  const { data: briefsData = [], isLoading, isError } = useGetAllBriefsQuery();
+  const [openCreate, setOpenCreate] = useState(false);
 
-  const [approveBrief] = useApproveBriefMutation();
-  const [requestChanges] = useRequestBriefChangesMutation();
+  const [editingClient, setEditingClient] = useState(null);
 
-  // ================= TRANSFORM =================
-  const briefs = useMemo(() => {
-    return briefsData.map((brief) => ({
-      id: brief.project_id,
-      briefId: brief.id,
+  const [view, setView] = useState("cards");
 
-      projectName:
-        brief.project?.name || brief.project_name || "Untitled Project",
+  // ================= FILTERED =================
+  const filteredClients = useMemo(() => {
+    if (!search.trim()) return clients;
 
-      client:
-        brief.project?.client?.name || brief.client_name || "Unknown Client",
+    const term = search.toLowerCase();
 
-      status: brief.status || "draft",
+    return clients.filter((client) =>
+      [
+        client.name,
+        client.email,
+        client.contact_number,
+        client.preferred_communication,
+      ]
+        .join(" ")
+        .toLowerCase()
+        .includes(term),
+    );
+  }, [clients, search]);
 
-      stage: brief.project?.status || "Planning",
-
-      createdAt: brief.created_at,
-      updatedAt: brief.updated_at,
-
-      architect:
-        brief.project?.assigned_architect?.name ||
-        brief.assigned_architect ||
-        "—",
-
-      documentUrl: brief.document_url,
-
-      raw: brief,
-    }));
-  }, [briefsData]);
-
-  // ================= FILTER =================
-  const filtered = useMemo(() => {
-    let result = [...briefs];
-
-    if (search.trim()) {
-      const term = search.toLowerCase();
-
-      result = result.filter(
-        (b) =>
-          b.projectName?.toLowerCase().includes(term) ||
-          b.client?.toLowerCase().includes(term),
-      );
-    }
-
-    if (statusFilter !== "all") {
-      result = result.filter((b) => b.status === statusFilter);
-    }
-
-    return result.sort((a, b) => new Date(b.updatedAt) - new Date(a.updatedAt));
-  }, [briefs, search, statusFilter]);
-
-  // ================= STATUS =================
-  const getStatusUI = (status) => {
-    switch (status) {
-      case "approved":
-        return {
-          label: "Approved",
-          className:
-            "bg-green-100 text-green-700 dark:bg-green-950 dark:text-green-400 border-green-200",
-          icon: CheckCircle2,
-        };
-
-      case "changes_requested":
-        return {
-          label: "Changes Requested",
-          className:
-            "bg-red-100 text-red-700 dark:bg-red-950 dark:text-red-400 border-red-200",
-          icon: AlertTriangle,
-        };
-
-      case "sent_to_client":
-        return {
-          label: "Sent To Client",
-          className:
-            "bg-orange-100 text-orange-700 dark:bg-orange-950 dark:text-orange-400 border-orange-200",
-          icon: FileText,
-        };
-
-      default:
-        return {
-          label: "Draft",
-          className:
-            "bg-blue-100 text-blue-700 dark:bg-blue-950 dark:text-blue-400 border-blue-200",
-          icon: Clock3,
-        };
-    }
-  };
-
-  // ================= ACTIONS =================
-  const handleOpenBrief = (projectId) => {
-    router.push(`/projects/${projectId}/brief`);
-  };
-
-  const handleCreateBrief = () => {
-    router.push("/brief/add");
-  };
-
-  const handleEditBrief = (briefId) => {
-    router.push(`/brief/add?briefId=${briefId}`);
-  };
-
-  const handleApprove = async (briefId) => {
+  // ================= CREATE =================
+  const handleCreate = async (data) => {
     try {
-      await approveBrief(briefId).unwrap();
+      await createClient(data).unwrap();
 
-      toast.success("Brief approved successfully");
+      toast.success("Client created successfully");
+
+      setOpenCreate(false);
     } catch (err) {
-      toast.error(err?.data?.message || "Failed to approve brief");
+      console.error(err);
+
+      toast.error(err?.data?.message || "Failed to create client");
     }
   };
 
-  const handleRequestChanges = async (briefId) => {
-    const note = prompt("Enter reason for changes");
-
-    if (!note) return;
-
+  // ================= UPDATE =================
+  const handleUpdate = async (data) => {
     try {
-      await requestChanges({
-        briefId,
-        note,
+      await updateClient({
+        id: editingClient.id,
+        ...data,
       }).unwrap();
 
-      toast.success("Changes requested");
+      toast.success("Client updated successfully");
+
+      setEditingClient(null);
     } catch (err) {
-      toast.error(err?.data?.message || "Failed to request changes");
+      console.error(err);
+
+      toast.error(err?.data?.message || "Failed to update client");
+    }
+  };
+
+  // ================= DELETE =================
+  const handleDelete = async (id) => {
+    if (!confirm("Delete this client?")) return;
+
+    try {
+      await deleteClient(id).unwrap();
+
+      toast.success("Client deleted");
+    } catch (err) {
+      console.error(err);
+
+      toast.error(err?.data?.message || "Failed to delete client");
     }
   };
 
   // ================= LOADING =================
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center h-full min-h-[70vh]">
+      <div className="flex items-center justify-center min-h-[70vh]">
         <Loader2 className="w-8 h-8 animate-spin text-primary" />
       </div>
     );
   }
 
-  // ================= ERROR =================
-  if (isError) {
-    return (
-      <div className="flex items-center justify-center h-full min-h-[70vh] text-red-500">
-        Failed to load briefs
-      </div>
-    );
-  }
-
   return (
-    <div className="flex flex-col h-full" data-testid="brief-page">
-      {/* ================= HEADER ================= */}
-      <div className="border-b border-border bg-card/70 backdrop-blur-xl sticky top-0 z-20">
-        <div className="p-4 md:p-6 space-y-5">
-          {/* TOP */}
-          <div className="flex flex-col xl:flex-row xl:items-center justify-between gap-4">
-            <div>
-              <h1 className="text-2xl md:text-3xl font-black tracking-tight">
-                Project Briefs
-              </h1>
+    <div className="relative flex flex-col h-full overflow-hidden bg-background">
+      {/* BACKGROUND */}
+      <div className="absolute inset-0 -z-10 bg-gradient-to-br from-background via-background to-muted/30" />
 
-              <p className="text-sm text-muted-foreground mt-1">
-                Manage all project brief documents
-              </p>
+      <div className="absolute top-0 left-0 h-72 w-72 rounded-full bg-orange-500/10 blur-3xl -z-10" />
+
+      <div className="absolute bottom-0 right-0 h-96 w-96 rounded-full bg-primary/10 blur-3xl -z-10" />
+
+      {/* HEADER */}
+      <div className="border-b border-border/60 bg-background/80 backdrop-blur-xl">
+        <div className="px-4 md:px-6 py-5">
+          <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-5">
+            <div>
+              <div className="flex items-center gap-3">
+                <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-orange-500 to-orange-600 text-white flex items-center justify-center shadow-lg">
+                  <Users className="w-6 h-6" />
+                </div>
+
+                <div>
+                  <h1 className="text-3xl font-black tracking-tight">
+                    Clients
+                  </h1>
+
+                  <p className="text-sm text-muted-foreground mt-1">
+                    Manage all your project clients and communication
+                  </p>
+                </div>
+              </div>
             </div>
 
-            <div className="flex items-center gap-2 flex-wrap">
-              {/* VIEW TOGGLE */}
-              <div className="flex items-center border border-border rounded-xl overflow-hidden bg-card">
-                {[
-                  {
-                    key: "grid",
-                    icon: LayoutGrid,
-                  },
-                  {
-                    key: "table",
-                    icon: Table2,
-                  },
-                ].map((item) => (
-                  <button
-                    key={item.key}
-                    onClick={() => setViewMode(item.key)}
-                    className={`p-2.5 transition-all ${
-                      viewMode === item.key
-                        ? "bg-primary text-primary-foreground"
-                        : "hover:bg-muted text-muted-foreground"
-                    }`}
-                  >
-                    <item.icon className="w-4 h-4" />
-                  </button>
-                ))}
+            <div className="flex items-center gap-3">
+              {/* VIEW SWITCH */}
+              <div className="flex border border-border rounded-xl overflow-hidden">
+                <button
+                  onClick={() => setView("cards")}
+                  className={`px-4 py-2.5 transition ${
+                    view === "cards"
+                      ? "bg-primary text-white"
+                      : "hover:bg-muted"
+                  }`}
+                >
+                  <LayoutGrid className="w-4 h-4" />
+                </button>
+
+                <button
+                  onClick={() => setView("table")}
+                  className={`px-4 py-2.5 transition ${
+                    view === "table"
+                      ? "bg-primary text-white"
+                      : "hover:bg-muted"
+                  }`}
+                >
+                  <Table2 className="w-4 h-4" />
+                </button>
               </div>
 
-              {/* NEW */}
               <Button
-                onClick={handleCreateBrief}
-                className="btn-primary rounded-xl px-5"
+                onClick={() => setOpenCreate(true)}
+                className="h-11 rounded-xl px-5 bg-orange-500 hover:bg-orange-600 text-white shadow-lg"
               >
                 <Plus className="w-4 h-4 mr-2" />
-                New Brief
+                Add Client
               </Button>
             </div>
           </div>
 
-          {/* SEARCH + FILTER */}
-          <div className="flex flex-col lg:flex-row gap-3">
-            {/* SEARCH */}
-            <div className="flex items-center gap-3 bg-card border border-border rounded-2xl px-4 py-3 flex-1 focus-within:border-primary/40 focus-within:shadow-glow transition-all">
-              <Search className="w-4 h-4 text-muted-foreground shrink-0" />
+          {/* SEARCH */}
+          <div className="mt-5">
+            <div className="relative">
+              <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
 
-              <input
-                type="text"
-                placeholder="Search project or client..."
+              <Input
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                className="bg-transparent outline-none text-sm w-full"
+                placeholder="Search clients..."
+                className="pl-11 h-12 rounded-2xl border-border/60 bg-card/70 backdrop-blur-sm"
               />
-            </div>
 
-            {/* FILTER */}
-            <div className="flex items-center gap-2 overflow-auto">
-              <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-muted-foreground px-2">
-                <Filter className="w-3.5 h-3.5" />
-                Status
-              </div>
-
-              {[
-                { key: "all", label: "All" },
-                { key: "draft", label: "Draft" },
-                { key: "sent_to_client", label: "Sent" },
-                { key: "approved", label: "Approved" },
-                {
-                  key: "changes_requested",
-                  label: "Changes",
-                },
-              ].map((item) => (
+              {search && (
                 <button
-                  key={item.key}
-                  onClick={() => setStatusFilter(item.key)}
-                  className={`px-4 py-2 rounded-xl text-sm whitespace-nowrap border transition-all ${
-                    statusFilter === item.key
-                      ? "bg-primary text-primary-foreground border-primary"
-                      : "bg-card hover:bg-muted border-border text-muted-foreground"
-                  }`}
+                  onClick={() => setSearch("")}
+                  className="absolute right-4 top-1/2 -translate-y-1/2"
                 >
-                  {item.label}
+                  <X className="w-4 h-4 text-muted-foreground" />
                 </button>
-              ))}
+              )}
             </div>
-          </div>
 
-          {/* COUNT */}
-          <div className="text-xs text-muted-foreground">
-            {filtered.length} brief
-            {filtered.length !== 1 ? "s" : ""}
+            <p className="mt-3 text-sm text-muted-foreground">
+              {filteredClients.length} client
+              {filteredClients.length !== 1 ? "s" : ""}
+            </p>
           </div>
         </div>
       </div>
 
-      {/* ================= CONTENT ================= */}
+      {/* CONTENT */}
       <ScrollArea className="flex-1">
         <div className="p-4 md:p-6">
-          {/* ================= GRID VIEW ================= */}
-          {viewMode === "grid" ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 2xl:grid-cols-3 gap-5">
-              {filtered.map((brief, i) => {
-                const st = getStatusUI(brief.status);
+          {filteredClients.length === 0 ? (
+            <Card className="border-dashed py-20 text-center rounded-3xl">
+              <div className="flex flex-col items-center">
+                <div className="w-20 h-20 rounded-full bg-muted flex items-center justify-center mb-5">
+                  <Users className="w-10 h-10 text-muted-foreground" />
+                </div>
 
-                return (
-                  <Card
-                    key={brief.briefId}
-                    onClick={() => handleOpenBrief(brief.id)}
-                    className="card-modern p-5 cursor-pointer group animate-fadeInUp"
-                    style={{
-                      animationDelay: `${i * 50}ms`,
-                    }}
-                  >
-                    {/* TOP */}
-                    <div className="flex items-start justify-between gap-3">
-                      <div className="flex items-start gap-3 min-w-0">
-                        <div className="w-12 h-12 rounded-2xl bg-primary text-primary-foreground flex items-center justify-center font-black text-lg shrink-0">
-                          {brief.projectName?.charAt(0)}
-                        </div>
+                <h3 className="text-2xl font-bold">No clients found</h3>
 
-                        <div className="min-w-0">
-                          <h3 className="font-bold text-base truncate group-hover:text-primary transition-colors">
-                            {brief.projectName}
-                          </h3>
+                <p className="text-muted-foreground mt-2 max-w-md">
+                  Start by adding your first client.
+                </p>
 
-                          <p className="text-sm text-muted-foreground truncate mt-1">
-                            {brief.client}
-                          </p>
-                        </div>
-                      </div>
-
-                      <ArrowUpRight className="w-4 h-4 text-muted-foreground group-hover:text-primary transition-colors shrink-0" />
-                    </div>
-
-                    {/* STATUS */}
-                    <div className="mt-5 flex items-center justify-between gap-3">
-                      <Badge
-                        className={`${st.className} border text-[11px] px-3 py-1`}
-                      >
-                        <st.icon className="w-3.5 h-3.5 mr-1" />
-                        {st.label}
-                      </Badge>
-
-                      <div className="text-[11px] text-muted-foreground">
-                        {brief.stage}
-                      </div>
-                    </div>
-
-                    {/* INFO */}
-                    <div className="mt-5 grid grid-cols-2 gap-4">
-                      <div>
-                        <p className="text-[10px] uppercase tracking-wider text-muted-foreground font-bold">
-                          Updated
-                        </p>
-
-                        <p className="text-sm mt-1">
-                          {brief.updatedAt
-                            ? new Date(brief.updatedAt).toLocaleDateString()
-                            : "—"}
-                        </p>
-                      </div>
-
-                      <div>
-                        <p className="text-[10px] uppercase tracking-wider text-muted-foreground font-bold">
-                          Architect
-                        </p>
-
-                        <p className="text-sm mt-1 truncate">
-                          {brief.architect}
-                        </p>
-                      </div>
-                    </div>
-
-                    {/* ACTIONS */}
-                    <div
-                      className="mt-6 flex flex-wrap gap-2"
-                      onClick={(e) => e.stopPropagation()}
-                    >
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        className="rounded-xl"
-                        onClick={() => handleOpenBrief(brief.id)}
-                      >
-                        <Eye className="w-4 h-4 mr-1" />
-                        Open
-                      </Button>
-
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        className="rounded-xl"
-                        onClick={() => handleEditBrief(brief.briefId)}
-                      >
-                        <Edit className="w-4 h-4 mr-1" />
-                        Edit
-                      </Button>
-
-                      {brief.status !== "approved" && (
-                        <Button
-                          size="sm"
-                          className="rounded-xl bg-green-600 hover:bg-green-700 text-white"
-                          onClick={() => handleApprove(brief.briefId)}
-                        >
-                          Approve
-                        </Button>
-                      )}
-
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        className="rounded-xl"
-                        onClick={() => handleRequestChanges(brief.briefId)}
-                      >
-                        Request Changes
-                      </Button>
-                    </div>
-                  </Card>
-                );
-              })}
-            </div>
-          ) : (
-            /* ================= TABLE VIEW ================= */
-            <div className="surface rounded-2xl overflow-hidden min-w-full">
-              {/* TABLE HEADER */}
-              <div className="hidden lg:grid grid-cols-12 gap-4 px-6 py-4 border-b border-border bg-muted/40 text-[11px] font-bold uppercase tracking-wider text-muted-foreground">
-                <div className="col-span-3">Project</div>
-                <div className="col-span-2">Client</div>
-                <div className="col-span-2">Status</div>
-                <div className="col-span-2">Updated</div>
-                <div className="col-span-1">Stage</div>
-                <div className="col-span-2 text-right">Actions</div>
+                <Button
+                  onClick={() => setOpenCreate(true)}
+                  className="mt-6 rounded-xl"
+                >
+                  <Plus className="w-4 h-4 mr-2" />
+                  Add Client
+                </Button>
               </div>
-
-              {/* ROWS */}
-              <div>
-                {filtered.map((brief) => {
-                  const st = getStatusUI(brief.status);
-
-                  return (
-                    <div
-                      key={brief.briefId}
-                      onClick={() => handleOpenBrief(brief.id)}
-                      className="border-b border-border hover:bg-muted/30 transition-colors cursor-pointer"
+            </Card>
+          ) : (
+            <>
+              {/* ================= CARD VIEW ================= */}
+              {view === "cards" && (
+                <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
+                  {filteredClients.map((client, index) => (
+                    <Card
+                      key={client.id}
+                      className="group relative overflow-hidden rounded-3xl border border-border/60 bg-card/80 backdrop-blur-sm transition-all duration-500 hover:-translate-y-1 hover:shadow-2xl hover:border-orange-500/30"
+                      style={{
+                        animationDelay: `${index * 80}ms`,
+                      }}
                     >
-                      {/* DESKTOP */}
-                      <div className="hidden lg:grid grid-cols-12 gap-4 px-6 py-4 items-center">
-                        {/* PROJECT */}
-                        <div className="col-span-3 flex items-center gap-3 min-w-0">
-                          <div className="w-10 h-10 rounded-xl bg-primary text-primary-foreground flex items-center justify-center font-bold shrink-0">
-                            {brief.projectName?.charAt(0)}
-                          </div>
-
-                          <div className="min-w-0">
-                            <p className="font-semibold truncate">
-                              {brief.projectName}
-                            </p>
-
-                            <p className="text-xs text-muted-foreground truncate">
-                              {brief.architect}
-                            </p>
-                          </div>
-                        </div>
-
-                        {/* CLIENT */}
-                        <div className="col-span-2 text-sm truncate">
-                          {brief.client}
-                        </div>
-
-                        {/* STATUS */}
-                        <div className="col-span-2">
-                          <Badge className={`${st.className} border`}>
-                            <st.icon className="w-3.5 h-3.5 mr-1" />
-                            {st.label}
-                          </Badge>
-                        </div>
-
-                        {/* UPDATED */}
-                        <div className="col-span-2 text-sm text-muted-foreground">
-                          {brief.updatedAt
-                            ? new Date(brief.updatedAt).toLocaleDateString()
-                            : "—"}
-                        </div>
-
-                        {/* STAGE */}
-                        <div className="col-span-1 text-sm">{brief.stage}</div>
-
-                        {/* ACTIONS */}
-                        <div
-                          className="col-span-2 flex justify-end gap-2"
-                          onClick={(e) => e.stopPropagation()}
-                        >
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            className="rounded-xl"
-                            onClick={() => handleEditBrief(brief.briefId)}
-                          >
-                            <Edit className="w-4 h-4" />
-                          </Button>
-
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            className="rounded-xl"
-                            onClick={() => handleOpenBrief(brief.id)}
-                          >
-                            <Eye className="w-4 h-4" />
-                          </Button>
-                        </div>
+                      {/* Glow */}
+                      <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500">
+                        <div className="absolute -right-10 -top-10 h-40 w-40 rounded-full bg-orange-500/10 blur-3xl" />
                       </div>
 
-                      {/* MOBILE */}
-                      <div className="lg:hidden p-4 space-y-4">
-                        <div className="flex items-start justify-between gap-3">
-                          <div className="flex items-start gap-3 min-w-0">
-                            <div className="w-10 h-10 rounded-xl bg-primary text-primary-foreground flex items-center justify-center font-bold shrink-0">
-                              {brief.projectName?.charAt(0)}
+                      {/* Top Line */}
+                      <div className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-orange-500 via-primary to-orange-500" />
+
+                      <div className="relative p-6">
+                        {/* HEADER */}
+                        <div className="flex items-start justify-between gap-4">
+                          <div className="flex items-center gap-4 min-w-0">
+                            <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-orange-500 to-orange-600 text-white flex items-center justify-center shadow-lg shrink-0">
+                              <Building2 className="w-7 h-7" />
                             </div>
 
                             <div className="min-w-0">
-                              <p className="font-semibold truncate">
-                                {brief.projectName}
-                              </p>
+                              <h3 className="text-lg font-bold truncate">
+                                {client.name}
+                              </h3>
 
                               <p className="text-sm text-muted-foreground truncate">
-                                {brief.client}
+                                {client.email || "No email provided"}
                               </p>
                             </div>
                           </div>
 
-                          <Badge className={`${st.className} border`}>
-                            <st.icon className="w-3 h-3 mr-1" />
-                            {st.label}
-                          </Badge>
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="rounded-xl"
+                              >
+                                <MoreVertical className="w-5 h-5" />
+                              </Button>
+                            </DropdownMenuTrigger>
+
+                            <DropdownMenuContent align="end">
+                              <DropdownMenuItem
+                                onClick={() => setEditingClient(client)}
+                              >
+                                <Pencil className="mr-2 h-4 w-4" />
+                                Edit Client
+                              </DropdownMenuItem>
+
+                              <DropdownMenuSeparator />
+
+                              <DropdownMenuItem
+                                className="text-red-600 focus:text-red-600"
+                                onClick={() => handleDelete(client.id)}
+                              >
+                                <Trash2 className="mr-2 h-4 w-4" />
+                                Delete Client
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
                         </div>
 
-                        <div className="flex items-center justify-between text-xs">
+                        {/* DETAILS */}
+                        <div className="mt-6 space-y-4">
+                          <div className="flex items-center gap-3 text-sm">
+                            <div className="w-9 h-9 rounded-xl bg-muted flex items-center justify-center">
+                              <Phone className="w-4 h-4 text-primary" />
+                            </div>
+
+                            <span className="font-medium">
+                              {client.contact_number}
+                            </span>
+                          </div>
+
+                          <div className="flex items-center gap-3 text-sm">
+                            <div className="w-9 h-9 rounded-xl bg-muted flex items-center justify-center">
+                              <Mail className="w-4 h-4 text-primary" />
+                            </div>
+
+                            <span className="truncate">
+                              {client.email || "No email"}
+                            </span>
+                          </div>
+
+                          <div className="flex items-center gap-3 text-sm">
+                            <div className="w-9 h-9 rounded-xl bg-muted flex items-center justify-center">
+                              <MessageSquare className="w-4 h-4 text-primary" />
+                            </div>
+
+                            <Badge
+                              className={
+                                COMMUNICATION_COLORS[
+                                  client.preferred_communication
+                                ] ||
+                                "bg-muted text-muted-foreground border-border"
+                              }
+                            >
+                              {client.preferred_communication ||
+                                "Not specified"}
+                            </Badge>
+                          </div>
+                        </div>
+
+                        {/* TAGS */}
+                        <div className="mt-6 flex flex-wrap gap-2">
+                          {client.is_owner && (
+                            <Badge className="rounded-full bg-emerald-100 text-emerald-700 border-emerald-200">
+                              <UserCheck className="w-3 h-3 mr-1" />
+                              Owner
+                            </Badge>
+                          )}
+
+                          {client.representative_involved && (
+                            <Badge className="rounded-full bg-violet-100 text-violet-700 border-violet-200">
+                              Representative
+                            </Badge>
+                          )}
+                        </div>
+
+                        {/* FOOTER */}
+                        <div className="mt-6 pt-5 border-t border-border/60 flex items-center justify-between">
                           <div>
-                            <span className="text-muted-foreground">
-                              Updated:
-                            </span>{" "}
-                            {brief.updatedAt
-                              ? new Date(brief.updatedAt).toLocaleDateString()
-                              : "—"}
+                            <p className="text-xs text-muted-foreground">
+                              Created
+                            </p>
+
+                            <p className="text-sm font-medium">
+                              {new Date(client.created_at).toLocaleDateString()}
+                            </p>
                           </div>
 
-                          <div className="text-primary font-medium">
-                            {brief.stage}
-                          </div>
-                        </div>
-
-                        <div
-                          className="flex gap-2"
-                          onClick={(e) => e.stopPropagation()}
-                        >
                           <Button
-                            size="sm"
                             variant="outline"
-                            className="flex-1 rounded-xl"
-                            onClick={() => handleOpenBrief(brief.id)}
+                            className="rounded-xl"
+                            onClick={() => setEditingClient(client)}
                           >
-                            <Eye className="w-4 h-4 mr-1" />
-                            Open
-                          </Button>
-
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            className="flex-1 rounded-xl"
-                            onClick={() => handleEditBrief(brief.briefId)}
-                          >
-                            <Edit className="w-4 h-4 mr-1" />
+                            <Pencil className="w-4 h-4 mr-2" />
                             Edit
                           </Button>
                         </div>
                       </div>
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-          )}
+                    </Card>
+                  ))}
+                </div>
+              )}
 
-          {/* EMPTY */}
-          {filtered.length === 0 && (
-            <div className="flex flex-col items-center justify-center py-24">
-              <div className="w-20 h-20 rounded-full bg-muted flex items-center justify-center mb-5">
-                <FileText className="w-9 h-9 text-muted-foreground" />
-              </div>
+              {/* ================= TABLE VIEW ================= */}
+              {view === "table" && (
+                <div className="border rounded-3xl overflow-hidden bg-card">
+                  <div className="overflow-x-auto">
+                    <table className="w-full min-w-[950px]">
+                      <thead className="bg-muted/60 border-b">
+                        <tr>
+                          <th className="text-left p-4 text-xs uppercase tracking-wider font-bold text-muted-foreground">
+                            Client
+                          </th>
 
-              <h3 className="text-xl font-bold">No Briefs Found</h3>
+                          <th className="text-left p-4 text-xs uppercase tracking-wider font-bold text-muted-foreground">
+                            Contact
+                          </th>
 
-              <p className="text-muted-foreground mt-2 text-center max-w-md">
-                Try changing your filters or create a new project brief.
-              </p>
+                          <th className="text-left p-4 text-xs uppercase tracking-wider font-bold text-muted-foreground">
+                            Communication
+                          </th>
 
-              <Button
-                onClick={handleCreateBrief}
-                className="mt-6 btn-primary rounded-xl"
-              >
-                <Plus className="w-4 h-4 mr-2" />
-                Create Brief
-              </Button>
-            </div>
+                          <th className="text-left p-4 text-xs uppercase tracking-wider font-bold text-muted-foreground">
+                            Ownership
+                          </th>
+
+                          <th className="text-left p-4 text-xs uppercase tracking-wider font-bold text-muted-foreground">
+                            Created
+                          </th>
+
+                          <th className="text-right p-4 text-xs uppercase tracking-wider font-bold text-muted-foreground">
+                            Actions
+                          </th>
+                        </tr>
+                      </thead>
+
+                      <tbody>
+                        {filteredClients.map((client) => (
+                          <tr
+                            key={client.id}
+                            className="border-b hover:bg-muted/50 transition-colors"
+                          >
+                            <td className="p-4">
+                              <div className="flex items-center gap-3">
+                                <div className="w-11 h-11 rounded-xl bg-gradient-to-br from-orange-500 to-orange-600 text-white flex items-center justify-center shadow-md">
+                                  <Building2 className="w-5 h-5" />
+                                </div>
+
+                                <div>
+                                  <p className="font-semibold">{client.name}</p>
+
+                                  <p className="text-sm text-muted-foreground">
+                                    {client.email || "No email"}
+                                  </p>
+                                </div>
+                              </div>
+                            </td>
+
+                            <td className="p-4">
+                              <div className="text-sm">
+                                {client.contact_number}
+                              </div>
+                            </td>
+
+                            <td className="p-4">
+                              <Badge
+                                className={
+                                  COMMUNICATION_COLORS[
+                                    client.preferred_communication
+                                  ] ||
+                                  "bg-muted text-muted-foreground border-border"
+                                }
+                              >
+                                {client.preferred_communication ||
+                                  "Not specified"}
+                              </Badge>
+                            </td>
+
+                            <td className="p-4">
+                              <div className="flex flex-wrap gap-2">
+                                {client.is_owner && (
+                                  <Badge className="bg-emerald-100 text-emerald-700 border-emerald-200">
+                                    Owner
+                                  </Badge>
+                                )}
+
+                                {client.representative_involved && (
+                                  <Badge className="bg-violet-100 text-violet-700 border-violet-200">
+                                    Representative
+                                  </Badge>
+                                )}
+                              </div>
+                            </td>
+
+                            <td className="p-4 text-sm text-muted-foreground">
+                              {new Date(client.created_at).toLocaleDateString()}
+                            </td>
+
+                            <td className="p-4 text-right">
+                              <DropdownMenu>
+                                <DropdownMenuTrigger asChild>
+                                  <Button variant="ghost" size="icon">
+                                    <MoreVertical className="w-5 h-5" />
+                                  </Button>
+                                </DropdownMenuTrigger>
+
+                                <DropdownMenuContent align="end">
+                                  <DropdownMenuItem
+                                    onClick={() => setEditingClient(client)}
+                                  >
+                                    <Pencil className="mr-2 h-4 w-4" />
+                                    Edit Client
+                                  </DropdownMenuItem>
+
+                                  <DropdownMenuSeparator />
+
+                                  <DropdownMenuItem
+                                    className="text-red-600 focus:text-red-600"
+                                    onClick={() => handleDelete(client.id)}
+                                  >
+                                    <Trash2 className="mr-2 h-4 w-4" />
+                                    Delete Client
+                                  </DropdownMenuItem>
+                                </DropdownMenuContent>
+                              </DropdownMenu>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              )}
+            </>
           )}
         </div>
       </ScrollArea>
+
+      {/* CREATE DIALOG */}
+      <Dialog open={openCreate} onOpenChange={setOpenCreate}>
+        <DialogContent className="max-w-2xl rounded-3xl">
+          <DialogHeader>
+            <DialogTitle className="text-2xl font-black">
+              Create Client
+            </DialogTitle>
+          </DialogHeader>
+
+          <ClientForm onSubmit={handleCreate} disabled={creating} />
+        </DialogContent>
+      </Dialog>
+
+      {/* EDIT DIALOG */}
+      <Dialog
+        open={!!editingClient}
+        onOpenChange={(open) => !open && setEditingClient(null)}
+      >
+        <DialogContent className="max-w-2xl rounded-3xl">
+          <DialogHeader>
+            <DialogTitle className="text-2xl font-black">
+              Edit Client
+            </DialogTitle>
+          </DialogHeader>
+
+          {editingClient && (
+            <ClientForm
+              initialValues={editingClient}
+              onSubmit={handleUpdate}
+              disabled={updating}
+            />
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

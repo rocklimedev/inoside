@@ -2,27 +2,53 @@
 
 import { useRouter } from "next/navigation";
 
-import { FileText, ArrowRight, Clock3, CheckCircle2 } from "lucide-react";
+import {
+  FileText,
+  ArrowRight,
+  Clock3,
+  CheckCircle2,
+  Sparkles,
+  Calculator,
+  Layers3,
+  ShieldCheck,
+  Wand2,
+} from "lucide-react";
+
+import { motion } from "framer-motion";
 
 import { PageHeader } from "@/components/PageHeader";
 
-import { Card } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
+
 import { Badge } from "@/components/ui/badge";
+
 import { Button } from "@/components/ui/button";
+
 import { Skeleton } from "@/components/ui/skeleton";
+
+import { Separator } from "@/components/ui/separator";
 
 import { useGetBoqCategoriesQuery } from "@/api/boqApi";
 
 const CATEGORY_META = {
   ARCH: {
     subtitle: "Construction",
+
     time: "~3 mins",
+
     gradient:
       "from-orange-500/20 via-orange-500/5 to-transparent dark:from-orange-500/10",
-    glow: "shadow-orange-500/20",
+
+    glow: "hover:shadow-orange-500/20",
+
     iconStyle: "bg-gradient-to-br from-orange-500 to-orange-600 text-white",
-    border: "hover:border-orange-500/40 hover:shadow-orange-500/10",
+
+    border: "hover:border-orange-500/40",
+
     button: "bg-orange-500 hover:bg-orange-600 text-white border-0",
+
+    badge: "bg-orange-100 text-orange-700 border-orange-200",
+
     features: [
       "Civil work BOQ",
       "Flooring & masonry",
@@ -33,12 +59,21 @@ const CATEGORY_META = {
 
   INT: {
     subtitle: "Interior Fitout",
+
     time: "~5 mins",
+
     gradient: "from-violet-500/20 via-violet-500/5 to-transparent",
-    glow: "shadow-violet-500/20",
+
+    glow: "hover:shadow-violet-500/20",
+
     iconStyle: "bg-gradient-to-br from-violet-600 to-violet-700 text-white",
-    border: "hover:border-violet-500/40 hover:shadow-violet-500/10",
+
+    border: "hover:border-violet-500/40",
+
     button: "bg-violet-600 hover:bg-violet-700 text-white border-0",
+
+    badge: "bg-violet-100 text-violet-700 border-violet-200",
+
     features: [
       "False ceiling",
       "Partitions & paint",
@@ -49,12 +84,21 @@ const CATEGORY_META = {
 
   FURN: {
     subtitle: "Furniture & Joinery",
+
     time: "~4 mins",
+
     gradient: "from-emerald-500/20 via-emerald-500/5 to-transparent",
-    glow: "shadow-emerald-500/20",
+
+    glow: "hover:shadow-emerald-500/20",
+
     iconStyle: "bg-gradient-to-br from-emerald-600 to-emerald-700 text-white",
-    border: "hover:border-emerald-500/40 hover:shadow-emerald-500/10",
+
+    border: "hover:border-emerald-500/40",
+
     button: "bg-emerald-600 hover:bg-emerald-700 text-white border-0",
+
+    badge: "bg-emerald-100 text-emerald-700 border-emerald-200",
+
     features: [
       "Modular furniture",
       "Wardrobes & storage",
@@ -70,135 +114,256 @@ export default function NewEstimate() {
   const { data: categories = [], isLoading } = useGetBoqCategoriesQuery();
 
   return (
-    <div
-      className="relative min-h-screen overflow-hidden"
-      data-testid="new-estimate-page"
-    >
-      {/* Background */}
-      <div className="absolute inset-0 -z-10 bg-gradient-to-br from-background via-background to-muted/30" />
+    <div className="relative min-h-screen overflow-hidden bg-[#fafafa]">
+      {/* ====================================================== */}
+      {/* BACKGROUND */}
+      {/* ====================================================== */}
 
-      {/* Decorative */}
-      <div className="absolute left-0 top-0 -z-10 h-72 w-72 rounded-full bg-orange-500/10 blur-3xl" />
-      <div className="absolute bottom-0 right-0 -z-10 h-80 w-80 rounded-full bg-primary/10 blur-3xl" />
+      <div className="absolute inset-0 -z-10 bg-gradient-to-br from-white via-[#fafafa] to-orange-50/40" />
 
-      <div className="space-y-8 animate-in fade-in duration-500">
-        {/* Header */}
-        <div className="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
-          <PageHeader
-            title="New Estimate"
-            subtitle="Choose a BOQ category to generate professional costing, quantity estimates and project BOQs."
-          />
+      <div className="absolute left-0 top-0 -z-10 h-96 w-96 rounded-full bg-orange-500/10 blur-3xl" />
+
+      <div className="absolute bottom-0 right-0 -z-10 h-[30rem] w-[30rem] rounded-full bg-violet-500/10 blur-3xl" />
+
+      {/* ====================================================== */}
+      {/* CONTAINER */}
+      {/* ====================================================== */}
+
+      <div className="mx-auto max-w-7xl px-4 py-8 md:px-8">
+        {/* ====================================================== */}
+        {/* SECTION HEADER */}
+        {/* ====================================================== */}
+
+        <div className="mt-12 mb-6 flex flex-col md:flex-row md:items-end md:justify-between gap-4">
+          <div>
+            <div className="text-xs uppercase tracking-[0.3em] text-muted-foreground font-semibold">
+              Categories
+            </div>
+
+            <h2 className="mt-2 text-3xl font-black tracking-tight">
+              Select Your Estimate Type
+            </h2>
+          </div>
+
+          <div className="text-sm text-muted-foreground max-w-md leading-7">
+            Choose a BOQ category below to begin generating structured estimates
+            and costing sheets.
+          </div>
         </div>
 
-        {/* Loading */}
+        <Separator className="mb-8" />
+
+        {/* ====================================================== */}
+        {/* LOADING */}
+        {/* ====================================================== */}
+
         {isLoading ? (
-          <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
+          <div className="grid grid-cols-1 gap-6 xl:grid-cols-3">
             {Array.from({ length: 3 }).map((_, index) => (
-              <Card key={index} className="space-y-5 rounded-3xl p-6">
-                <Skeleton className="h-16 w-16 rounded-2xl" />
+              <Card
+                key={index}
+                className="rounded-[30px] border-0 shadow-lg overflow-hidden"
+              >
+                <CardContent className="p-7 space-y-6">
+                  <div className="flex items-center justify-between">
+                    <Skeleton className="h-16 w-16 rounded-2xl" />
 
-                <div className="space-y-3">
-                  <Skeleton className="h-5 w-28" />
-                  <Skeleton className="h-8 w-48" />
-                  <Skeleton className="h-20 w-full" />
-                </div>
+                    <Skeleton className="h-8 w-24 rounded-full" />
+                  </div>
 
-                <div className="grid grid-cols-2 gap-3">
-                  <Skeleton className="h-12 w-full rounded-xl" />
-                  <Skeleton className="h-12 w-full rounded-xl" />
-                  <Skeleton className="h-12 w-full rounded-xl" />
-                  <Skeleton className="h-12 w-full rounded-xl" />
-                </div>
+                  <div className="space-y-4">
+                    <Skeleton className="h-4 w-24" />
 
-                <Skeleton className="h-12 w-full rounded-xl" />
+                    <Skeleton className="h-10 w-52" />
+
+                    <Skeleton className="h-20 w-full" />
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-3">
+                    {Array.from({ length: 4 }).map((_, i) => (
+                      <Skeleton key={i} className="h-14 rounded-2xl" />
+                    ))}
+                  </div>
+
+                  <Skeleton className="h-12 rounded-2xl" />
+                </CardContent>
               </Card>
             ))}
           </div>
         ) : (
-          <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
+          /* ====================================================== */
+          /* GRID */
+          /* ====================================================== */
+
+          <div className="grid grid-cols-1 gap-8 xl:grid-cols-3">
             {categories.map((category, index) => {
               const meta = CATEGORY_META[category.code] || CATEGORY_META.ARCH;
 
               return (
-                <Card
+                <motion.div
                   key={category.id}
-                  onClick={() => router.push(`/boq/create/${category.id}`)}
-                  className={`group relative cursor-pointer overflow-hidden border border-border/60 bg-card/80 backdrop-blur-sm transition-all duration-500 hover:-translate-y-2 hover:shadow-2xl ${meta.border} ${meta.glow}`}
-                  style={{
-                    animationDelay: `${index * 120}ms`,
+                  initial={{
+                    opacity: 0,
+                    y: 25,
+                  }}
+                  animate={{
+                    opacity: 1,
+                    y: 0,
+                  }}
+                  transition={{
+                    duration: 0.45,
+                    delay: index * 0.12,
                   }}
                 >
-                  {/* Gradient */}
-                  <div
-                    className={`absolute inset-0 bg-gradient-to-br ${meta.gradient}`}
-                  />
+                  <Card
+                    onClick={() => router.push(`/boq/create/${category.id}`)}
+                    className={`
+                      group
+                      relative
+                      overflow-hidden
+                      rounded-[32px]
+                      border
+                      bg-white/90
+                      backdrop-blur-xl
+                      shadow-xl
+                      cursor-pointer
+                      transition-all
+                      duration-500
+                      hover:-translate-y-3
+                      hover:shadow-2xl
+                      ${meta.border}
+                      ${meta.glow}
+                    `}
+                  >
+                    {/* Gradient */}
 
-                  {/* Top Line */}
-                  <div className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-orange-500 via-primary to-orange-500 opacity-80" />
+                    <div
+                      className={`absolute inset-0 bg-gradient-to-br ${meta.gradient}`}
+                    />
 
-                  {/* Hover Glow */}
-                  <div className="absolute inset-0 opacity-0 transition-opacity duration-500 group-hover:opacity-100">
-                    <div className="absolute -right-10 -top-10 h-40 w-40 rounded-full bg-white/10 blur-3xl" />
-                  </div>
+                    {/* Top Border */}
 
-                  <div className="relative space-y-6 p-7">
-                    {/* Header */}
-                    <div className="flex items-start justify-between gap-4">
-                      <div
-                        className={`flex h-16 w-16 items-center justify-center rounded-2xl shadow-lg transition-transform duration-300 group-hover:scale-110 ${meta.iconStyle}`}
-                      >
-                        <FileText className="h-8 w-8" />
-                      </div>
+                    <div className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-orange-500 via-violet-500 to-orange-500" />
 
-                      <Badge
-                        variant="outline"
-                        className="gap-1 rounded-full border-border/60 bg-background/80 px-3 py-1 text-xs backdrop-blur"
-                      >
-                        <Clock3 className="h-3 w-3" />
-                        {meta.time}
-                      </Badge>
+                    {/* Glow */}
+
+                    <div className="absolute inset-0 opacity-0 transition-opacity duration-500 group-hover:opacity-100">
+                      <div className="absolute -top-16 -right-16 h-56 w-56 rounded-full bg-white/10 blur-3xl" />
                     </div>
 
-                    {/* Content */}
-                    <div>
-                      <div className="text-xs font-semibold uppercase tracking-[0.28em] text-muted-foreground">
-                        {meta.subtitle}
-                      </div>
+                    <CardContent className="relative z-10 p-7">
+                      {/* TOP */}
 
-                      <h3 className="mt-2 text-3xl font-bold tracking-tight">
-                        {category.name}
-                      </h3>
-
-                      <p className="mt-4 text-sm leading-7 text-muted-foreground">
-                        {category.description ||
-                          "Generate detailed BOQs and professional estimates."}
-                      </p>
-                    </div>
-
-                    {/* Features */}
-                    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-                      {meta.features.map((feature) => (
+                      <div className="flex items-start justify-between gap-4">
                         <div
-                          key={feature}
-                          className="flex items-center gap-2 rounded-xl border border-border/50 bg-background/70 px-3 py-3 text-sm backdrop-blur-sm transition-all duration-300 hover:border-orange-500/30"
+                          className={`
+                            h-16
+                            w-16
+                            rounded-2xl
+                            flex
+                            items-center
+                            justify-center
+                            shadow-lg
+                            transition-transform
+                            duration-300
+                            group-hover:scale-110
+                            ${meta.iconStyle}
+                          `}
                         >
-                          <CheckCircle2 className="h-4 w-4 text-orange-500" />
-
-                          <span>{feature}</span>
+                          <FileText className="h-8 w-8" />
                         </div>
-                      ))}
-                    </div>
 
-                    {/* CTA */}
-                    <Button
-                      className={`group/btn h-12 w-full justify-between rounded-xl text-sm font-medium shadow-lg transition-all duration-300 hover:scale-[1.02] ${meta.button}`}
-                    >
-                      <span>Start {category.name}</span>
+                        <Badge
+                          variant="outline"
+                          className={`
+                            rounded-full
+                            px-4
+                            py-1.5
+                            border
+                            ${meta.badge}
+                          `}
+                        >
+                          <Clock3 className="h-3 w-3 mr-1" />
 
-                      <ArrowRight className="h-4 w-4 transition-transform duration-300 group-hover/btn:translate-x-1" />
-                    </Button>
-                  </div>
-                </Card>
+                          {meta.time}
+                        </Badge>
+                      </div>
+
+                      {/* CONTENT */}
+
+                      <div className="mt-8">
+                        <div className="text-xs font-bold uppercase tracking-[0.3em] text-muted-foreground">
+                          {meta.subtitle}
+                        </div>
+
+                        <h3 className="mt-3 text-3xl font-black tracking-tight leading-tight">
+                          {category.name}
+                        </h3>
+
+                        <p className="mt-5 text-sm leading-7 text-muted-foreground">
+                          {category.description ||
+                            "Generate detailed BOQs and professional project estimates."}
+                        </p>
+                      </div>
+
+                      {/* FEATURES */}
+
+                      <div className="mt-8 grid grid-cols-1 gap-3 sm:grid-cols-2">
+                        {meta.features.map((feature) => (
+                          <div
+                            key={feature}
+                            className="
+                                flex
+                                items-center
+                                gap-3
+                                rounded-2xl
+                                border
+                                bg-white/70
+                                px-4
+                                py-4
+                                text-sm
+                                backdrop-blur-sm
+                                transition-all
+                                duration-300
+                                hover:border-orange-500/30
+                              "
+                          >
+                            <div className="flex h-8 w-8 items-center justify-center rounded-full bg-orange-100">
+                              <CheckCircle2 className="h-4 w-4 text-orange-500" />
+                            </div>
+
+                            <span className="font-medium">{feature}</span>
+                          </div>
+                        ))}
+                      </div>
+
+                      {/* CTA */}
+
+                      <Button
+                        className={`
+                          group/btn
+                          mt-8
+                          h-14
+                          w-full
+                          justify-between
+                          rounded-2xl
+                          px-5
+                          text-sm
+                          font-semibold
+                          shadow-lg
+                          transition-all
+                          duration-300
+                          hover:scale-[1.02]
+                          ${meta.button}
+                        `}
+                      >
+                        <span>Start {category.name}</span>
+
+                        <ArrowRight className="h-4 w-4 transition-transform duration-300 group-hover/btn:translate-x-1" />
+                      </Button>
+                    </CardContent>
+                  </Card>
+                </motion.div>
               );
             })}
           </div>

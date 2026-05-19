@@ -15,10 +15,6 @@ export class CreateBoqDto {
 
   @IsOptional()
   @IsString()
-  code?: string;
-
-  @IsOptional()
-  @IsString()
   notes?: string;
 
   @IsOptional()

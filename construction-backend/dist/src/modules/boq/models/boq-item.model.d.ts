@@ -4,13 +4,13 @@ import { Boq } from './boq.model';
 import { BoqSection } from './boq-section.model';
 import { BoqSubHeading } from './boq-subheading.model';
 import { Unit } from './unit.model';
-import { InventoryItem } from '@/modules/inventory/models/inventory-item.model';
+import { InventoryMaster } from '@/modules/inventory/models/inventory-master.model';
 export declare class BoqItem extends Model<InferAttributes<BoqItem>, InferCreationAttributes<BoqItem>> {
     id: CreationOptional<string>;
     boq_id: string;
     section_id: string;
     subheading_id: CreationOptional<string | null>;
-    inventory_item_id: CreationOptional<string | null>;
+    inventory_master_id: CreationOptional<string | null>;
     unit_id: CreationOptional<string | null>;
     sno: CreationOptional<string | null>;
     item_code: CreationOptional<string | null>;
@@ -31,6 +31,6 @@ export declare class BoqItem extends Model<InferAttributes<BoqItem>, InferCreati
     boq?: NonAttribute<Boq>;
     section?: NonAttribute<BoqSection>;
     subheading?: NonAttribute<BoqSubHeading>;
-    inventory_item?: NonAttribute<InventoryItem>;
+    inventory_master?: NonAttribute<InventoryMaster>;
     unit?: NonAttribute<Unit>;
 }

@@ -38,6 +38,10 @@ export const baseApi = createApi({
     "Auth",
     "BoqCategory",
     "VendorsTypes",
+    "Pitches",
+    "Inventory",
+    "Dispatch",
+    "InventoryMaster",
   ],
 
   endpoints: () => ({}),

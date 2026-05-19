@@ -13,7 +13,10 @@ import { BoqSection } from './models/boq-section.model';
 import { BoqSubHeading } from './models/boq-subheading.model';
 import { BoqItem } from './models/boq-item.model';
 
-import { InventoryItem } from '@/modules/inventory/models/inventory-item.model';
+// ✅ FIXED IMPORT (IMPORTANT)
+import { InventoryMaster } from '@/modules/inventory/models/inventory-master.model';
+
+import { Brand } from '@/modules/inventory/models/brand.model';
 
 @Module({
   imports: [
@@ -27,14 +30,13 @@ import { InventoryItem } from '@/modules/inventory/models/inventory-item.model';
       BoqItem,
 
       // ================= INVENTORY =================
-      InventoryItem,
+      InventoryMaster,
+      Brand,
     ]),
   ],
 
   controllers: [BoqController],
-
   providers: [BoqService],
-
   exports: [BoqService],
 })
 export class BoqModule {}

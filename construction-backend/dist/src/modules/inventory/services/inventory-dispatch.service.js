@@ -14,8 +14,7 @@ var __param = (this && this.__param) || function (paramIndex, decorator) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.InventoryDispatchService = void 0;
 const common_1 = require("@nestjs/common");
-const typeorm_1 = require("@nestjs/typeorm");
-const typeorm_2 = require("typeorm");
+const sequelize_1 = require("@nestjs/sequelize");
 const inventory_dispatch_model_1 = require("../models/inventory-dispatch.model");
 const inventory_request_model_1 = require("../models/inventory-request.model");
 const uuid_1 = require("uuid");
@@ -33,14 +32,14 @@ let InventoryDispatchService = class InventoryDispatchService {
         if (!request) {
             throw new common_1.NotFoundException('Request not found');
         }
-        const dispatch = this.dispatchRepo.create({
+        const dispatch = await this.dispatchRepo.create({
             id: (0, uuid_1.v4)(),
             ...dto,
             dispatch_date: new Date(),
         });
         request.status = 'dispatched';
-        await this.requestRepo.save(request);
-        return this.dispatchRepo.save(dispatch);
+        await request.save();
+        return dispatch;
     }
     async markDelivered(dispatchId, received_quantity) {
         const dispatch = await this.dispatchRepo.findOne({
@@ -51,15 +50,14 @@ let InventoryDispatchService = class InventoryDispatchService {
         }
         dispatch.received_quantity = received_quantity;
         dispatch.supervisor_confirmation = true;
-        return this.dispatchRepo.save(dispatch);
+        return dispatch.save();
     }
 };
 exports.InventoryDispatchService = InventoryDispatchService;
 exports.InventoryDispatchService = InventoryDispatchService = __decorate([
     (0, common_1.Injectable)(),
-    __param(0, (0, typeorm_1.InjectRepository)(inventory_dispatch_model_1.InventoryDispatch)),
-    __param(1, (0, typeorm_1.InjectRepository)(inventory_request_model_1.InventoryRequest)),
-    __metadata("design:paramtypes", [typeorm_2.Repository,
-        typeorm_2.Repository])
+    __param(0, (0, sequelize_1.InjectModel)(inventory_dispatch_model_1.InventoryDispatch)),
+    __param(1, (0, sequelize_1.InjectModel)(inventory_request_model_1.InventoryRequest)),
+    __metadata("design:paramtypes", [Object, Object])
 ], InventoryDispatchService);
 //# sourceMappingURL=inventory-dispatch.service.js.map

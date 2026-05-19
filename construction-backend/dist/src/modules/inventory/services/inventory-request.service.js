@@ -14,8 +14,7 @@ var __param = (this && this.__param) || function (paramIndex, decorator) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.InventoryRequestService = void 0;
 const common_1 = require("@nestjs/common");
-const typeorm_1 = require("@nestjs/typeorm");
-const typeorm_2 = require("typeorm");
+const sequelize_1 = require("@nestjs/sequelize");
 const inventory_request_model_1 = require("../models/inventory-request.model");
 const uuid_1 = require("uuid");
 let InventoryRequestService = class InventoryRequestService {
@@ -24,37 +23,33 @@ let InventoryRequestService = class InventoryRequestService {
         this.repo = repo;
     }
     async create(dto, userId) {
-        const request = this.repo.create({
+        return this.repo.create({
             id: (0, uuid_1.v4)(),
             ...dto,
             requested_by: userId,
             status: 'requested',
         });
-        return this.repo.save(request);
     }
     async approve(id, approvedBy) {
-        const request = await this.repo.findOne({
-            where: { id },
-        });
+        const request = await this.repo.findOne({ where: { id } });
         if (!request) {
             throw new common_1.NotFoundException('Request not found');
         }
         request.status = 'approved';
         request.approved_by = approvedBy;
-        return this.repo.save(request);
+        return request.save();
     }
     async getAll() {
-        return this.repo.find({
-            order: {
-                created_at: 'DESC',
-            },
+        return this.repo.findAll({
+            order: [['created_at', 'DESC']],
+            include: { all: true },
         });
     }
 };
 exports.InventoryRequestService = InventoryRequestService;
 exports.InventoryRequestService = InventoryRequestService = __decorate([
     (0, common_1.Injectable)(),
-    __param(0, (0, typeorm_1.InjectRepository)(inventory_request_model_1.InventoryRequest)),
-    __metadata("design:paramtypes", [typeorm_2.Repository])
+    __param(0, (0, sequelize_1.InjectModel)(inventory_request_model_1.InventoryRequest)),
+    __metadata("design:paramtypes", [Object])
 ], InventoryRequestService);
 //# sourceMappingURL=inventory-request.service.js.map

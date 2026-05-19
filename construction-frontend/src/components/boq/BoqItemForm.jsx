@@ -12,9 +12,32 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+} from "@/components/ui/command";
+import { Check, ChevronsUpDown, Search } from "lucide-react";
+import { cn } from "@/lib/utils";
 
-export function BoqItemForm({ item, onSave, onCancel }) {
-  const isNewItem = !item;
+export function BoqItemForm({
+  item,
+  onSave,
+  onCancel,
+  inventoryItems = [],
+  isLoadingInventory = false,
+  searchTerm = "",
+  onSearchChange,
+}) {
+  const isNewItem = !item?.id;
 
   const [form, setForm] = useState({
     id: item?.id || null,
@@ -24,7 +47,7 @@ export function BoqItemForm({ item, onSave, onCancel }) {
     specification: item?.specification || "",
     brand: item?.brand || "",
     qty: item?.qty || 0,
-    unit_id: item?.unit_id || "", // Added
+    unit_id: item?.unit_id || "",
     rate: item?.rate || 0,
     wastage_percent: item?.wastage_percent || 0,
     discount_percent: item?.discount_percent || 0,
@@ -32,7 +55,9 @@ export function BoqItemForm({ item, onSave, onCancel }) {
     remarks: item?.remarks || "",
   });
 
-  // Reset form when item changes (important for switching between items)
+  const [openInventory, setOpenInventory] = useState(false);
+
+  // Reset form when item changes
   useEffect(() => {
     setForm({
       id: item?.id || null,
@@ -50,6 +75,24 @@ export function BoqItemForm({ item, onSave, onCancel }) {
       remarks: item?.remarks || "",
     });
   }, [item]);
+
+  const handleInventorySelect = (invItem) => {
+    setForm({
+      ...form,
+      item_name: invItem.item_name || invItem.name || "",
+      item_code: invItem.item_code || invItem.code || "",
+      description: invItem.description || form.description,
+      specification: invItem.specification || form.specification,
+
+      // ✅ FIX HERE
+      brand: invItem.brand?.name || "",
+
+      rate: invItem.default_rate || invItem.rate || form.rate,
+      unit_id: invItem.unit_id || form.unit_id,
+    });
+
+    setOpenInventory(false);
+  };
 
   const handleSubmit = (e) => {
     e.preventDefault();
@@ -71,11 +114,91 @@ export function BoqItemForm({ item, onSave, onCancel }) {
   };
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-5">
-      <h3 className="text-lg font-semibold">
-        {isNewItem ? "Add New Item" : "Edit Item"}
-      </h3>
+    <form onSubmit={handleSubmit} className="space-y-6">
+      <div className="flex items-center justify-between">
+        <h3 className="text-2xl font-bold">
+          {isNewItem ? "Add New Item" : "Edit Item"}
+        </h3>
+        <Button type="button" variant="outline" onClick={onCancel}>
+          Cancel
+        </Button>
+      </div>
 
+      {/* ====================== INVENTORY SEARCH ====================== */}
+      <div className="space-y-2">
+        <Label className="flex items-center gap-2">
+          <Search className="w-4 h-4" />
+          Load from Inventory (Optional)
+        </Label>
+        <Popover open={openInventory} onOpenChange={setOpenInventory}>
+          <PopoverTrigger asChild>
+            <Button
+              variant="outline"
+              role="combobox"
+              className="w-full justify-between h-11"
+            >
+              {form.item_name ? (
+                <span className="truncate">{form.item_name}</span>
+              ) : (
+                "Search and select from inventory..."
+              )}
+              <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+            </Button>
+          </PopoverTrigger>
+          <PopoverContent className="w-full p-0" align="start">
+            <Command>
+              <CommandInput
+                placeholder="Search inventory items..."
+                value={searchTerm}
+                onValueChange={onSearchChange}
+              />
+              <CommandList>
+                {isLoadingInventory && (
+                  <CommandEmpty>Loading inventory...</CommandEmpty>
+                )}
+                {!isLoadingInventory &&
+                  inventoryItems.length === 0 &&
+                  searchTerm.length > 1 && (
+                    <CommandEmpty>No items found.</CommandEmpty>
+                  )}
+                <CommandGroup>
+                  {inventoryItems.map((inv) => (
+                    <CommandItem
+                      key={inv.id}
+                      value={inv.name || inv.item_name || ""}
+                      onSelect={() => handleInventorySelect(inv)}
+                    >
+                      <Check
+                        className={cn(
+                          "mr-2 h-4 w-4",
+                          form.item_name === (inv.name || inv.item_name)
+                            ? "opacity-100"
+                            : "opacity-0",
+                        )}
+                      />
+                      <div className="flex flex-col">
+                        <span className="font-medium">
+                          {inv.name || inv.item_name}
+                        </span>
+                        {inv.code || inv.item_code ? (
+                          <span className="text-xs text-muted-foreground">
+                            {inv.code || inv.item_code}
+                          </span>
+                        ) : null}
+                      </div>
+                    </CommandItem>
+                  ))}
+                </CommandGroup>
+              </CommandList>
+            </Command>
+          </PopoverContent>
+        </Popover>
+        <p className="text-xs text-muted-foreground">
+          You can still edit all fields after selecting from inventory
+        </p>
+      </div>
+
+      {/* ====================== ITEM DETAILS ====================== */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div className="md:col-span-2">
           <Label>Item Name *</Label>
@@ -132,7 +255,8 @@ export function BoqItemForm({ item, onSave, onCancel }) {
               <SelectItem value="nos">Nos</SelectItem>
               <SelectItem value="kg">Kg</SelectItem>
               <SelectItem value="m">Meter</SelectItem>
-              {/* Add more units as needed */}
+              <SelectItem value="ltr">Liter</SelectItem>
+              <SelectItem value="ton">Ton</SelectItem>
             </SelectContent>
           </Select>
         </div>
@@ -199,7 +323,7 @@ export function BoqItemForm({ item, onSave, onCancel }) {
           value={form.specification}
           onChange={(e) => setForm({ ...form, specification: e.target.value })}
           rows={2}
-          placeholder="Technical specifications..."
+          placeholder="Technical specifications, size, grade, etc."
         />
       </div>
 
@@ -209,6 +333,7 @@ export function BoqItemForm({ item, onSave, onCancel }) {
           value={form.description}
           onChange={(e) => setForm({ ...form, description: e.target.value })}
           rows={3}
+          placeholder="Detailed description..."
         />
       </div>
 
@@ -221,11 +346,13 @@ export function BoqItemForm({ item, onSave, onCancel }) {
         />
       </div>
 
-      <div className="flex justify-end gap-3 pt-4">
+      <div className="flex justify-end gap-3 pt-6 border-t">
         <Button type="button" variant="outline" onClick={onCancel}>
           Cancel
         </Button>
-        <Button type="submit">{isNewItem ? "Add Item" : "Update Item"}</Button>
+        <Button type="submit" className="bg-[#ef7f1b] hover:bg-[#d66e15]">
+          {isNewItem ? "Add Item" : "Update Item"}
+        </Button>
       </div>
     </form>
   );

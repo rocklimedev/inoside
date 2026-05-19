@@ -15,7 +15,7 @@ const boq_model_1 = require("./boq.model");
 const boq_section_model_1 = require("./boq-section.model");
 const boq_subheading_model_1 = require("./boq-subheading.model");
 const unit_model_1 = require("./unit.model");
-const inventory_item_model_1 = require("../../inventory/models/inventory-item.model");
+const inventory_master_model_1 = require("../../inventory/models/inventory-master.model");
 let BoqItem = class BoqItem extends sequelize_typescript_1.Model {
 };
 exports.BoqItem = BoqItem;
@@ -26,27 +26,27 @@ __decorate([
 ], BoqItem.prototype, "id", void 0);
 __decorate([
     (0, sequelize_typescript_1.ForeignKey)(() => boq_model_1.Boq),
-    (0, sequelize_typescript_1.Column)({ type: sequelize_typescript_1.DataType.UUID, allowNull: false }),
+    (0, sequelize_typescript_1.Column)({ type: sequelize_typescript_1.DataType.CHAR(36), allowNull: false }),
     __metadata("design:type", String)
 ], BoqItem.prototype, "boq_id", void 0);
 __decorate([
     (0, sequelize_typescript_1.ForeignKey)(() => boq_section_model_1.BoqSection),
-    (0, sequelize_typescript_1.Column)({ type: sequelize_typescript_1.DataType.UUID, allowNull: false }),
+    (0, sequelize_typescript_1.Column)({ type: sequelize_typescript_1.DataType.CHAR(36), allowNull: false }),
     __metadata("design:type", String)
 ], BoqItem.prototype, "section_id", void 0);
 __decorate([
     (0, sequelize_typescript_1.ForeignKey)(() => boq_subheading_model_1.BoqSubHeading),
-    (0, sequelize_typescript_1.Column)({ type: sequelize_typescript_1.DataType.UUID, allowNull: true }),
+    (0, sequelize_typescript_1.Column)({ type: sequelize_typescript_1.DataType.CHAR(36), allowNull: true }),
     __metadata("design:type", Object)
 ], BoqItem.prototype, "subheading_id", void 0);
 __decorate([
-    (0, sequelize_typescript_1.ForeignKey)(() => inventory_item_model_1.InventoryItem),
-    (0, sequelize_typescript_1.Column)({ type: sequelize_typescript_1.DataType.UUID, allowNull: true }),
+    (0, sequelize_typescript_1.ForeignKey)(() => inventory_master_model_1.InventoryMaster),
+    (0, sequelize_typescript_1.Column)({ type: sequelize_typescript_1.DataType.CHAR(36), allowNull: true }),
     __metadata("design:type", Object)
-], BoqItem.prototype, "inventory_item_id", void 0);
+], BoqItem.prototype, "inventory_master_id", void 0);
 __decorate([
     (0, sequelize_typescript_1.ForeignKey)(() => unit_model_1.Unit),
-    (0, sequelize_typescript_1.Column)({ type: sequelize_typescript_1.DataType.UUID, allowNull: true }),
+    (0, sequelize_typescript_1.Column)({ type: sequelize_typescript_1.DataType.CHAR(36), allowNull: true }),
     __metadata("design:type", Object)
 ], BoqItem.prototype, "unit_id", void 0);
 __decorate([
@@ -126,9 +126,11 @@ __decorate([
     __metadata("design:type", Object)
 ], BoqItem.prototype, "subheading", void 0);
 __decorate([
-    (0, sequelize_typescript_1.BelongsTo)(() => inventory_item_model_1.InventoryItem),
+    (0, sequelize_typescript_1.BelongsTo)(() => inventory_master_model_1.InventoryMaster, {
+        foreignKey: 'inventory_master_id',
+    }),
     __metadata("design:type", Object)
-], BoqItem.prototype, "inventory_item", void 0);
+], BoqItem.prototype, "inventory_master", void 0);
 __decorate([
     (0, sequelize_typescript_1.BelongsTo)(() => unit_model_1.Unit),
     __metadata("design:type", Object)

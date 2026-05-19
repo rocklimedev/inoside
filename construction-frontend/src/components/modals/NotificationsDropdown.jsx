@@ -1,7 +1,15 @@
-// components/dropdowns/NotificationsDropdown.tsx
 "use client";
 
-import { Bell } from "lucide-react";
+import { useMemo, useState } from "react";
+import {
+  Bell,
+  CheckCheck,
+  MessageSquare,
+  FolderOpen,
+  AlertCircle,
+  Activity,
+  RefreshCw,
+} from "lucide-react";
 
 import {
   DropdownMenu,
@@ -10,6 +18,10 @@ import {
 } from "@/components/ui/dropdown-menu";
 
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { Button } from "@/components/ui/button";
+import { Separator } from "@/components/ui/separator";
+import { Badge } from "@/components/ui/badge";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 const defaultNotifications = [
   {
@@ -19,6 +31,7 @@ const defaultNotifications = [
     time: "2 min ago",
     unread: true,
     type: "message",
+    category: "updates",
   },
   {
     id: 2,
@@ -27,6 +40,7 @@ const defaultNotifications = [
     time: "15 min ago",
     unread: true,
     type: "project",
+    category: "updates",
   },
   {
     id: 3,
@@ -35,89 +49,150 @@ const defaultNotifications = [
     time: "1 hour ago",
     unread: false,
     type: "approval",
+    category: "activity",
+  },
+  {
+    id: 4,
+    title: "System Activity",
+    message: "Backup completed successfully",
+    time: "2 hours ago",
+    unread: false,
+    type: "alert",
+    category: "activity",
   },
 ];
+
+const typeIcon = {
+  message: MessageSquare,
+  project: FolderOpen,
+  approval: CheckCheck,
+  alert: AlertCircle,
+};
 
 export default function NotificationsDropdown({
   notifications = defaultNotifications,
 }) {
+  const [tab, setTab] = useState("all");
+
+  const unreadCount = notifications.filter((n) => n.unread).length;
+
+  const filtered = useMemo(() => {
+    if (tab === "all") return notifications;
+    return notifications.filter((n) => n.category === tab);
+  }, [tab, notifications]);
+
   return (
     <DropdownMenu>
+      {/* Trigger */}
       <DropdownMenuTrigger asChild>
-        <button className="relative w-8 h-8 rounded-lg flex items-center justify-center text-gray-500 hover:bg-gray-100 transition-colors">
-          <Bell className="w-[18px] h-[18px]" />
+        <Button variant="ghost" size="icon" className="relative rounded-full">
+          <Bell className="w-5 h-5 text-muted-foreground" />
 
-          {notifications.some((n) => n.unread) && (
-            <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-[#e31d3b] rounded-full" />
+          {unreadCount > 0 && (
+            <span className="absolute top-1 right-1 h-2.5 w-2.5 rounded-full bg-orange-500 animate-pulse" />
           )}
-        </button>
+        </Button>
       </DropdownMenuTrigger>
 
+      {/* Panel */}
       <DropdownMenuContent
         align="end"
-        className="w-[380px] p-0 overflow-hidden rounded-2xl"
+        className="w-[420px] p-0 overflow-hidden rounded-2xl"
       >
         {/* Header */}
-        <div className="flex items-center justify-between px-4 py-3 border-b bg-white">
+        <div className="p-4 flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <Bell className="w-4 h-4 text-[#ef7f1b]" />
-            <h3 className="font-semibold text-sm">Notifications</h3>
+            <Bell className="w-4 h-4 text-orange-500" />
+            <p className="font-semibold text-sm">Activity Center</p>
+
+            {unreadCount > 0 && (
+              <Badge variant="secondary" className="text-xs">
+                {unreadCount}
+              </Badge>
+            )}
           </div>
 
-          <button className="text-xs text-[#ef7f1b] hover:underline">
-            Mark all read
-          </button>
+          <Button variant="ghost" size="icon">
+            <RefreshCw className="w-4 h-4" />
+          </Button>
+        </div>
+
+        <Separator />
+
+        {/* Tabs */}
+        <div className="px-2 pt-2">
+          <Tabs value={tab} onValueChange={setTab} className="w-full">
+            <TabsList className="grid grid-cols-3 w-full">
+              <TabsTrigger value="all">All</TabsTrigger>
+              <TabsTrigger value="updates">Updates</TabsTrigger>
+              <TabsTrigger value="activity">Activity</TabsTrigger>
+            </TabsList>
+          </Tabs>
         </div>
 
         {/* List */}
-        <ScrollArea className="max-h-[420px]">
+        <ScrollArea className="max-h-[420px] mt-2">
           <div className="p-2 space-y-1">
-            {notifications.length === 0 ? (
-              <div className="py-12 text-center text-sm text-gray-500">
-                No notifications yet
+            {filtered.length === 0 ? (
+              <div className="py-12 text-center text-sm text-muted-foreground">
+                No items in this section
               </div>
             ) : (
-              notifications.map((notif) => (
-                <button
-                  key={notif.id}
-                  className={`w-full text-left p-3 rounded-xl transition-colors border ${
-                    notif.unread
-                      ? "bg-orange-50/60 border-orange-100"
-                      : "border-transparent hover:bg-gray-50"
-                  }`}
-                >
-                  <div className="flex gap-3">
+              filtered.map((notif) => {
+                const Icon = typeIcon[notif.type] || Activity;
+
+                return (
+                  <button
+                    key={notif.id}
+                    className={`w-full text-left flex gap-3 p-3 rounded-xl transition
+                      ${
+                        notif.unread
+                          ? "bg-orange-50 border border-orange-100"
+                          : "hover:bg-muted border border-transparent"
+                      }`}
+                  >
+                    {/* Icon */}
+                    <div className="p-2 rounded-lg bg-muted h-fit">
+                      <Icon className="w-4 h-4 text-muted-foreground" />
+                    </div>
+
+                    {/* Content */}
                     <div className="flex-1 min-w-0">
-                      <div className="flex items-start justify-between gap-2">
-                        <p className="text-sm font-medium text-black">
+                      <div className="flex justify-between gap-2">
+                        <p className="text-sm font-medium leading-tight">
                           {notif.title}
                         </p>
 
                         {notif.unread && (
-                          <div className="w-2 h-2 rounded-full bg-[#ef7f1b] mt-1 shrink-0" />
+                          <span className="w-2 h-2 mt-1 rounded-full bg-orange-500 shrink-0" />
                         )}
                       </div>
 
-                      <p className="text-sm text-gray-600 mt-1 line-clamp-2">
+                      <p className="text-sm text-muted-foreground mt-1 line-clamp-2">
                         {notif.message}
                       </p>
 
-                      <p className="text-[11px] text-gray-400 mt-2">
+                      <p className="text-[11px] text-muted-foreground mt-2">
                         {notif.time}
                       </p>
                     </div>
-                  </div>
-                </button>
-              ))
+                  </button>
+                );
+              })
             )}
           </div>
         </ScrollArea>
 
         {/* Footer */}
-        <div className="border-t px-4 py-3 bg-gray-50">
-          <button className="w-full text-sm font-medium text-[#ef7f1b] hover:underline">
-            View all activity
-          </button>
+        <Separator />
+
+        <div className="p-2">
+          <Button
+            variant="ghost"
+            className="w-full text-sm text-orange-500 hover:text-orange-600"
+          >
+            View full activity log
+          </Button>
         </div>
       </DropdownMenuContent>
     </DropdownMenu>

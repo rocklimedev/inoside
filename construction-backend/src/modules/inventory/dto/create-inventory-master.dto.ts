@@ -1,6 +1,6 @@
-import { IsNotEmpty, IsOptional } from 'class-validator';
+import { IsNotEmpty, IsOptional, IsNumber, IsBoolean } from 'class-validator';
 
-export class CreateInventoryItemDto {
+export class CreateInventoryMasterDto {
   @IsNotEmpty()
   item_code!: string;
 
@@ -13,8 +13,9 @@ export class CreateInventoryItemDto {
   @IsOptional()
   unit_id?: string;
 
-  @IsOptional()
-  default_rate?: number;
+  @IsNotEmpty()
+  @IsNumber()
+  default_rate!: number;
 
   @IsOptional()
   brand?: string;

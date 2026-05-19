@@ -24,6 +24,8 @@ class CreateProjectDto {
     budget_range;
     timeline_expectation;
     design_preference;
+    current_stage;
+    token_received;
     created_by;
 }
 exports.CreateProjectDto = CreateProjectDto;
@@ -82,6 +84,16 @@ __decorate([
     (0, class_validator_1.IsString)(),
     __metadata("design:type", String)
 ], CreateProjectDto.prototype, "design_preference", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsString)(),
+    __metadata("design:type", String)
+], CreateProjectDto.prototype, "current_stage", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsBoolean)(),
+    __metadata("design:type", Boolean)
+], CreateProjectDto.prototype, "token_received", void 0);
 __decorate([
     (0, class_validator_1.IsOptional)(),
     (0, class_validator_1.IsUUID)(),

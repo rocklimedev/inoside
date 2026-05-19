@@ -15,7 +15,6 @@ class CreateBoqDto {
     project_id;
     boq_category_id;
     title;
-    code;
     notes;
     prepared_by;
 }
@@ -35,11 +34,6 @@ __decorate([
     (0, class_validator_1.IsString)(),
     __metadata("design:type", String)
 ], CreateBoqDto.prototype, "title", void 0);
-__decorate([
-    (0, class_validator_1.IsOptional)(),
-    (0, class_validator_1.IsString)(),
-    __metadata("design:type", String)
-], CreateBoqDto.prototype, "code", void 0);
 __decorate([
     (0, class_validator_1.IsOptional)(),
     (0, class_validator_1.IsString)(),

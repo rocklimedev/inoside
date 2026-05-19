@@ -21,8 +21,6 @@ const create_boq_item_dto_1 = require("./dto/create-boq-item.dto");
 const create_boq_subheading_dto_1 = require("./dto/create-boq-subheading.dto");
 const create_boq_category_dto_1 = require("./dto/create-boq-category.dto");
 const jwt_auth_guard_1 = require("../../common/guards/jwt-auth.guard");
-const roles_guard_1 = require("../../common/guards/roles.guard");
-const roles_decorator_1 = require("../../common/decorators/roles.decorator");
 let BoqController = class BoqController {
     boqService;
     constructor(boqService) {
@@ -77,8 +75,6 @@ __decorate([
 ], BoqController.prototype, "findCategories", null);
 __decorate([
     (0, common_1.Post)('categories'),
-    (0, common_1.UseGuards)(roles_guard_1.RolesGuard),
-    (0, roles_decorator_1.Roles)('admin', 'estimator', 'project_manager'),
     __param(0, (0, common_1.Body)()),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [create_boq_category_dto_1.CreateBoqCategoryDto]),
@@ -86,8 +82,6 @@ __decorate([
 ], BoqController.prototype, "createCategory", null);
 __decorate([
     (0, common_1.Post)(),
-    (0, common_1.UseGuards)(roles_guard_1.RolesGuard),
-    (0, roles_decorator_1.Roles)('admin', 'estimator', 'project_manager'),
     __param(0, (0, common_1.Body)()),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [create_boq_dto_1.CreateBoqDto]),
@@ -116,8 +110,6 @@ __decorate([
 ], BoqController.prototype, "calculateTotal", null);
 __decorate([
     (0, common_1.Post)('sections'),
-    (0, common_1.UseGuards)(roles_guard_1.RolesGuard),
-    (0, roles_decorator_1.Roles)('admin', 'estimator', 'project_manager'),
     __param(0, (0, common_1.Body)()),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [create_boq_section_dto_1.CreateBoqSectionDto]),
@@ -132,8 +124,6 @@ __decorate([
 ], BoqController.prototype, "findSections", null);
 __decorate([
     (0, common_1.Post)('subheadings'),
-    (0, common_1.UseGuards)(roles_guard_1.RolesGuard),
-    (0, roles_decorator_1.Roles)('admin', 'estimator', 'project_manager'),
     __param(0, (0, common_1.Body)()),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [create_boq_subheading_dto_1.CreateBoqSubHeadingDto]),
@@ -148,8 +138,6 @@ __decorate([
 ], BoqController.prototype, "findSubHeadings", null);
 __decorate([
     (0, common_1.Post)('items'),
-    (0, common_1.UseGuards)(roles_guard_1.RolesGuard),
-    (0, roles_decorator_1.Roles)('admin', 'estimator', 'project_manager'),
     __param(0, (0, common_1.Body)()),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [create_boq_item_dto_1.CreateBoqItemDto]),
@@ -157,8 +145,6 @@ __decorate([
 ], BoqController.prototype, "createItem", null);
 __decorate([
     (0, common_1.Patch)('items/:id'),
-    (0, common_1.UseGuards)(roles_guard_1.RolesGuard),
-    (0, roles_decorator_1.Roles)('admin', 'estimator', 'project_manager'),
     __param(0, (0, common_1.Param)('id')),
     __param(1, (0, common_1.Body)()),
     __metadata("design:type", Function),
@@ -167,8 +153,6 @@ __decorate([
 ], BoqController.prototype, "updateItem", null);
 __decorate([
     (0, common_1.Delete)('items/:id'),
-    (0, common_1.UseGuards)(roles_guard_1.RolesGuard),
-    (0, roles_decorator_1.Roles)('admin', 'estimator', 'project_manager'),
     __param(0, (0, common_1.Param)('id')),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [String]),

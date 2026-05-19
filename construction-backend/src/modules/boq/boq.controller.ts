@@ -37,8 +37,6 @@ export class BoqController {
   }
 
   @Post('categories')
-  @UseGuards(RolesGuard)
-  @Roles('admin', 'estimator', 'project_manager')
   createCategory(@Body() dto: CreateBoqCategoryDto) {
     return this.boqService.createCategory(dto);
   }
@@ -48,8 +46,6 @@ export class BoqController {
   // =========================================================
 
   @Post()
-  @UseGuards(RolesGuard)
-  @Roles('admin', 'estimator', 'project_manager')
   createBoq(@Body() dto: CreateBoqDto) {
     return this.boqService.createBoq(dto);
   }
@@ -74,8 +70,6 @@ export class BoqController {
   // =========================================================
 
   @Post('sections')
-  @UseGuards(RolesGuard)
-  @Roles('admin', 'estimator', 'project_manager')
   createSection(@Body() dto: CreateBoqSectionDto) {
     return this.boqService.createSection(dto);
   }
@@ -90,8 +84,6 @@ export class BoqController {
   // =========================================================
 
   @Post('subheadings')
-  @UseGuards(RolesGuard)
-  @Roles('admin', 'estimator', 'project_manager')
   createSubHeading(@Body() dto: CreateBoqSubHeadingDto) {
     return this.boqService.createSubHeading(dto);
   }
@@ -106,15 +98,11 @@ export class BoqController {
   // =========================================================
 
   @Post('items')
-  @UseGuards(RolesGuard)
-  @Roles('admin', 'estimator', 'project_manager')
   createItem(@Body() dto: CreateBoqItemDto) {
     return this.boqService.createItem(dto);
   }
 
   @Patch('items/:id')
-  @UseGuards(RolesGuard)
-  @Roles('admin', 'estimator', 'project_manager')
   updateItem(
     @Param('id') id: string,
     @Body()
@@ -124,8 +112,6 @@ export class BoqController {
   }
 
   @Delete('items/:id')
-  @UseGuards(RolesGuard)
-  @Roles('admin', 'estimator', 'project_manager')
   deleteItem(@Param('id') id: string) {
     return this.boqService.deleteItem(id);
   }

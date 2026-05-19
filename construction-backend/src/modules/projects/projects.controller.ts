@@ -57,8 +57,6 @@ export class ProjectsController {
   // =================================================
 
   @Post()
-  @UseGuards(RolesGuard)
-  @Roles('admin', 'project_manager')
   create(@Body() dto: CreateProjectDto) {
     return this.projectsService.create(dto);
   }
@@ -74,15 +72,11 @@ export class ProjectsController {
   }
 
   @Patch(':id')
-  @UseGuards(RolesGuard)
-  @Roles('admin', 'project_manager')
   update(@Param('id') id: string, @Body() dto: UpdateProjectDto) {
     return this.projectsService.update(id, dto);
   }
 
   @Delete(':id')
-  @UseGuards(RolesGuard)
-  @Roles('admin')
   remove(@Param('id') id: string) {
     return this.projectsService.remove(id);
   }
@@ -116,23 +110,17 @@ export class ProjectsController {
   // =================================================
 
   @Patch('briefs/:briefId/approve')
-  @UseGuards(RolesGuard)
-  @Roles('admin', 'project_manager')
   approveBrief(@Param('briefId') briefId: string, @Req() req: Request) {
     const user = req.user as any;
     return this.briefService.approveBrief(briefId, user.id);
   }
 
   @Patch('briefs/:briefId/unapprove')
-  @UseGuards(RolesGuard)
-  @Roles('admin', 'project_manager')
   unapproveBrief(@Param('briefId') briefId: string) {
     return this.briefService.unapproveBrief(briefId);
   }
 
   @Patch('briefs/:briefId/request-changes')
-  @UseGuards(RolesGuard)
-  @Roles('admin', 'project_manager')
   requestBriefChanges(
     @Param('briefId') briefId: string,
     @Body() dto: RequestBriefChangesDto,
@@ -146,15 +134,11 @@ export class ProjectsController {
   }
 
   @Patch('briefs/:briefId/send-to-client')
-  @UseGuards(RolesGuard)
-  @Roles('admin', 'project_manager')
   sendBriefToClient(@Param('briefId') briefId: string) {
     return this.briefService.sendBriefToClient(briefId);
   }
 
   @Patch('briefs/:briefId/draft')
-  @UseGuards(RolesGuard)
-  @Roles('admin', 'project_manager')
   markBriefAsDraft(@Param('briefId') briefId: string) {
     return this.briefService.markBriefAsDraft(briefId);
   }
@@ -218,8 +202,6 @@ export class ProjectsController {
 
   // DELETE PITCH
   @Delete('pitches/:pitchId')
-  @UseGuards(RolesGuard)
-  @Roles('admin', 'project_manager')
   deletePitch(@Param('pitchId') pitchId: string) {
     return this.pitchService.deletePitch(pitchId);
   }

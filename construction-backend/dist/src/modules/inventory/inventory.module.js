@@ -9,15 +9,13 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.InventoryModule = void 0;
 const common_1 = require("@nestjs/common");
 const sequelize_1 = require("@nestjs/sequelize");
-const inventory_master_model_1 = require("./models/inventory-master.model");
+const inventory_service_1 = require("./inventory.service");
+const inventory_controller_1 = require("./inventory.controller");
 const inventory_request_model_1 = require("./models/inventory-request.model");
 const inventory_dispatch_model_1 = require("./models/inventory-dispatch.model");
+const inventory_master_model_1 = require("./models/inventory-master.model");
 const materials_model_1 = require("./models/materials.model");
-const inventory_master_service_1 = require("./services/inventory-master.service");
-const inventory_request_service_1 = require("./services/inventory-request.service");
-const inventory_dispatch_service_1 = require("./services/inventory-dispatch.service");
-const inventory_request_controller_1 = require("./inventory-request.controller");
-const inventory_disptach_controller_1 = require("./inventory-disptach.controller");
+const brand_model_1 = require("./models/brand.model");
 let InventoryModule = class InventoryModule {
 };
 exports.InventoryModule = InventoryModule;
@@ -25,23 +23,16 @@ exports.InventoryModule = InventoryModule = __decorate([
     (0, common_1.Module)({
         imports: [
             sequelize_1.SequelizeModule.forFeature([
-                inventory_master_model_1.InventoryMaster,
                 inventory_request_model_1.InventoryRequest,
                 inventory_dispatch_model_1.InventoryDispatch,
+                inventory_master_model_1.InventoryMaster,
                 materials_model_1.Material,
+                brand_model_1.Brand,
             ]),
         ],
-        controllers: [inventory_request_controller_1.InventoryRequestController, inventory_disptach_controller_1.InventoryDispatchController],
-        providers: [
-            inventory_master_service_1.InventoryMasterService,
-            inventory_request_service_1.InventoryRequestService,
-            inventory_dispatch_service_1.InventoryDispatchService,
-        ],
-        exports: [
-            inventory_master_service_1.InventoryMasterService,
-            inventory_request_service_1.InventoryRequestService,
-            inventory_dispatch_service_1.InventoryDispatchService,
-        ],
+        controllers: [inventory_controller_1.InventoryController],
+        providers: [inventory_service_1.InventoryService],
+        exports: [inventory_service_1.InventoryService],
     })
 ], InventoryModule);
 //# sourceMappingURL=inventory.module.js.map
