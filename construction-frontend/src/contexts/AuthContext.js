@@ -12,7 +12,7 @@ const AuthContext = createContext(null);
 export const AuthProvider = ({ children }) => {
   const [token, setToken] = useState(null);
   const [user, setUser] = useState(null);
-  const [isLoading, setIsLoading] = useState(true); // ← Critical for production
+  const [authReady, setAuthReady] = useState(false);
 
   const [loginMutation] = useLoginMutation();
   const [registerMutation] = useRegisterMutation();
@@ -25,51 +25,38 @@ export const AuthProvider = ({ children }) => {
     skip: !token,
   });
 
-  // Load token from localStorage on mount
+  // hydrate token
   useEffect(() => {
     const savedToken = localStorage.getItem("access_token");
-    if (savedToken) {
-      setToken(savedToken);
-    }
-    setIsLoading(false); // Important: Mark loading as done
+    if (savedToken) setToken(savedToken);
+    setAuthReady(true);
   }, []);
 
-  // Update user when profile data comes back
+  // hydrate user
   useEffect(() => {
     if (profileData?.user) {
       setUser(profileData.user);
     }
-  }, [profileData]);
+  }, [profileData?.user]);
 
   const login = async (credentials) => {
-    try {
-      const res = await loginMutation(credentials).unwrap();
+    const res = await loginMutation(credentials).unwrap();
 
-      const accessToken = res.access_token || res.token;
+    const accessToken = res.access_token || res.token;
 
-      // Save to localStorage and state
-      localStorage.setItem("access_token", accessToken);
-      setToken(accessToken);
+    localStorage.setItem("access_token", accessToken);
+    setToken(accessToken);
 
-      // Set user if available in login response
-      if (res.user) {
-        setUser(res.user);
-      }
-
-      return res;
-    } catch (err) {
-      console.error("Login error:", err);
-      throw err?.data?.message || err?.data?.detail || "Login failed";
+    if (res.user) {
+      setUser(res.user);
     }
+
+    return res;
   };
 
   const register = async (data) => {
-    try {
-      const res = await registerMutation(data).unwrap();
-      return res;
-    } catch (err) {
-      throw err?.data?.message || err?.data?.detail || "Registration failed";
-    }
+    const res = await registerMutation(data).unwrap();
+    return res;
   };
 
   const logout = () => {
@@ -79,9 +66,7 @@ export const AuthProvider = ({ children }) => {
   };
 
   const refreshUser = async () => {
-    if (token) {
-      await refetchProfile();
-    }
+    if (token) await refetchProfile();
   };
 
   const isUserActive = () => {
@@ -89,26 +74,31 @@ export const AuthProvider = ({ children }) => {
     return user.is_active === true || user.isActive === true;
   };
 
-  const value = {
-    token,
-    user,
-    login,
-    register,
-    logout,
-    refreshUser,
-    isAuthenticated: !!token && !!user,
-    isActive: isUserActive(),
-    isLoading,
-    profileLoading,
-  };
+  return (
+    <AuthContext.Provider
+      value={{
+        token,
+        user,
+        login,
+        register,
+        logout,
+        refreshUser,
 
-  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
+        // IMPORTANT FIX
+        isAuthenticated: !!token,
+
+        isActive: isUserActive(),
+        isLoading: !authReady,
+        profileLoading,
+      }}
+    >
+      {children}
+    </AuthContext.Provider>
+  );
 };
 
 export const useAuth = () => {
-  const context = useContext(AuthContext);
-  if (!context) {
-    throw new Error("useAuth must be used within an AuthProvider");
-  }
-  return context;
+  const ctx = useContext(AuthContext);
+  if (!ctx) throw new Error("useAuth must be used within AuthProvider");
+  return ctx;
 };

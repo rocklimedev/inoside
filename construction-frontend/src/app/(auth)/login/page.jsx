@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/contexts/AuthContext";
 import { Eye, EyeOff, ArrowRight, Loader2, Lock } from "lucide-react";
@@ -12,12 +12,19 @@ const roleRoutes = {
   Builder: "/dashboard/builder",
   "Site Supervisor": "/dashboard/site-supervisor",
   "Team Member": "/dashboard/team",
-  Admin: "/dashboard/admin", // Add if you have admin role
+  Admin: "/dashboard/admin",
+};
+
+// safe role extractor
+const getRoleName = (role) => {
+  if (!role) return null;
+  if (typeof role === "string") return role;
+  return role.name;
 };
 
 export default function LoginPage() {
   const router = useRouter();
-  const { login, isAuthenticated, user, isLoading: authLoading } = useAuth();
+  const { login, isLoading: authLoading } = useAuth();
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -26,15 +33,6 @@ export default function LoginPage() {
   const [errors, setErrors] = useState({});
   const [emailFocused, setEmailFocused] = useState(false);
   const [passwordFocused, setPasswordFocused] = useState(false);
-
-  // Redirect if already logged in
-  useEffect(() => {
-    if (!authLoading && isAuthenticated && user?.role) {
-      const userRole = user.role?.name || user.role;
-      const route = roleRoutes[userRole] || "/dashboard";
-      router.replace(route);
-    }
-  }, [authLoading, isAuthenticated, user, router]);
 
   const validate = () => {
     const errs = {};
@@ -61,25 +59,14 @@ export default function LoginPage() {
 
       toast.success("Login successful!");
 
-      // Get role from login response (most reliable)
-      const userRole =
-        res?.user?.role?.name ||
-        res?.user?.role ||
-        user?.role?.name ||
-        user?.role;
+      const role = getRoleName(res?.user?.role);
+      const route = roleRoutes[role] || "/dashboard";
 
-      const route = roleRoutes[userRole] || "/dashboard";
-
-      // Small delay for better UX + let context update
-      setTimeout(() => {
-        router.replace(route);
-      }, 400);
+      // SINGLE SAFE REDIRECT (NO useEffect, NO timeout)
+      router.replace(route);
     } catch (err) {
       const message =
-        err?.data?.message ||
-        err?.data?.detail ||
-        err?.message ||
-        "Invalid credentials";
+        err?.data?.message || err?.message || "Invalid credentials";
 
       toast.error(message);
       setErrors({ general: message });
@@ -88,7 +75,7 @@ export default function LoginPage() {
     }
   };
 
-  // Show loading while auth is being checked
+  // auth loading screen
   if (authLoading) {
     return (
       <div className="flex h-screen items-center justify-center bg-white">
@@ -104,11 +91,8 @@ export default function LoginPage() {
   const passwordActive = passwordFocused || password.length > 0;
 
   return (
-    <div
-      className="flex h-screen w-full overflow-hidden"
-      data-testid="login-page"
-    >
-      {/* Left Panel */}
+    <div className="flex h-screen w-full overflow-hidden">
+      {/* LEFT PANEL */}
       <div className="relative hidden lg:flex flex-col justify-between flex-1 p-12 bg-[#0f172a] overflow-hidden">
         <div
           className="absolute inset-0"
@@ -122,103 +106,79 @@ export default function LoginPage() {
         />
 
         <div className="relative z-10">
-          <h1 className="text-4xl font-black tracking-tight text-white">
+          <h1 className="text-4xl font-black text-white">
             BUILD<span className="text-[#ef7f1b]">CON</span>
           </h1>
-          <p className="text-gray-400 text-base mt-2 font-light">
-            Construction ERP Platform
-          </p>
+          <p className="text-gray-400 mt-2">Construction ERP Platform</p>
         </div>
       </div>
 
-      {/* Right Panel */}
-      <div className="flex-1 flex items-center justify-center p-6 sm:p-8 lg:p-12 bg-white">
+      {/* RIGHT PANEL */}
+      <div className="flex-1 flex items-center justify-center p-6 bg-white">
         <div className="w-full max-w-[420px]">
+          {/* HEADER */}
           <div className="mb-10">
-            <div className="flex items-baseline gap-0.5">
-              <h1 className="text-3xl font-black text-black tracking-tight">
-                BUILD
-              </h1>
-              <h1 className="text-3xl font-black text-[#ef7f1b] tracking-tight">
-                CON
-              </h1>
-            </div>
-            <p className="text-sm font-bold text-[#ef7f1b] mt-1 uppercase tracking-wider">
-              Construction ERP
-            </p>
-            <p className="text-sm text-gray-400 mt-4 leading-relaxed">
-              Project planning, approvals, execution, and handover — in one
-              simple system.
+            <h1 className="text-3xl font-black">
+              BUILD<span className="text-[#ef7f1b]">CON</span>
+            </h1>
+
+            <p className="text-sm text-gray-400 mt-3">
+              Project planning, approvals, execution & handover
             </p>
           </div>
 
           <form onSubmit={handleLogin} className="space-y-5">
             {errors.general && (
-              <div className="bg-red-50 text-[#e31d3b] text-sm px-4 py-3 rounded-lg border border-red-100">
+              <div className="bg-red-50 text-red-600 text-sm px-4 py-3 rounded-lg border border-red-100">
                 {errors.general}
               </div>
             )}
 
-            {/* Email Field */}
+            {/* EMAIL */}
             <div className="relative">
               <input
                 type="email"
                 value={email}
                 onChange={(e) => {
                   setEmail(e.target.value);
-                  setErrors((prev) => ({ ...prev, email: "" }));
+                  setErrors((p) => ({ ...p, email: "" }));
                 }}
                 onFocus={() => setEmailFocused(true)}
                 onBlur={() => setEmailFocused(false)}
-                placeholder=" "
-                className={`w-full h-14 pt-5 pb-2 px-4 text-sm border rounded-lg bg-white transition-all outline-none ${
-                  emailFocused
-                    ? "border-[#ef7f1b] ring-2 ring-[#ef7f1b]/20"
-                    : errors.email
-                      ? "border-[#e31d3b]"
-                      : "border-gray-200 hover:border-gray-300"
-                }`}
+                className="w-full h-14 px-4 pt-5 pb-2 border rounded-lg outline-none"
               />
+
               <label
-                className={`absolute left-4 transition-all duration-200 pointer-events-none ${
-                  emailActive
-                    ? "top-1.5 text-[10px] font-bold uppercase tracking-wider"
-                    : "top-4 text-sm"
-                } ${emailFocused ? "text-[#ef7f1b]" : "text-gray-400"}`}
+                className={`absolute left-4 transition-all ${
+                  emailActive ? "top-1 text-xs" : "top-4 text-sm"
+                }`}
               >
                 Email
               </label>
+
               {errors.email && (
-                <p className="text-[#e31d3b] text-xs mt-1.5">{errors.email}</p>
+                <p className="text-red-500 text-xs mt-1">{errors.email}</p>
               )}
             </div>
 
-            {/* Password Field */}
+            {/* PASSWORD */}
             <div className="relative">
               <input
                 type={showPassword ? "text" : "password"}
                 value={password}
                 onChange={(e) => {
                   setPassword(e.target.value);
-                  setErrors((prev) => ({ ...prev, password: "" }));
+                  setErrors((p) => ({ ...p, password: "" }));
                 }}
                 onFocus={() => setPasswordFocused(true)}
                 onBlur={() => setPasswordFocused(false)}
-                placeholder=" "
-                className={`w-full h-14 pt-5 pb-2 px-4 pr-12 text-sm border rounded-lg bg-white transition-all outline-none ${
-                  passwordFocused
-                    ? "border-[#ef7f1b] ring-2 ring-[#ef7f1b]/20"
-                    : errors.password
-                      ? "border-[#e31d3b]"
-                      : "border-gray-200 hover:border-gray-300"
-                }`}
+                className="w-full h-14 px-4 pr-10 pt-5 pb-2 border rounded-lg outline-none"
               />
+
               <label
-                className={`absolute left-4 transition-all duration-200 pointer-events-none ${
-                  passwordActive
-                    ? "top-1.5 text-[10px] font-bold uppercase tracking-wider"
-                    : "top-4 text-sm"
-                } ${passwordFocused ? "text-[#ef7f1b]" : "text-gray-400"}`}
+                className={`absolute left-4 transition-all ${
+                  passwordActive ? "top-1 text-xs" : "top-4 text-sm"
+                }`}
               >
                 Password
               </label>
@@ -226,61 +186,36 @@ export default function LoginPage() {
               <button
                 type="button"
                 onClick={() => setShowPassword(!showPassword)}
-                className="absolute right-4 top-4 text-gray-400 hover:text-gray-600"
+                className="absolute right-3 top-4"
               >
-                {showPassword ? (
-                  <EyeOff className="w-4 h-4" />
-                ) : (
-                  <Eye className="w-4 h-4" />
-                )}
+                {showPassword ? <EyeOff /> : <Eye />}
               </button>
 
               {errors.password && (
-                <p className="text-[#e31d3b] text-xs mt-1.5">
-                  {errors.password}
-                </p>
+                <p className="text-red-500 text-xs mt-1">{errors.password}</p>
               )}
             </div>
 
-            {/* Remember Me + Forgot Password */}
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <input type="checkbox" className="w-4 h-4 accent-[#ef7f1b]" />
-                <label className="text-sm text-gray-500 cursor-pointer select-none">
-                  Remember me
-                </label>
-              </div>
-
-              <button
-                type="button"
-                className="text-sm text-[#ef7f1b] hover:text-[#d66e15] font-medium"
-                onClick={() => toast.info("Password reset coming soon")}
-              >
-                Forgot password?
-              </button>
-            </div>
-
-            {/* Login Button */}
+            {/* LOGIN */}
             <button
               type="submit"
               disabled={loading}
-              className="w-full h-12 bg-[#ef7f1b] hover:bg-[#d66e15] active:bg-[#bd6010] text-white font-bold rounded-lg transition-all flex items-center justify-center gap-2 disabled:opacity-70"
+              className="w-full h-12 bg-[#ef7f1b] text-white rounded-lg flex items-center justify-center gap-2"
             >
               {loading ? (
-                <Loader2 className="w-5 h-5 animate-spin" />
+                <Loader2 className="animate-spin w-4 h-4" />
               ) : (
                 <>
-                  Sign in
-                  <ArrowRight className="w-4 h-4" />
+                  Sign in <ArrowRight className="w-4 h-4" />
                 </>
               )}
             </button>
 
-            {/* Register Button */}
+            {/* REGISTER */}
             <button
               type="button"
               onClick={() => router.push("/register")}
-              className="w-full h-12 border border-gray-200 text-gray-600 hover:bg-gray-50 hover:border-gray-300 font-medium rounded-lg transition-all flex items-center justify-center gap-2"
+              className="w-full h-12 border rounded-lg flex items-center justify-center gap-2"
             >
               <Lock className="w-4 h-4" />
               Create Account
