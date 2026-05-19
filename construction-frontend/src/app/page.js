@@ -4,43 +4,40 @@ import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/contexts/AuthContext";
 
+const roleRoutes = {
+  architect: "/dashboard/architect",
+  admin: "/dashboard/admin",
+  vendor: "/dashboard/vendor",
+  client: "/dashboard/client",
+  site_supervisor: "/dashboard/site-supervisor",
+};
+
+const normalizeRole = (role) => {
+  if (!role) return null;
+  if (typeof role === "string") return role.toLowerCase();
+  return role.name?.toLowerCase();
+};
+
 export default function Home() {
   const router = useRouter();
-  const { user, isAuthenticated, profileLoading } = useAuth();
+  const { user, isAuthenticated, isLoading } = useAuth();
 
   useEffect(() => {
-    if (profileLoading) return;
+    if (isLoading) return;
 
+    // 1. Not logged in → login
     if (!isAuthenticated) {
       router.replace("/login");
       return;
     }
 
-    const role = user?.role?.name; // 👈 IMPORTANT (from backend Role model)
+    // 2. Get normalized role
+    const role = normalizeRole(user?.role);
 
-    switch (role) {
-      case "architect":
-        router.replace("/dashboard/architect");
-        break;
+    const targetRoute = roleRoutes[role] || "/dashboard";
 
-      case "admin":
-        router.replace("/dashboard/admin");
-        break;
-
-      case "vendor":
-        router.replace("/dashboard/vendor");
-        break;
-
-      case "client":
-        router.replace("/dashboard/client");
-        break;
-      case "site_supervisor":
-        router.replace("/dashboard/site-supervisor");
-        break;
-      default:
-        router.replace("/dashboard/login");
-    }
-  }, [user, isAuthenticated, profileLoading, router]);
+    router.replace(targetRoute);
+  }, [isLoading, isAuthenticated, user?.role, router]);
 
   return (
     <div className="flex h-screen items-center justify-center">Loading...</div>
