@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/contexts/AuthContext";
-import { Eye, EyeOff, Shield, Lock, ArrowRight, Loader2 } from "lucide-react";
+import { Eye, EyeOff, ArrowRight, Loader2, Lock } from "lucide-react";
 import { toast } from "sonner";
 
 const roleRoutes = {
@@ -12,16 +12,16 @@ const roleRoutes = {
   Builder: "/dashboard/builder",
   "Site Supervisor": "/dashboard/site-supervisor",
   "Team Member": "/dashboard/team",
+  Admin: "/dashboard/admin", // Add if you have admin role
 };
 
 export default function LoginPage() {
   const router = useRouter();
-  const { login, user, isAuthenticated } = useAuth();
+  const { login, isAuthenticated, user, isLoading: authLoading } = useAuth();
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
-  const [rememberMe, setRememberMe] = useState(false);
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState({});
   const [emailFocused, setEmailFocused] = useState(false);
@@ -29,13 +29,12 @@ export default function LoginPage() {
 
   // Redirect if already logged in
   useEffect(() => {
-    if (isAuthenticated && user?.role) {
+    if (!authLoading && isAuthenticated && user?.role) {
       const userRole = user.role?.name || user.role;
-      const route = roleRoutes[userRole] || "/";
-
+      const route = roleRoutes[userRole] || "/dashboard";
       router.replace(route);
     }
-  }, [isAuthenticated, user, router]);
+  }, [authLoading, isAuthenticated, user, router]);
 
   const validate = () => {
     const errs = {};
@@ -47,13 +46,11 @@ export default function LoginPage() {
     else if (password.length < 6) errs.password = "Minimum 6 characters";
 
     setErrors(errs);
-
     return Object.keys(errs).length === 0;
   };
 
   const handleLogin = async (e) => {
     e.preventDefault();
-
     if (!validate()) return;
 
     setLoading(true);
@@ -64,24 +61,44 @@ export default function LoginPage() {
 
       toast.success("Login successful!");
 
-      const userRole = res?.user?.role?.name || user?.role?.name || user?.role;
+      // Get role from login response (most reliable)
+      const userRole =
+        res?.user?.role?.name ||
+        res?.user?.role ||
+        user?.role?.name ||
+        user?.role;
 
-      const route = roleRoutes[userRole] || "";
+      const route = roleRoutes[userRole] || "/dashboard";
 
+      // Small delay for better UX + let context update
       setTimeout(() => {
         router.replace(route);
-      }, 600);
+      }, 400);
     } catch (err) {
       const message =
-        err?.data?.message || err?.message || "Invalid credentials";
+        err?.data?.message ||
+        err?.data?.detail ||
+        err?.message ||
+        "Invalid credentials";
 
       toast.error(message);
-
       setErrors({ general: message });
     } finally {
       setLoading(false);
     }
   };
+
+  // Show loading while auth is being checked
+  if (authLoading) {
+    return (
+      <div className="flex h-screen items-center justify-center bg-white">
+        <div className="flex flex-col items-center gap-3">
+          <Loader2 className="w-8 h-8 animate-spin text-[#ef7f1b]" />
+          <p className="text-sm text-gray-500">Checking authentication...</p>
+        </div>
+      </div>
+    );
+  }
 
   const emailActive = emailFocused || email.length > 0;
   const passwordActive = passwordFocused || password.length > 0;
@@ -93,7 +110,6 @@ export default function LoginPage() {
     >
       {/* Left Panel */}
       <div className="relative hidden lg:flex flex-col justify-between flex-1 p-12 bg-[#0f172a] overflow-hidden">
-        {/* Grid Background */}
         <div
           className="absolute inset-0"
           style={{
@@ -107,10 +123,8 @@ export default function LoginPage() {
 
         <div className="relative z-10">
           <h1 className="text-4xl font-black tracking-tight text-white">
-            BUILD
-            <span className="text-[#ef7f1b]">CON</span>
+            BUILD<span className="text-[#ef7f1b]">CON</span>
           </h1>
-
           <p className="text-gray-400 text-base mt-2 font-light">
             Construction ERP Platform
           </p>
@@ -120,22 +134,18 @@ export default function LoginPage() {
       {/* Right Panel */}
       <div className="flex-1 flex items-center justify-center p-6 sm:p-8 lg:p-12 bg-white">
         <div className="w-full max-w-[420px]">
-          {/* Header */}
           <div className="mb-10">
             <div className="flex items-baseline gap-0.5">
               <h1 className="text-3xl font-black text-black tracking-tight">
                 BUILD
               </h1>
-
               <h1 className="text-3xl font-black text-[#ef7f1b] tracking-tight">
                 CON
               </h1>
             </div>
-
             <p className="text-sm font-bold text-[#ef7f1b] mt-1 uppercase tracking-wider">
               Construction ERP
             </p>
-
             <p className="text-sm text-gray-400 mt-4 leading-relaxed">
               Project planning, approvals, execution, and handover — in one
               simple system.
@@ -149,18 +159,14 @@ export default function LoginPage() {
               </div>
             )}
 
-            {/* Email */}
+            {/* Email Field */}
             <div className="relative">
               <input
                 type="email"
                 value={email}
                 onChange={(e) => {
                   setEmail(e.target.value);
-
-                  setErrors((prev) => ({
-                    ...prev,
-                    email: "",
-                  }));
+                  setErrors((prev) => ({ ...prev, email: "" }));
                 }}
                 onFocus={() => setEmailFocused(true)}
                 onBlur={() => setEmailFocused(false)}
@@ -173,7 +179,6 @@ export default function LoginPage() {
                       : "border-gray-200 hover:border-gray-300"
                 }`}
               />
-
               <label
                 className={`absolute left-4 transition-all duration-200 pointer-events-none ${
                   emailActive
@@ -183,24 +188,19 @@ export default function LoginPage() {
               >
                 Email
               </label>
-
               {errors.email && (
                 <p className="text-[#e31d3b] text-xs mt-1.5">{errors.email}</p>
               )}
             </div>
 
-            {/* Password */}
+            {/* Password Field */}
             <div className="relative">
               <input
                 type={showPassword ? "text" : "password"}
                 value={password}
                 onChange={(e) => {
                   setPassword(e.target.value);
-
-                  setErrors((prev) => ({
-                    ...prev,
-                    password: "",
-                  }));
+                  setErrors((prev) => ({ ...prev, password: "" }));
                 }}
                 onFocus={() => setPasswordFocused(true)}
                 onBlur={() => setPasswordFocused(false)}
@@ -213,7 +213,6 @@ export default function LoginPage() {
                       : "border-gray-200 hover:border-gray-300"
                 }`}
               />
-
               <label
                 className={`absolute left-4 transition-all duration-200 pointer-events-none ${
                   passwordActive
@@ -227,7 +226,7 @@ export default function LoginPage() {
               <button
                 type="button"
                 onClick={() => setShowPassword(!showPassword)}
-                className="absolute right-4 top-4 text-gray-400 hover:text-gray-600 transition-colors"
+                className="absolute right-4 top-4 text-gray-400 hover:text-gray-600"
               >
                 {showPassword ? (
                   <EyeOff className="w-4 h-4" />
@@ -243,16 +242,10 @@ export default function LoginPage() {
               )}
             </div>
 
-            {/* Remember Me */}
+            {/* Remember Me + Forgot Password */}
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
-                <input
-                  type="checkbox"
-                  checked={rememberMe}
-                  onChange={(e) => setRememberMe(e.target.checked)}
-                  className="w-4 h-4 accent-[#ef7f1b]"
-                />
-
+                <input type="checkbox" className="w-4 h-4 accent-[#ef7f1b]" />
                 <label className="text-sm text-gray-500 cursor-pointer select-none">
                   Remember me
                 </label>
@@ -260,8 +253,8 @@ export default function LoginPage() {
 
               <button
                 type="button"
-                className="text-sm text-[#ef7f1b] hover:text-[#d66e15] transition-colors font-medium"
-                onClick={() => toast.info("Password reset feature coming soon")}
+                className="text-sm text-[#ef7f1b] hover:text-[#d66e15] font-medium"
+                onClick={() => toast.info("Password reset coming soon")}
               >
                 Forgot password?
               </button>
@@ -271,7 +264,7 @@ export default function LoginPage() {
             <button
               type="submit"
               disabled={loading}
-              className="w-full h-12 bg-[#ef7f1b] hover:bg-[#d66e15] active:bg-[#bd6010] text-white font-bold rounded-lg transition-all flex items-center justify-center gap-2 shadow-sm hover:shadow-md hover:-translate-y-0.5 disabled:opacity-60 disabled:cursor-not-allowed"
+              className="w-full h-12 bg-[#ef7f1b] hover:bg-[#d66e15] active:bg-[#bd6010] text-white font-bold rounded-lg transition-all flex items-center justify-center gap-2 disabled:opacity-70"
             >
               {loading ? (
                 <Loader2 className="w-5 h-5 animate-spin" />
@@ -283,14 +276,14 @@ export default function LoginPage() {
               )}
             </button>
 
-            {/* OTP Login */}
+            {/* Register Button */}
             <button
               type="button"
-              className="w-full h-12 border border-gray-200 text-gray-600 hover:bg-gray-50 hover:border-gray-300 font-medium rounded-lg transition-all flex items-center justify-center gap-2"
               onClick={() => router.push("/register")}
+              className="w-full h-12 border border-gray-200 text-gray-600 hover:bg-gray-50 hover:border-gray-300 font-medium rounded-lg transition-all flex items-center justify-center gap-2"
             >
               <Lock className="w-4 h-4" />
-              Register
+              Create Account
             </button>
           </form>
         </div>

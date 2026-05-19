@@ -12,7 +12,7 @@ import {
   Receipt,
 } from "lucide-react";
 import { toast } from "sonner";
-
+import { useAuth } from "@/contexts/AuthContext";
 import { PageHeader } from "@/components/PageHeader";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -51,6 +51,7 @@ import { useGetInventoryMasterQuery } from "@/api/inventoryApi"; // ← Added
 
 export default function BoqPage({ projectId: initialProjectId, boqId }) {
   const router = useRouter();
+  const { isAuthenticated, isLoading: authLoading } = useAuth(); // ← Added
 
   // ======================================================
   // STATE
@@ -92,6 +93,31 @@ export default function BoqPage({ projectId: initialProjectId, boqId }) {
       { search: itemSearchTerm },
       { skip: itemSearchTerm.length < 2 },
     );
+
+  // ======================================================
+  // AUTH PROTECTION
+  // ======================================================
+  useEffect(() => {
+    if (!authLoading && !isAuthenticated) {
+      router.replace("/login"); // Use replace to avoid history issues
+    }
+  }, [isAuthenticated, authLoading, router]);
+
+  // Prevent rendering protected content while checking auth
+  if (authLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-[#fafafa]">
+        <div className="text-center">
+          <div className="animate-spin w-8 h-8 border-4 border-[#ef7f1b] border-t-transparent rounded-full mx-auto mb-4"></div>
+          <p className="text-muted-foreground">Verifying authentication...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!isAuthenticated) {
+    return null; // Will redirect via useEffect
+  }
 
   // ======================================================
   // EFFECTS

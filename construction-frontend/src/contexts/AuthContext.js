@@ -12,6 +12,7 @@ const AuthContext = createContext(null);
 export const AuthProvider = ({ children }) => {
   const [token, setToken] = useState(null);
   const [user, setUser] = useState(null);
+  const [isLoading, setIsLoading] = useState(true); // ← Critical for production
 
   const [loginMutation] = useLoginMutation();
   const [registerMutation] = useRegisterMutation();
@@ -30,9 +31,10 @@ export const AuthProvider = ({ children }) => {
     if (savedToken) {
       setToken(savedToken);
     }
+    setIsLoading(false); // Important: Mark loading as done
   }, []);
 
-  // Update user when profile is fetched
+  // Update user when profile data comes back
   useEffect(() => {
     if (profileData?.user) {
       setUser(profileData.user);
@@ -43,18 +45,20 @@ export const AuthProvider = ({ children }) => {
     try {
       const res = await loginMutation(credentials).unwrap();
 
-      const accessToken = res.access_token;
+      const accessToken = res.access_token || res.token;
 
-      // Save token
-      setToken(accessToken);
+      // Save to localStorage and state
       localStorage.setItem("access_token", accessToken);
+      setToken(accessToken);
 
-      // Set user immediately from login response
-      const loggedInUser = res.user || profileData?.user;
-      setUser(loggedInUser);
+      // Set user if available in login response
+      if (res.user) {
+        setUser(res.user);
+      }
 
       return res;
     } catch (err) {
+      console.error("Login error:", err);
       throw err?.data?.message || err?.data?.detail || "Login failed";
     }
   };
@@ -80,7 +84,6 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  // Helper to check if user is active
   const isUserActive = () => {
     if (!user) return false;
     return user.is_active === true || user.isActive === true;
@@ -95,6 +98,7 @@ export const AuthProvider = ({ children }) => {
     refreshUser,
     isAuthenticated: !!token && !!user,
     isActive: isUserActive(),
+    isLoading,
     profileLoading,
   };
 
@@ -103,10 +107,8 @@ export const AuthProvider = ({ children }) => {
 
 export const useAuth = () => {
   const context = useContext(AuthContext);
-
   if (!context) {
-    throw new Error("useAuth must be used within AuthProvider");
+    throw new Error("useAuth must be used within an AuthProvider");
   }
-
   return context;
 };
