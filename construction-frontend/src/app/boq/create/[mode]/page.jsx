@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { Plus, Save, ArrowLeft, FileSpreadsheet } from "lucide-react";
 import { toast } from "sonner";
@@ -42,10 +42,17 @@ import { useGetInventoryMasterQuery } from "@/api/inventoryApi";
 
 export default function BoqPage({ projectId: initialProjectId, boqId }) {
   const router = useRouter();
-  const { isAuthenticated, isLoading: authLoading, user } = useAuth();
 
   // ======================================================
-  // STATE
+  // AUTH — must be called unconditionally at the top
+  // ======================================================
+  // NOTE: Do NOT add per-page auth guards if AppProviders / DashboardLayout
+  // already protects all non-auth routes. Keeping it here only as a safety
+  // net for cases where this component is rendered outside the layout.
+  const { isAuthenticated, isLoading: authLoading } = useAuth();
+
+  // ======================================================
+  // STATE — all hooks must come before any conditional return
   // ======================================================
   const [selectedProjectId, setSelectedProjectId] = useState(
     initialProjectId || "",
@@ -53,7 +60,7 @@ export default function BoqPage({ projectId: initialProjectId, boqId }) {
   const [itemSearchTerm, setItemSearchTerm] = useState("");
 
   const [boq, setBoq] = useState({
-    project_id: selectedProjectId,
+    project_id: initialProjectId || "",
     boq_category_id: "",
     title: "",
     revision_no: "Rev-01",
@@ -69,7 +76,7 @@ export default function BoqPage({ projectId: initialProjectId, boqId }) {
   const [isSavingStructure, setIsSavingStructure] = useState(false);
 
   // ======================================================
-  // API
+  // API HOOKS — unconditional
   // ======================================================
   const [createBoq, { isLoading: isCreatingBoq }] = useCreateBoqMutation();
   const [createSection] = useCreateSectionMutation();
@@ -85,8 +92,10 @@ export default function BoqPage({ projectId: initialProjectId, boqId }) {
     );
 
   // ======================================================
-  // AUTH PROTECTION
+  // EFFECTS — all before any conditional return
   // ======================================================
+
+  // Auth redirect — only fires if this page is somehow outside the layout
   useEffect(() => {
     if (authLoading) return;
     if (!isAuthenticated) {
@@ -94,11 +103,57 @@ export default function BoqPage({ projectId: initialProjectId, boqId }) {
     }
   }, [isAuthenticated, authLoading, router]);
 
+  // Keep boq.project_id in sync with the project selector
+  useEffect(() => {
+    setBoq((prev) => ({
+      ...prev,
+      project_id: selectedProjectId,
+    }));
+  }, [selectedProjectId]);
+
+  // ======================================================
+  // MEMOS — all before any conditional return
+  // ======================================================
+  const totals = useMemo(() => {
+    let subtotal = 0;
+
+    boq.sections.forEach((section) => {
+      section.subheadings.forEach((subheading) => {
+        subheading.items.forEach((item) => {
+          const base = (item.qty || 0) * (item.rate || 0);
+          const afterWastage = base * (1 + (item.wastage_percent || 0) / 100);
+          const afterDiscount =
+            afterWastage * (1 - (item.discount_percent || 0) / 100);
+          subtotal += afterDiscount;
+        });
+      });
+    });
+
+    const tax = subtotal * 0.18;
+
+    return {
+      subtotal: Math.round(subtotal * 100) / 100,
+      tax_amount: Math.round(tax * 100) / 100,
+      grand_total: Math.round((subtotal + tax) * 100) / 100,
+    };
+  }, [boq.sections]);
+
+  const itemCount = useMemo(
+    () =>
+      boq.sections
+        .flatMap((s) => s.subheadings)
+        .reduce((acc, sh) => acc + sh.items.length, 0),
+    [boq.sections],
+  );
+
+  // ======================================================
+  // CONDITIONAL RETURNS — only after all hooks
+  // ======================================================
   if (authLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-[#fafafa]">
         <div className="text-center">
-          <div className="animate-spin w-8 h-8 border-4 border-[#ef7f1b] border-t-transparent rounded-full mx-auto mb-4"></div>
+          <div className="animate-spin w-8 h-8 border-4 border-[#ef7f1b] border-t-transparent rounded-full mx-auto mb-4" />
           <p className="text-muted-foreground">Verifying authentication...</p>
         </div>
       </div>
@@ -110,25 +165,13 @@ export default function BoqPage({ projectId: initialProjectId, boqId }) {
   }
 
   // ======================================================
-  // EFFECTS
-  // ======================================================
-  useEffect(() => {
-    setBoq((prev) => ({
-      ...prev,
-      project_id: selectedProjectId,
-    }));
-  }, [selectedProjectId]);
-
-  // ======================================================
-  // HELPERS
+  // HANDLERS
   // ======================================================
   const updateBoq = (patch) => {
     setBoq((prev) => ({ ...prev, ...patch }));
   };
 
-  // ======================================================
-  // ADD SECTION
-  // ======================================================
+  // ── Sections ──────────────────────────────────────────
   const addSection = (data) => {
     const newSection = {
       id: `temp_${Date.now()}`,
@@ -147,10 +190,8 @@ export default function BoqPage({ projectId: initialProjectId, boqId }) {
     toast.success("Section added");
   };
 
-  // ======================================================
-  // ADD SUBHEADING
-  // ======================================================
-  const addSubHeading = (sectionId) => {
+  // ── Subheadings ───────────────────────────────────────
+  const openAddSubheading = (sectionId) => {
     setCurrentSectionId(sectionId);
     setSubheadingModalOpen(true);
   };
@@ -168,10 +209,7 @@ export default function BoqPage({ projectId: initialProjectId, boqId }) {
       ...prev,
       sections: prev.sections.map((section) =>
         section.id === currentSectionId || section.title === currentSectionId
-          ? {
-              ...section,
-              subheadings: [...section.subheadings, newSubheading],
-            }
+          ? { ...section, subheadings: [...section.subheadings, newSubheading] }
           : section,
       ),
     }));
@@ -180,9 +218,7 @@ export default function BoqPage({ projectId: initialProjectId, boqId }) {
     toast.success("Subheading added");
   };
 
-  // ======================================================
-  // ITEMS
-  // ======================================================
+  // ── Items ─────────────────────────────────────────────
   const handleAddItem = (sectionId, subheadingId) => {
     setActiveItem({ sectionId, subheadingId, item: null });
   };
@@ -230,10 +266,7 @@ export default function BoqPage({ projectId: initialProjectId, boqId }) {
               ...section,
               subheadings: section.subheadings.map((sh) =>
                 sh.id === subheadingId
-                  ? {
-                      ...sh,
-                      items: sh.items.filter((i) => i.id !== itemId),
-                    }
+                  ? { ...sh, items: sh.items.filter((i) => i.id !== itemId) }
                   : sh,
               ),
             }
@@ -242,87 +275,71 @@ export default function BoqPage({ projectId: initialProjectId, boqId }) {
     }));
   };
 
-  // ======================================================
-  // TOTALS
-  // ======================================================
-  const calculateTotals = useMemo(() => {
-    let subtotal = 0;
+  // ── Save ──────────────────────────────────────────────
 
-    boq.sections.forEach((section) => {
-      section.subheadings.forEach((subheading) => {
-        subheading.items.forEach((item) => {
-          const base = (item.qty || 0) * (item.rate || 0);
-          const afterWastage = base * (1 + (item.wastage_percent || 0) / 100);
-          const afterDiscount =
-            afterWastage * (1 - (item.discount_percent || 0) / 100);
-          subtotal += afterDiscount;
-        });
-      });
-    });
-
-    const tax = subtotal * 0.18;
-
-    return {
-      subtotal: Math.round(subtotal * 100) / 100,
-      tax_amount: Math.round(tax * 100) / 100,
-      grand_total: Math.round((subtotal + tax) * 100) / 100,
-    };
-  }, [boq.sections]);
-
-  // ======================================================
-  // SAVE
-  // ======================================================
+  /**
+   * Saves all sections → subheadings → items for the given boqId.
+   * Sections are saved in parallel; subheadings and items within each
+   * section remain sequential because they depend on the parent IDs.
+   */
   const saveBoqStructure = async (boqIdCreated) => {
     setIsSavingStructure(true);
     try {
-      for (const section of boq.sections) {
-        const createdSection = await createSection({
-          boq_id: boqIdCreated,
-          title: section.title,
-          description: section.description || "",
-          sort_order: section.sort_order || 0,
-        }).unwrap();
-
-        const sectionId = createdSection.id || createdSection.data?.id;
-
-        for (const subheading of section.subheadings) {
-          const createdSubheading = await createSubHeading({
+      await Promise.all(
+        boq.sections.map(async (section) => {
+          const createdSection = await createSection({
             boq_id: boqIdCreated,
-            section_id: sectionId,
-            title: subheading.title,
-            description: subheading.description || "",
-            sort_order: subheading.sort_order || 0,
+            title: section.title,
+            description: section.description || "",
+            sort_order: section.sort_order || 0,
           }).unwrap();
 
-          const subheadingId =
-            createdSubheading.id || createdSubheading.data?.id;
+          const sectionId = createdSection.id || createdSection.data?.id;
 
-          for (const item of subheading.items) {
-            await createItem({
+          // Subheadings depend on sectionId — keep sequential
+          for (const subheading of section.subheadings) {
+            const createdSubheading = await createSubHeading({
               boq_id: boqIdCreated,
               section_id: sectionId,
-              subheading_id: subheadingId,
-              item_name: item.item_name,
-              item_code: item.item_code || null,
-              description: item.description || null,
-              specification: item.specification || null,
-              brand: item.brand || null,
-              qty: Number(item.qty) || 0,
-              unit_id: item.unit_id || null,
-              rate: Number(item.rate) || 0,
-              wastage_percent: Number(item.wastage_percent) || 0,
-              discount_percent: Number(item.discount_percent) || 0,
-              tax_percent: Number(item.tax_percent) || 18,
-              remarks: item.remarks || null,
-              sort_order: item.sort_order || 0,
+              title: subheading.title,
+              description: subheading.description || "",
+              sort_order: subheading.sort_order || 0,
             }).unwrap();
+
+            const subheadingId =
+              createdSubheading.id || createdSubheading.data?.id;
+
+            // Items can be parallelized within a subheading
+            await Promise.all(
+              subheading.items.map((item) =>
+                createItem({
+                  boq_id: boqIdCreated,
+                  section_id: sectionId,
+                  subheading_id: subheadingId,
+                  item_name: item.item_name,
+                  item_code: item.item_code || null,
+                  description: item.description || null,
+                  specification: item.specification || null,
+                  brand: item.brand || null,
+                  qty: Number(item.qty) || 0,
+                  unit_id: item.unit_id || null,
+                  rate: Number(item.rate) || 0,
+                  wastage_percent: Number(item.wastage_percent) || 0,
+                  discount_percent: Number(item.discount_percent) || 0,
+                  tax_percent: Number(item.tax_percent) || 18,
+                  remarks: item.remarks || null,
+                  sort_order: item.sort_order || 0,
+                }).unwrap(),
+              ),
+            );
           }
-        }
-      }
+        }),
+      );
+
       toast.success("BOQ structure saved successfully");
     } catch (err) {
-      console.error(err);
-      toast.error("Some items failed to save");
+      console.error("[BOQ SAVE STRUCTURE ERROR]", err);
+      toast.error("Some items failed to save. Please review and retry.");
     } finally {
       setIsSavingStructure(false);
     }
@@ -352,24 +369,19 @@ export default function BoqPage({ projectId: initialProjectId, boqId }) {
 
       router.push(`/boq/${boqIdCreated}`);
     } catch (error) {
-      console.error(error);
+      console.error("[BOQ SAVE ERROR]", error);
       toast.error(error?.data?.message || "Failed to save BOQ");
     }
   };
 
-  // ======================================================
-  // COUNTS
-  // ======================================================
-  const itemCount = boq.sections
-    .flatMap((s) => s.subheadings)
-    .reduce((acc, sh) => acc + sh.items.length, 0);
+  const isSaving = isCreatingBoq || isSavingStructure;
 
   // ======================================================
   // UI
   // ======================================================
   return (
     <div className="min-h-screen bg-[#fafafa]">
-      {/* Header */}
+      {/* ── Header ── */}
       <div className="sticky top-0 z-20 border-b bg-white/80 backdrop-blur-xl">
         <div className="px-4 md:px-8 py-5">
           <PageHeader
@@ -388,13 +400,11 @@ export default function BoqPage({ projectId: initialProjectId, boqId }) {
 
                 <Button
                   onClick={handleSave}
-                  disabled={isCreatingBoq || isSavingStructure}
+                  disabled={isSaving}
                   className="rounded-xl bg-[#ef7f1b] hover:bg-[#d66e15] text-white shadow-lg"
                 >
                   <Save className="mr-2 h-4 w-4" />
-                  {isCreatingBoq || isSavingStructure
-                    ? "Saving..."
-                    : "Save BOQ"}
+                  {isSaving ? "Saving..." : "Save BOQ"}
                 </Button>
               </div>
             }
@@ -403,13 +413,14 @@ export default function BoqPage({ projectId: initialProjectId, boqId }) {
       </div>
 
       <div className="px-4 md:px-8 py-6 space-y-6">
+        {/* ── Project Selector ── */}
         <ProjectSelector
           value={selectedProjectId}
           onChange={setSelectedProjectId}
           disabled={!!boqId}
         />
 
-        {/* BOQ Information */}
+        {/* ── BOQ Information ── */}
         <Card className="rounded-3xl border-0 shadow-sm overflow-hidden">
           <CardContent className="p-6 md:p-8">
             <div className="flex items-center gap-3 mb-6">
@@ -494,8 +505,9 @@ export default function BoqPage({ projectId: initialProjectId, boqId }) {
           </CardContent>
         </Card>
 
-        {/* Builder */}
+        {/* ── Structure Builder ── */}
         <div className="grid grid-cols-1 xl:grid-cols-12 gap-6">
+          {/* Left — Tree */}
           <div className="xl:col-span-4">
             <Card className="rounded-3xl border-0 shadow-sm overflow-hidden">
               <div className="border-b px-6 py-5 bg-white">
@@ -517,7 +529,7 @@ export default function BoqPage({ projectId: initialProjectId, boqId }) {
                   <BoqTreeView
                     sections={boq.sections}
                     onAddSection={() => setSectionModalOpen(true)}
-                    onAddSubheading={addSubHeading}
+                    onAddSubheading={openAddSubheading}
                     onEditItem={(sectionId, subheadingId, item) =>
                       setActiveItem({ sectionId, subheadingId, item })
                     }
@@ -529,6 +541,7 @@ export default function BoqPage({ projectId: initialProjectId, boqId }) {
             </Card>
           </div>
 
+          {/* Right — Item Form / Placeholder */}
           <div className="xl:col-span-8">
             <Card className="rounded-3xl border-0 shadow-sm min-h-[700px] overflow-hidden">
               {!activeItem ? (
@@ -574,10 +587,11 @@ export default function BoqPage({ projectId: initialProjectId, boqId }) {
           </div>
         </div>
 
-        <BoqSummary totals={calculateTotals} itemCount={itemCount} />
+        {/* ── Summary ── */}
+        <BoqSummary totals={totals} itemCount={itemCount} />
       </div>
 
-      {/* Modals */}
+      {/* ── Modals ── */}
       <BoqSectionForm
         open={sectionModalOpen}
         onClose={() => setSectionModalOpen(false)}

@@ -1,6 +1,6 @@
 "use client";
 
-import React from "react";
+import React, { useEffect } from "react";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { useAuth } from "@/contexts/AuthContext";
@@ -17,14 +17,34 @@ export default function BriefPage() {
   const { id: projectId } = useParams();
   const router = useRouter();
 
+  // ======================================================
+  // HOOKS — all unconditional, always at the top
+  // ======================================================
   const { isAuthenticated, isLoading: authLoading, user } = useAuth();
 
-  // ================= RTK QUERY =================
-  const { data: brief, isLoading: briefLoading } = useGetBriefQuery(projectId, {
-    skip: !projectId,
+  const {
+    data: brief,
+    isLoading: briefLoading,
+    isError: briefError,
+  } = useGetBriefQuery(projectId, {
+    // Skip if no projectId OR if auth hasn't resolved yet —
+    // avoids firing an authed API call before the token is ready
+    skip: !projectId || authLoading || !isAuthenticated,
   });
 
-  // ================= AUTH PROTECTION =================
+  // Auth redirect via useEffect — NEVER call router inside render
+  useEffect(() => {
+    if (authLoading) return;
+    if (!isAuthenticated) {
+      router.replace("/login");
+    }
+  }, [isAuthenticated, authLoading, router]);
+
+  // ======================================================
+  // CONDITIONAL RETURNS — only after all hooks
+  // ======================================================
+
+  // 1. Auth still resolving
   if (authLoading) {
     return (
       <div className="flex items-center justify-center h-full min-h-[60vh]">
@@ -33,12 +53,12 @@ export default function BriefPage() {
     );
   }
 
+  // 2. Not authenticated — render nothing while redirect fires
   if (!isAuthenticated) {
-    router.replace("/login");
     return null;
   }
 
-  // ================= LOADING STATE =================
+  // 3. Brief data loading
   if (briefLoading) {
     return (
       <div className="flex items-center justify-center h-full min-h-[60vh]">
@@ -47,20 +67,40 @@ export default function BriefPage() {
     );
   }
 
-  // ================= DOCUMENT VIEW =================
+  // 4. Brief fetch error
+  if (briefError) {
+    return (
+      <div className="flex flex-col items-center justify-center py-20 min-h-[70vh]">
+        <div className="w-20 h-20 rounded-full bg-red-50 flex items-center justify-center mb-5">
+          <FileText className="w-10 h-10 text-red-300" />
+        </div>
+        <h2 className="text-2xl font-bold text-black mb-2">
+          Failed to Load Brief
+        </h2>
+        <p className="text-gray-500 mb-8 text-center max-w-md">
+          There was a problem fetching the project brief. Please try again.
+        </p>
+        <Button variant="outline" onClick={() => router.refresh()}>
+          Retry
+        </Button>
+      </div>
+    );
+  }
+
+  // 5. Brief exists — show document
   if (brief) {
     return (
       <BriefDocument
         projectId={projectId}
         brief={brief}
         user={user}
-        onBack={() => window.history.back()}
-        onEdit={() => router.push(`/brief/add?briefId=${brief?.id}`)}
+        onBack={() => router.back()}
+        onEdit={() => router.push(`/brief/add?briefId=${brief.id}`)}
       />
     );
   }
 
-  // ================= EMPTY STATE =================
+  // 6. No brief yet — empty state
   return (
     <div className="flex flex-col items-center justify-center py-20 min-h-[70vh]">
       <div className="w-20 h-20 rounded-full bg-gray-100 flex items-center justify-center mb-5">
@@ -76,7 +116,7 @@ export default function BriefPage() {
         timelines, and client expectations.
       </p>
 
-      <Link href={`/brief/add`}>
+      <Link href={`/brief/add?projectId=${projectId}`}>
         <Button className="bg-[#ef7f1b] hover:bg-[#d66e15]">
           <Plus className="w-4 h-4 mr-2" />
           Create Brief
