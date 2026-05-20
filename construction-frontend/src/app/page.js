@@ -1,3 +1,4 @@
+// app/page.tsx
 "use client";
 
 import { useEffect } from "react";
@@ -17,11 +18,13 @@ const roleRoutes = {
 
 export default function Home() {
   const router = useRouter();
-  const { authInitialized, authResolved, isAuthenticated, user } = useAuth();
+  const { authInitialized, isAuthenticated, user } = useAuth();
 
   useEffect(() => {
-    // Wait for initialization AND resolution
-    if (!authInitialized || !authResolved) return;
+    // Only run this effect on the root page
+    // This page should NEVER render, only redirect
+
+    if (!authInitialized) return;
 
     // Not authenticated → Login
     if (!isAuthenticated) {
@@ -29,15 +32,22 @@ export default function Home() {
       return;
     }
 
-    // Wait for role data
-    if (!user?.role) return;
+    // Wait for user role to load
+    if (!user?.role) {
+      console.log("[ROOT] Waiting for user role...");
+      return;
+    }
 
-    // Redirect to role dashboard
+    // Authenticated with role → Redirect to dashboard
+    console.log("[ROOT] Redirecting to role dashboard:", user.role);
+
     const roleKey = user.role.toLowerCase().replace(/\s+/g, "_").trim();
-    router.replace(roleRoutes[roleKey] || "/dashboard");
-  }, [authInitialized, authResolved, isAuthenticated, user?.role, router]);
+    const redirectTo = roleRoutes[roleKey] || "/dashboard";
 
-  // Always show loader - this page never stays visible
+    router.replace(redirectTo);
+  }, [authInitialized, isAuthenticated, user?.role, router]);
+
+  // This page never stays visible - just show loading
   return (
     <div className="flex h-screen items-center justify-center bg-white">
       <div className="flex flex-col items-center gap-3">
