@@ -1,28 +1,36 @@
-import { NextResponse } from "next/server";
-import type { NextRequest } from "next/server";
+// middleware.ts (at project root, same level as app/)
+import { NextRequest, NextResponse } from "next/server";
 
-/**
- * Middleware is intentionally kept as a passthrough.
- *
- * WHY: The app uses localStorage for token storage. Cookies are only written
- * by the React client after hydration. This means on any hard navigation or
- * first load, the cookie doesn't exist yet when middleware runs — causing
- * incorrect redirects on protected dynamic routes like /project/[id]/brief.
- *
- * Auth protection is handled entirely client-side in AppProviders:
- * - Unauthenticated users are redirected to /login via useEffect
- * - Protected pages render a spinner (not children) while auth resolves
- * - No flash of protected content is possible because isLoading gates rendering
- *
- * If you later switch to httpOnly server-set cookies (e.g. via an API route
- * that sets Set-Cookie), you can re-enable middleware redirects at that point.
- */
 export function middleware(request: NextRequest) {
+  const { pathname } = request.nextUrl;
+
+  // Only handle root path
+  if (pathname === "/") {
+    // Get token from cookies
+    const token = request.cookies.get("access_token")?.value;
+
+    // Not authenticated
+    if (!token) {
+      return NextResponse.redirect(new URL("/login", request.url));
+    }
+
+    // This middleware can't determine role, so let the page handle it
+    // OR redirect to a default dashboard
+    return NextResponse.redirect(new URL("/dashboard", request.url));
+  }
+
   return NextResponse.next();
 }
 
 export const config = {
   matcher: [
-    "/((?!_next/static|_next/image|favicon.ico|api|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)",
+    /*
+     * Match all request paths except for the ones starting with:
+     * - api (API routes)
+     * - _next/static (static files)
+     * - _next/image (image optimization files)
+     * - favicon.ico (favicon file)
+     */
+    "/((?!api|_next/static|_next/image|favicon.ico).*)",
   ],
 };
