@@ -7,6 +7,7 @@ import React, {
   useState,
   useCallback,
   useMemo,
+  useRef,
 } from "react";
 
 import {
@@ -17,40 +18,23 @@ import {
 
 const AuthContext = createContext(null);
 
-/**
- * ======================================================
- * DEBUG LOGGER
- * ======================================================
- */
+// ======================================================
+// DEBUG LOGGER
+// ======================================================
 const AUTH_DEBUG = process.env.NODE_ENV === "development";
+const authLog = (...args) =>
+  AUTH_DEBUG &&
+  console.log("%c[AUTH]", "color:#22c55e;font-weight:bold;", ...args);
+const authWarn = (...args) =>
+  AUTH_DEBUG &&
+  console.warn("%c[AUTH WARNING]", "color:#f59e0b;font-weight:bold;", ...args);
+const authError = (...args) =>
+  AUTH_DEBUG &&
+  console.error("%c[AUTH ERROR]", "color:#ef4444;font-weight:bold;", ...args);
 
-const authLog = (...args) => {
-  if (AUTH_DEBUG) {
-    console.log("%c[AUTH]", "color:#22c55e;font-weight:bold;", ...args);
-  }
-};
-
-const authWarn = (...args) => {
-  if (AUTH_DEBUG) {
-    console.warn(
-      "%c[AUTH WARNING]",
-      "color:#f59e0b;font-weight:bold;",
-      ...args,
-    );
-  }
-};
-
-const authError = (...args) => {
-  if (AUTH_DEBUG) {
-    console.error("%c[AUTH ERROR]", "color:#ef4444;font-weight:bold;", ...args);
-  }
-};
-
-/**
- * ======================================================
- * USER NORMALIZER
- * ======================================================
- */
+// ======================================================
+// USER NORMALIZER
+// ======================================================
 const normalizeUser = (user) => {
   if (!user) {
     authWarn("normalizeUser called with null user");
@@ -59,7 +43,6 @@ const normalizeUser = (user) => {
 
   const rawUser = user?.dataValues || user;
 
-  // Handle nested Sequelize role object
   let role = rawUser.role;
   if (role && typeof role === "object") {
     const roleData = role?.dataValues || role;
@@ -72,16 +55,11 @@ const normalizeUser = (user) => {
     email: rawUser.email,
     phone: rawUser.phone,
     role: typeof role === "string" ? role : null,
-
-    // Flags
     is_active: Boolean(rawUser.is_active),
     is_email_verified: Boolean(rawUser.is_email_verified),
-
-    // Backward compatibility
+    // Backward compat
     isActive: Boolean(rawUser.is_active),
     isEmailVerified: Boolean(rawUser.is_email_verified),
-
-    // Metadata
     last_login: rawUser.last_login,
     created_at: rawUser.created_at,
   };
@@ -90,39 +68,40 @@ const normalizeUser = (user) => {
   return normalized;
 };
 
+// ======================================================
+// PROVIDER
+// ======================================================
 export const AuthProvider = ({ children }) => {
   const [token, setToken] = useState(null);
   const [user, setUser] = useState(null);
   const [authReady, setAuthReady] = useState(false);
+  // Safety escape: if profile fetch takes > 6s, stop blocking the UI
+  const [profileTimedOut, setProfileTimedOut] = useState(false);
+  const profileTimeoutRef = useRef(null);
 
   const [loginMutation] = useLoginMutation();
   const [registerMutation] = useRegisterMutation();
 
-  /**
-   * BOOTSTRAP TOKEN FROM LOCALSTORAGE
-   */
+  // ── Bootstrap token ──────────────────────────────────
   useEffect(() => {
     authLog("Auth bootstrap started");
-
     try {
       const storedToken = localStorage.getItem("access_token");
       if (storedToken) {
         authLog("Token found in localStorage");
         setToken(storedToken);
       } else {
-        authLog("No token found in localStorage");
+        authLog("No token in localStorage");
       }
     } catch (err) {
-      authError("Failed to read token from localStorage:", err);
+      authError("Failed to read token:", err);
     } finally {
       setAuthReady(true);
-      authLog("Auth hydration complete → authReady = true");
+      authLog("authReady = true");
     }
   }, []);
 
-  /**
-   * PROFILE QUERY
-   */
+  // ── Profile fetch ────────────────────────────────────
   const {
     data: profileData,
     refetch: refetchProfile,
@@ -130,12 +109,32 @@ export const AuthProvider = ({ children }) => {
     error: profileError,
   } = useGetProfileQuery(undefined, {
     skip: !authReady || !token,
-    refetchOnMountOrArgChange: false, // Changed to false to reduce noise
+    refetchOnMountOrArgChange: false,
   });
 
-  /**
-   * SYNC USER FROM PROFILE
-   */
+  // Start a safety timeout whenever a profile fetch begins
+  useEffect(() => {
+    if (!token || !authReady || profileTimedOut) return;
+
+    profileTimeoutRef.current = setTimeout(() => {
+      if (!user) {
+        authWarn("Profile fetch timed out after 6s — releasing loading state");
+        setProfileTimedOut(true);
+      }
+    }, 6000);
+
+    return () => clearTimeout(profileTimeoutRef.current);
+  }, [token, authReady]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Clear timeout once user loads successfully
+  useEffect(() => {
+    if (user) {
+      clearTimeout(profileTimeoutRef.current);
+      setProfileTimedOut(false);
+    }
+  }, [user]);
+
+  // ── Sync user from profile ───────────────────────────
   useEffect(() => {
     if (!token) {
       setUser(null);
@@ -144,34 +143,35 @@ export const AuthProvider = ({ children }) => {
 
     if (profileData?.user) {
       authLog("Profile data received");
-      const normalized = normalizeUser(profileData.user);
-      setUser(normalized);
+      setUser(normalizeUser(profileData.user));
       return;
     }
 
     if (profileError) {
       authError("Profile fetch failed:", profileError);
       localStorage.removeItem("access_token");
+      // Also clear the cookie set during login
+      document.cookie = "access_token=; path=/; max-age=0";
       setToken(null);
       setUser(null);
       authWarn("Invalid token removed");
     }
   }, [profileData, profileError, token]);
 
-  /**
-   * LOGIN
-   */
+  // ── Login ────────────────────────────────────────────
   const login = async (credentials) => {
     try {
-      authLog("Login attempt started", { email: credentials?.email });
-
+      authLog("Login attempt:", credentials?.email);
       const res = await loginMutation(credentials).unwrap();
       const accessToken = res.access_token || res.accessToken;
 
       if (!accessToken) throw new Error("No access token received");
 
+      // Store in both localStorage AND a cookie so middleware can read it
       localStorage.setItem("access_token", accessToken);
+      document.cookie = `access_token=${accessToken}; path=/; max-age=86400; SameSite=Lax`;
       setToken(accessToken);
+      setProfileTimedOut(false); // reset timeout on fresh login
 
       if (res.user) {
         const normalized = normalizeUser(res.user);
@@ -194,9 +194,7 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  /**
-   * REGISTER
-   */
+  // ── Register ─────────────────────────────────────────
   const register = async (data) => {
     try {
       authLog("Register attempt:", data?.email);
@@ -209,23 +207,18 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  /**
-   * LOGOUT
-   */
+  // ── Logout ───────────────────────────────────────────
   const logout = useCallback(() => {
-    authLog("Logout started");
+    authLog("Logout");
     localStorage.removeItem("access_token");
+    document.cookie = "access_token=; path=/; max-age=0";
     setToken(null);
     setUser(null);
-    authLog("Auth state cleared");
   }, []);
 
-  /**
-   * REFRESH USER
-   */
+  // ── Refresh user ─────────────────────────────────────
   const refreshUser = useCallback(async () => {
     if (!token) return null;
-
     try {
       const res = await refetchProfile();
       if (res?.data?.user) {
@@ -240,9 +233,7 @@ export const AuthProvider = ({ children }) => {
     }
   }, [token, refetchProfile]);
 
-  /**
-   * HELPERS
-   */
+  // ── Derived state ────────────────────────────────────
   const isUserActive = useMemo(
     () => Boolean(user?.is_active ?? user?.isActive),
     [user],
@@ -251,18 +242,18 @@ export const AuthProvider = ({ children }) => {
     () => Boolean(user?.is_email_verified ?? user?.isEmailVerified),
     [user],
   );
-
   const isAuthenticated = Boolean(token && user);
 
+  // isLoading is true only while we genuinely don't know yet.
+  // profileTimedOut is the safety escape hatch.
   const isLoading =
-    !authReady ||
-    (Boolean(token) && (profileLoading || !user) && !profileError);
+    !profileTimedOut &&
+    (!authReady ||
+      (Boolean(token) && (profileLoading || !user) && !profileError));
 
-  /**
-   * GLOBAL STATE LOGGER (Optimized)
-   */
+  // ── Debug logger ─────────────────────────────────────
   useEffect(() => {
-    authLog("GLOBAL AUTH STATE:", {
+    authLog("AUTH STATE:", {
       authReady,
       hasToken: Boolean(token),
       hasUser: Boolean(user),
@@ -271,6 +262,7 @@ export const AuthProvider = ({ children }) => {
       isLoading,
       isActive: isUserActive,
       isEmailVerified,
+      profileTimedOut,
     });
   }, [
     authReady,
@@ -280,28 +272,23 @@ export const AuthProvider = ({ children }) => {
     isLoading,
     isUserActive,
     isEmailVerified,
+    profileTimedOut,
   ]);
 
-  /**
-   * VALUE
-   */
+  // ── Context value ────────────────────────────────────
   const value = {
     token,
     user,
     userMeta: user,
-
     login,
     register,
     logout,
     refreshUser,
-
     authReady,
     isAuthenticated,
     isLoading,
-
     isActive: isUserActive,
     isEmailVerified,
-
     hasRole: (roleName) =>
       user?.role?.toLowerCase() === roleName?.toLowerCase(),
   };
@@ -311,14 +298,7 @@ export const AuthProvider = ({ children }) => {
 
 export const useAuth = () => {
   const ctx = useContext(AuthContext);
-
-  if (!ctx) {
-    throw new Error("useAuth must be used within AuthProvider");
-  }
-
-  if (AUTH_DEBUG) {
-    authLog("useAuth hook accessed");
-  }
-
+  if (!ctx) throw new Error("useAuth must be used within AuthProvider");
+  if (AUTH_DEBUG) authLog("useAuth accessed");
   return ctx;
 };
