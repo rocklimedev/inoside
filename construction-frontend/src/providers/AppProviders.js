@@ -7,15 +7,24 @@ import ReduxProvider from "./ReduxProvider";
 import { AuthProvider, useAuth } from "@/contexts/AuthContext";
 import DashboardLayout from "@/components/DashboardLayout";
 
+// ======================================================
+// DEBUG LOGGER
+// ======================================================
+
 const APP_DEBUG = process.env.NODE_ENV === "development";
 
 const appLog = (...args) => {
-  if (APP_DEBUG)
+  if (APP_DEBUG) {
     console.log("%c[APP]", "color:#3b82f6;font-weight:bold;", ...args);
+  }
 };
 
+// ======================================================
+// INNER APP CONTENT
+// ======================================================
+
 function AppContent({ children, pathname }) {
-  const { isLoading, isAuthenticated } = useAuth();
+  const { isLoading, isAuthenticated, user } = useAuth();
 
   const isAuthPage =
     pathname === "/login" ||
@@ -23,6 +32,17 @@ function AppContent({ children, pathname }) {
     pathname.startsWith("/404") ||
     pathname.startsWith("/no-access") ||
     pathname === "/not-found";
+
+  // Debug log
+  useEffect(() => {
+    appLog("APP STATE UPDATE", {
+      pathname,
+      isAuthPage,
+      isLoading,
+      isAuthenticated,
+      role: user?.role,
+    });
+  }, [pathname, isAuthPage, isLoading, isAuthenticated, user?.role]);
 
   if (isLoading) {
     return (
@@ -38,12 +58,22 @@ function AppContent({ children, pathname }) {
   }
 
   if (isAuthPage) {
+    appLog("Rendering AUTH PAGE");
     return <>{children}</>;
   }
 
-  // Protected pages
+  // PROTECTED PAGES (including dynamic routes)
+  appLog("Rendering PROTECTED PAGE with DashboardLayout", {
+    pathname,
+    role: user?.role,
+  });
+
   return <DashboardLayout>{children}</DashboardLayout>;
 }
+
+// ======================================================
+// MAIN PROVIDER
+// ======================================================
 
 export default function AppProviders({ children }) {
   const pathname = usePathname();
