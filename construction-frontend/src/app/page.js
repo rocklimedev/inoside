@@ -17,13 +17,12 @@ const roleRoutes = {
 
 export default function Home() {
   const router = useRouter();
-  const pathname = usePathname(); // ← Added this
+  const pathname = usePathname();
   const { isLoading, isAuthenticated, user } = useAuth();
   const hasRedirected = useRef(false);
 
   useEffect(() => {
-    // Only run redirect logic on the exact root path "/"
-    if (pathname !== "/") return;
+    if (pathname !== "/") return; // Only redirect from root
 
     if (isLoading || hasRedirected.current) return;
 
@@ -33,12 +32,12 @@ export default function Home() {
       return;
     }
 
-    if (!user?.role) return; // Wait for profile to load
+    if (!user?.role) return;
 
     const roleKey = user.role.toLowerCase().replace(/\s+/g, "_").trim();
     const targetRoute = roleRoutes[roleKey] || "/dashboard";
 
-    console.log("[HOME] Redirecting from root to:", targetRoute);
+    console.log("[HOME] Redirecting from / to:", targetRoute);
     hasRedirected.current = true;
     router.replace(targetRoute);
   }, [pathname, isLoading, isAuthenticated, user?.role, router]);
@@ -55,6 +54,5 @@ export default function Home() {
     );
   }
 
-  // If somehow rendered on other pages, just show children (safety)
   return null;
 }
