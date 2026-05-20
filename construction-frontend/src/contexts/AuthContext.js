@@ -22,8 +22,7 @@ const AuthContext = createContext(null);
  * DEBUG LOGGER
  * ======================================================
  */
-
-const AUTH_DEBUG = true;
+const AUTH_DEBUG = process.env.NODE_ENV === "development";
 
 const authLog = (...args) => {
   if (AUTH_DEBUG) {
@@ -52,27 +51,18 @@ const authError = (...args) => {
  * USER NORMALIZER
  * ======================================================
  */
-
 const normalizeUser = (user) => {
   if (!user) {
     authWarn("normalizeUser called with null user");
     return null;
   }
 
-  authLog("Raw user before normalization:", user);
-
   const rawUser = user?.dataValues || user;
 
+  // Handle nested Sequelize role object
   let role = rawUser.role;
-
-  /**
-   * Sequelize nested model support
-   */
   if (role && typeof role === "object") {
     const roleData = role?.dataValues || role;
-
-    authLog("Nested role detected:", roleData);
-
     role = roleData?.name || roleData?.role_name || null;
   }
 
@@ -81,10 +71,6 @@ const normalizeUser = (user) => {
     name: rawUser.name,
     email: rawUser.email,
     phone: rawUser.phone,
-
-    /**
-     * ALWAYS normalized string role
-     */
     role: typeof role === "string" ? role : null,
 
     // Flags
@@ -101,355 +87,180 @@ const normalizeUser = (user) => {
   };
 
   authLog("Normalized user:", normalized);
-
   return normalized;
 };
 
 export const AuthProvider = ({ children }) => {
-  /**
-   * ======================================================
-   * STATE
-   * ======================================================
-   */
-
   const [token, setToken] = useState(null);
-
   const [user, setUser] = useState(null);
-
-  /**
-   * authReady =
-   * localStorage hydration finished
-   */
   const [authReady, setAuthReady] = useState(false);
 
-  /**
-   * ======================================================
-   * MUTATIONS
-   * ======================================================
-   */
-
   const [loginMutation] = useLoginMutation();
-
   const [registerMutation] = useRegisterMutation();
 
   /**
-   * ======================================================
-   * BOOTSTRAP TOKEN
-   * ======================================================
+   * BOOTSTRAP TOKEN FROM LOCALSTORAGE
    */
-
   useEffect(() => {
     authLog("Auth bootstrap started");
 
     try {
       const storedToken = localStorage.getItem("access_token");
-
-      authLog(
-        "Initial token from localStorage:",
-        storedToken ? "FOUND" : "NOT FOUND",
-      );
-
       if (storedToken) {
+        authLog("Token found in localStorage");
         setToken(storedToken);
+      } else {
+        authLog("No token found in localStorage");
       }
     } catch (err) {
-      authError("Failed to read localStorage token:", err);
+      authError("Failed to read token from localStorage:", err);
     } finally {
-      /**
-       * VERY IMPORTANT:
-       * hydration complete
-       */
       setAuthReady(true);
-
-      authLog("Auth ready set TRUE");
+      authLog("Auth hydration complete → authReady = true");
     }
   }, []);
 
   /**
-   * ======================================================
    * PROFILE QUERY
-   * ======================================================
    */
-
   const {
     data: profileData,
     refetch: refetchProfile,
     isFetching: profileLoading,
     error: profileError,
   } = useGetProfileQuery(undefined, {
-    /**
-     * ONLY RUN AFTER:
-     * - hydration finished
-     * - token exists
-     */
     skip: !authReady || !token,
-
-    refetchOnMountOrArgChange: true,
+    refetchOnMountOrArgChange: false, // Changed to false to reduce noise
   });
 
   /**
-   * ======================================================
-   * PROFILE QUERY LOGGER
-   * ======================================================
-   */
-
-  useEffect(() => {
-    authLog("Profile query state:", {
-      authReady,
-      hasToken: Boolean(token),
-      profileLoading,
-      hasProfileData: Boolean(profileData),
-      profileError,
-    });
-  }, [authReady, token, profileLoading, profileData, profileError]);
-
-  /**
-   * ======================================================
    * SYNC USER FROM PROFILE
-   * ======================================================
    */
-
   useEffect(() => {
-    /**
-     * No token
-     */
     if (!token) {
-      authLog("No token present — clearing user");
-
       setUser(null);
-
       return;
     }
 
-    /**
-     * Profile loaded successfully
-     */
     if (profileData?.user) {
-      authLog("Profile data received:", profileData);
-
+      authLog("Profile data received");
       const normalized = normalizeUser(profileData.user);
-
       setUser(normalized);
-
-      authLog("User synced from profile");
-
       return;
     }
 
-    /**
-     * Invalid token / unauthorized
-     */
     if (profileError) {
       authError("Profile fetch failed:", profileError);
-
       localStorage.removeItem("access_token");
-
       setToken(null);
       setUser(null);
-
       authWarn("Invalid token removed");
     }
   }, [profileData, profileError, token]);
 
   /**
-   * ======================================================
    * LOGIN
-   * ======================================================
    */
-
   const login = async (credentials) => {
     try {
-      authLog("Login attempt started", {
-        email: credentials?.email,
-      });
+      authLog("Login attempt started", { email: credentials?.email });
 
       const res = await loginMutation(credentials).unwrap();
-
-      authLog("Login response:", res);
-
       const accessToken = res.access_token || res.accessToken;
 
-      if (!accessToken) {
-        authError("No access token received");
+      if (!accessToken) throw new Error("No access token received");
 
-        throw new Error("No access token received from server");
-      }
-
-      /**
-       * Save token
-       */
       localStorage.setItem("access_token", accessToken);
-
       setToken(accessToken);
 
-      authLog("Token stored successfully");
-
-      /**
-       * BEST CASE:
-       * login already returned user
-       */
       if (res.user) {
-        authLog("Using user from login response");
-
         const normalized = normalizeUser(res.user);
-
         setUser(normalized);
-
-        return {
-          ...res,
-          user: normalized,
-        };
+        return { ...res, user: normalized };
       }
 
-      /**
-       * FALLBACK:
-       * fetch profile
-       */
-      authWarn("No user in login response — refetching profile");
-
+      // Fallback: fetch profile
       const profileRes = await refetchProfile();
-
-      authLog("Profile refetch response:", profileRes);
-
       if (profileRes?.data?.user) {
         const normalized = normalizeUser(profileRes.data.user);
-
         setUser(normalized);
-
-        authLog("User synced from profile refetch");
-
-        return {
-          ...res,
-          user: normalized,
-        };
+        return { ...res, user: normalized };
       }
 
       return res;
     } catch (err) {
       authError("Login failed:", err);
-
       throw err;
     }
   };
 
   /**
-   * ======================================================
    * REGISTER
-   * ======================================================
    */
-
   const register = async (data) => {
     try {
       authLog("Register attempt:", data?.email);
-
       const res = await registerMutation(data).unwrap();
-
-      authLog("Register success:", res);
-
+      authLog("Register success");
       return res;
     } catch (err) {
       authError("Register failed:", err);
-
       throw err;
     }
   };
 
   /**
-   * ======================================================
    * LOGOUT
-   * ======================================================
    */
-
   const logout = useCallback(() => {
     authLog("Logout started");
-
     localStorage.removeItem("access_token");
-
     setToken(null);
     setUser(null);
-
     authLog("Auth state cleared");
   }, []);
 
   /**
-   * ======================================================
    * REFRESH USER
-   * ======================================================
    */
-
   const refreshUser = useCallback(async () => {
+    if (!token) return null;
+
     try {
-      authLog("Manual refreshUser called");
-
-      if (!token) {
-        authWarn("refreshUser aborted — no token");
-        return null;
-      }
-
       const res = await refetchProfile();
-
-      authLog("refreshUser response:", res);
-
       if (res?.data?.user) {
         const normalized = normalizeUser(res.data.user);
-
         setUser(normalized);
-
-        authLog("User refreshed successfully");
-
         return normalized;
       }
-
       return null;
     } catch (err) {
       authError("refreshUser failed:", err);
-
       return null;
     }
   }, [token, refetchProfile]);
 
   /**
-   * ======================================================
    * HELPERS
-   * ======================================================
    */
-
-  const isUserActive = useMemo(() => {
-    return Boolean(user?.is_active ?? user?.isActive);
-  }, [user]);
-
-  const isEmailVerified = useMemo(() => {
-    return Boolean(user?.is_email_verified ?? user?.isEmailVerified);
-  }, [user]);
-
-  /**
-   * ======================================================
-   * IMPORTANT FIX
-   * ======================================================
-   *
-   * AUTHENTICATED ONLY WHEN:
-   * token + user BOTH exist
-   */
+  const isUserActive = useMemo(
+    () => Boolean(user?.is_active ?? user?.isActive),
+    [user],
+  );
+  const isEmailVerified = useMemo(
+    () => Boolean(user?.is_email_verified ?? user?.isEmailVerified),
+    [user],
+  );
 
   const isAuthenticated = Boolean(token && user);
 
-  /**
-   * ======================================================
-   * LOADING STATE
-   * ======================================================
-   */
-
   const isLoading =
     !authReady ||
-    (Boolean(token) && profileLoading) ||
-    (Boolean(token) && !user && !profileError);
+    (Boolean(token) && (profileLoading || !user) && !profileError);
 
   /**
-   * ======================================================
-   * DEBUG GLOBAL STATE
-   * ======================================================
+   * GLOBAL STATE LOGGER (Optimized)
    */
-
   useEffect(() => {
     authLog("GLOBAL AUTH STATE:", {
       authReady,
@@ -458,13 +269,13 @@ export const AuthProvider = ({ children }) => {
       userRole: user?.role,
       isAuthenticated,
       isLoading,
-      isUserActive,
+      isActive: isUserActive,
       isEmailVerified,
     });
   }, [
     authReady,
     token,
-    user,
+    user?.role,
     isAuthenticated,
     isLoading,
     isUserActive,
@@ -472,65 +283,42 @@ export const AuthProvider = ({ children }) => {
   ]);
 
   /**
-   * ======================================================
-   * PROVIDER VALUE
-   * ======================================================
+   * VALUE
    */
-
   const value = {
-    // State
     token,
     user,
     userMeta: user,
 
-    // Methods
     login,
     register,
     logout,
     refreshUser,
 
-    // Status
     authReady,
     isAuthenticated,
     isLoading,
 
-    // Flags
     isActive: isUserActive,
     isEmailVerified,
 
-    // Helpers
-    hasRole: (roleName) => {
-      const result = user?.role?.toLowerCase() === roleName?.toLowerCase();
-
-      authLog("hasRole check:", {
-        expected: roleName,
-        actual: user?.role,
-        result,
-      });
-
-      return result;
-    },
+    hasRole: (roleName) =>
+      user?.role?.toLowerCase() === roleName?.toLowerCase(),
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 };
 
-/**
- * ======================================================
- * HOOK
- * ======================================================
- */
-
 export const useAuth = () => {
   const ctx = useContext(AuthContext);
 
   if (!ctx) {
-    authError("useAuth used outside AuthProvider");
-
     throw new Error("useAuth must be used within AuthProvider");
   }
 
-  authLog("useAuth hook accessed");
+  if (AUTH_DEBUG) {
+    authLog("useAuth hook accessed");
+  }
 
   return ctx;
 };

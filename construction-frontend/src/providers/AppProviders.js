@@ -4,16 +4,14 @@ import { useEffect } from "react";
 import { usePathname } from "next/navigation";
 
 import ReduxProvider from "./ReduxProvider";
-
 import { AuthProvider, useAuth } from "@/contexts/AuthContext";
-
 import DashboardLayout from "@/components/DashboardLayout";
 
 // ======================================================
 // DEBUG LOGGER
 // ======================================================
 
-const APP_DEBUG = true;
+const APP_DEBUG = process.env.NODE_ENV === "development";
 
 const appLog = (...args) => {
   if (APP_DEBUG) {
@@ -47,25 +45,19 @@ function AppContent({ children, pathname }) {
     pathname === "/not-found";
 
   // ======================================================
-  // GLOBAL APP LOGGER
+  // GLOBAL APP LOGGER (Optimized)
   // ======================================================
 
   useEffect(() => {
     appLog("APP STATE UPDATE", {
       pathname,
       isAuthPage,
-
-      // Auth
       isLoading,
       isAuthenticated,
       hasToken: Boolean(token),
       hasUser: Boolean(user),
-
-      // User
       role: user?.role,
       email: user?.email,
-
-      // Flags
       isActive,
       isEmailVerified,
     });
@@ -75,7 +67,7 @@ function AppContent({ children, pathname }) {
     isLoading,
     isAuthenticated,
     token,
-    user,
+    user?.role, // ← Changed from `user` to `user?.role`
     isActive,
     isEmailVerified,
   ]);
@@ -93,7 +85,7 @@ function AppContent({ children, pathname }) {
   }, [pathname, isAuthPage]);
 
   // ======================================================
-  // LOADING SCREEN LOGGER
+  // LOADING SCREEN
   // ======================================================
 
   if (isLoading) {
@@ -126,15 +118,11 @@ function AppContent({ children, pathname }) {
   }
 
   // ======================================================
-  // AUTH PAGES
+  // AUTH PAGES (No Dashboard Layout)
   // ======================================================
 
-  /**
-   * Auth pages should NOT use dashboard layout
-   */
   if (isAuthPage) {
     appLog("Rendering AUTH PAGE without DashboardLayout");
-
     return children;
   }
 
@@ -159,7 +147,6 @@ export default function AppProviders({ children }) {
 
   useEffect(() => {
     appLog("AppProviders mounted");
-
     appLog("Current pathname:", pathname);
   }, [pathname]);
 

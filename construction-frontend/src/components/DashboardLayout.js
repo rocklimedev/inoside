@@ -3,7 +3,15 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 
-import { Menu, Search, Plus, X, Settings, LogOut } from "lucide-react";
+import {
+  Menu,
+  Search,
+  Plus,
+  X,
+  Settings,
+  LogOut,
+  ChevronLeft,
+} from "lucide-react";
 
 import Link from "next/link";
 
@@ -25,6 +33,22 @@ import GlobalSearchModal from "@/components/modals/GlobalSearchModal";
 import { quickActions } from "@/lib/defaults";
 import { useAuth } from "@/contexts/AuthContext";
 
+// ======================================================
+// DEBUG LOGGER
+// ======================================================
+
+const LAYOUT_DEBUG = process.env.NODE_ENV === "development";
+
+const layoutLog = (...args) => {
+  if (LAYOUT_DEBUG) {
+    console.log(
+      "%c[DASHBOARD LAYOUT]",
+      "color:#8b5cf6;font-weight:bold;",
+      ...args,
+    );
+  }
+};
+
 export default function DashboardLayout({ children }) {
   const [collapsed, setCollapsed] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -33,7 +57,7 @@ export default function DashboardLayout({ children }) {
   const router = useRouter();
   const { user, logout } = useAuth();
 
-  // GLOBAL CMD + K
+  // GLOBAL CMD + K Shortcut
   useEffect(() => {
     const handleKeyDown = (e) => {
       if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "k") {
@@ -51,10 +75,19 @@ export default function DashboardLayout({ children }) {
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, []);
 
-  const handleLogout = async () => {
+  const handleLogout = () => {
+    layoutLog("Logout initiated");
     logout();
     router.replace("/login");
   };
+
+  const toggleSidebar = () => setCollapsed((prev) => !prev);
+
+  layoutLog("DashboardLayout rendered", {
+    role: user?.role,
+    collapsed,
+    mobileMenuOpen,
+  });
 
   return (
     <TooltipProvider delayDuration={0}>
@@ -98,32 +131,45 @@ export default function DashboardLayout({ children }) {
           </div>
         )}
 
-        {/* MAIN */}
+        {/* MAIN CONTENT AREA */}
         <div className="flex-1 flex flex-col overflow-hidden min-w-0">
-          {/* HEADER (COMMAND BAR STYLE) */}
+          {/* HEADER */}
           <header className="h-16 bg-white border-b border-gray-200 flex items-center justify-between px-4 md:px-6 shrink-0">
-            {/* LEFT */}
+            {/* LEFT SECTION */}
             <div className="flex items-center gap-3">
+              {/* Mobile Menu Button */}
               <button
-                className="md:hidden text-gray-500 hover:text-gray-800"
+                className="md:hidden text-gray-500 hover:text-gray-800 p-2"
                 onClick={() => setMobileMenuOpen(true)}
               >
                 <Menu className="w-5 h-5" />
               </button>
 
+              {/* Desktop Collapse Button */}
+              <button
+                onClick={toggleSidebar}
+                className="hidden md:flex text-gray-500 hover:text-gray-800 p-2 rounded-xl hover:bg-gray-100"
+              >
+                <ChevronLeft
+                  className={`w-5 h-5 transition-transform duration-200 ${
+                    collapsed ? "rotate-180" : ""
+                  }`}
+                />
+              </button>
+
               <div>
                 <h1 className="text-base font-bold text-black leading-tight">
-                  {user?.role || "Dashboard"}
+                  {user?.role ? user.role.replace("_", " ") : "Dashboard"}
                 </h1>
                 <p className="text-[11px] text-gray-400">
-                  Welcome back, {user?.name}
+                  Welcome back, {user?.name || "User"}
                 </p>
               </div>
             </div>
 
-            {/* RIGHT ACTION BAR */}
+            {/* RIGHT SECTION */}
             <div className="flex items-center gap-2">
-              {/* COMMAND SEARCH TRIGGER */}
+              {/* Search Trigger */}
               <button
                 onClick={() => setSearchOpen(true)}
                 className="
@@ -138,28 +184,26 @@ export default function DashboardLayout({ children }) {
                 "
               >
                 <Search className="w-4 h-4 text-gray-400" />
-
                 <span className="text-sm text-gray-400 flex-1 text-left">
                   Search anything...
                 </span>
-
                 <span className="text-[10px] text-gray-400 border px-1.5 py-0.5 rounded-md bg-white">
                   ⌘K
                 </span>
               </button>
 
-              {/* QUICK ADD */}
+              {/* Quick Add */}
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <button
                     className="
-                    w-9 h-9 rounded-xl
-                    bg-[#ef7f1b]
-                    text-white
-                    flex items-center justify-center
-                    hover:bg-[#d66e15]
-                    transition
-                  "
+                      w-9 h-9 rounded-xl
+                      bg-[#ef7f1b]
+                      text-white
+                      flex items-center justify-center
+                      hover:bg-[#d66e15]
+                      transition
+                    "
                   >
                     <Plus className="w-4 h-4" />
                   </button>
@@ -180,23 +224,24 @@ export default function DashboardLayout({ children }) {
                 </DropdownMenuContent>
               </DropdownMenu>
 
-              {/* NOTIFICATIONS */}
+              {/* Notifications */}
               <NotificationsDropdown />
 
-              {/* PROFILE */}
+              {/* Profile Dropdown */}
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <button
                     className="
-                    w-9 h-9 rounded-full
-                    bg-[#ef7f1b]
-                    text-white
-                    flex items-center justify-center
-                    text-xs font-bold
-                    hover:bg-[#d66e15]
-                  "
+                      w-9 h-9 rounded-full
+                      bg-[#ef7f1b]
+                      text-white
+                      flex items-center justify-center
+                      text-xs font-bold
+                      hover:bg-[#d66e15]
+                      transition
+                    "
                   >
-                    {user?.name?.charAt(0) || "U"}
+                    {user?.name?.charAt(0)?.toUpperCase() || "U"}
                   </button>
                 </DropdownMenuTrigger>
 
@@ -220,7 +265,7 @@ export default function DashboardLayout({ children }) {
 
                   <DropdownMenuItem
                     onClick={handleLogout}
-                    className="text-[#e31d3b]"
+                    className="text-[#e31d3b] focus:text-[#e31d3b]"
                   >
                     <LogOut className="w-4 h-4 mr-2" />
                     Logout
@@ -230,12 +275,12 @@ export default function DashboardLayout({ children }) {
             </div>
           </header>
 
-          {/* CONTENT */}
+          {/* MAIN CONTENT */}
           <main className="flex-1 overflow-auto">{children}</main>
         </div>
       </div>
 
-      {/* GLOBAL SEARCH (COMMAND PALETTE) */}
+      {/* GLOBAL SEARCH MODAL */}
       <GlobalSearchModal open={searchOpen} onOpenChange={setSearchOpen} />
     </TooltipProvider>
   );
