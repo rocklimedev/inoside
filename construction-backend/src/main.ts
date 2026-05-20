@@ -1,7 +1,7 @@
 import { ValidationPipe } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
-import * as cookieParser from 'cookie-parser';
 
+import cookieParser from 'cookie-parser';
 import helmet from 'helmet';
 import compression from 'compression';
 
@@ -29,17 +29,17 @@ async function bootstrap() {
   app.use(compression());
 
   // =================================================
-  // COOKIE PARSER (CRITICAL for cookie handling)
+  // COOKIE PARSER
   // =================================================
   app.use(cookieParser());
 
   // =================================================
-  // API PREFIX
+  // GLOBAL API PREFIX
   // =================================================
   app.setGlobalPrefix('api');
 
   // =================================================
-  // CORS (MUST include credentials: true)
+  // CORS
   // =================================================
   app.enableCors({
     origin: [
@@ -54,21 +54,20 @@ async function bootstrap() {
 
     allowedHeaders: ['Content-Type', 'Authorization', 'x-cdn-key'],
 
-    // ✅ CRITICAL: Allow cookies to be sent/received
     credentials: true,
 
-    // ✅ Allow Set-Cookie header
     exposedHeaders: ['Set-Cookie'],
   });
 
   // =================================================
-  // VALIDATION
+  // VALIDATION PIPE
   // =================================================
   app.useGlobalPipes(
     new ValidationPipe({
       whitelist: true,
       forbidNonWhitelisted: true,
       transform: true,
+
       transformOptions: {
         enableImplicitConversion: true,
       },
@@ -96,7 +95,7 @@ async function bootstrap() {
   // =================================================
   // START SERVER
   // =================================================
-  const port = process.env.PORT || 5000;
+  const port = Number(process.env.PORT) || 5000;
   const env = process.env.NODE_ENV || 'development';
 
   await app.listen(port, '0.0.0.0');
