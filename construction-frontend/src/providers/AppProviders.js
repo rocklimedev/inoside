@@ -36,82 +36,55 @@ function FullScreenLoader({ text = "Loading..." }) {
 function AppContent({ children }) {
   const pathname = usePathname();
   const router = useRouter();
-  const { authInitialized, authResolved, isAuthenticated, user } = useAuth();
+
+  const { authInitialized, authResolved, isAuthenticated } = useAuth();
 
   const onPublicPage = isPublicPath(pathname);
   const onRootPage = pathname === "/";
 
   // ============================================
-  // HANDLE ROOT PAGE REDIRECT
+  // ROOT PAGE REDIRECT (NO ROLE CHECK)
   // ============================================
   useEffect(() => {
     if (!authInitialized || !authResolved) return;
 
-    // Only redirect if on root page
     if (!onRootPage) return;
 
-    // Not authenticated → Login
     if (!isAuthenticated) {
-      console.log("[PROVIDERS] Root redirect to login");
+      console.log("[PROVIDERS] Root redirect → login");
       router.replace("/login");
       return;
     }
 
-    // Wait for user role
-    if (!user?.role) {
-      console.log("[PROVIDERS] Waiting for user role");
-      return;
-    }
-
-    // Authenticated → Redirect to dashboard
-    console.log("[PROVIDERS] Root redirect to dashboard:", user.role);
-
-    const roleRoutes = {
-      architect: "/dashboard/architect",
-      client: "/dashboard/client",
-      builder: "/dashboard/builder",
-      site_supervisor: "/dashboard/site-supervisor",
-      team_member: "/dashboard/team",
-      admin: "/dashboard/admin",
-      super_admin: "/dashboard/admin",
-    };
-
-    const roleKey = user.role.toLowerCase().replace(/\s+/g, "_").trim();
-    router.replace(roleRoutes[roleKey] || "/dashboard");
-  }, [
-    authInitialized,
-    authResolved,
-    isAuthenticated,
-    user?.role,
-    onRootPage,
-    router,
-  ]);
+    console.log("[PROVIDERS] Root redirect → dashboard");
+    router.replace("/dashboard");
+  }, [authInitialized, authResolved, isAuthenticated, onRootPage, router]);
 
   // ============================================
-  // PROTECTED ROUTE GUARD (NOT for root)
+  // PROTECTED ROUTE GUARD
   // ============================================
   useEffect(() => {
     if (!authInitialized || !authResolved) return;
 
-    // Skip root and public pages
-    if (onRootPage || onPublicPage) return;
+    // Skip public pages + root
+    if (onPublicPage || onRootPage) return;
 
-    // Protect all other routes
+    // Protect everything else
     if (!isAuthenticated) {
-      console.log("[PROVIDERS] Redirecting to login from protected route");
+      console.log("[PROVIDERS] Redirecting to login");
       router.replace("/login");
     }
   }, [
     authInitialized,
     authResolved,
     isAuthenticated,
-    onRootPage,
     onPublicPage,
+    onRootPage,
     router,
   ]);
 
   // ============================================
-  // BOOTSTRAP
+  // INITIAL BOOTSTRAP
   // ============================================
   if (!authInitialized) {
     return <FullScreenLoader text="Initializing application..." />;
@@ -125,14 +98,14 @@ function AppContent({ children }) {
   }
 
   // ============================================
-  // ROOT PAGE - Show loader while redirecting
+  // ROOT PAGE
   // ============================================
   if (onRootPage) {
     return <FullScreenLoader text="Redirecting..." />;
   }
 
   // ============================================
-  // PROTECTED ROUTES - Wait for full resolution
+  // WAIT FOR AUTH RESOLUTION
   // ============================================
   if (!authResolved) {
     return <FullScreenLoader text="Verifying authentication..." />;
