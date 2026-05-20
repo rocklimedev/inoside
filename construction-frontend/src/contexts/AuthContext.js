@@ -8,46 +8,42 @@ import React, {
   useCallback,
   useMemo,
 } from "react";
+import { usePathname } from "next/navigation";
 
 import {
   useLoginMutation,
   useRegisterMutation,
   useGetProfileQuery,
-  useLogoutMutation,
 } from "@/api/authApi";
 
 const AuthContext = createContext(null);
 
 // ======================================================
 // USER NORMALIZER
-// Backend now returns consistent format
 // ======================================================
 const normalizeUser = (user) => {
   if (!user) return null;
 
-  // Handle nested role object from backend
-  let role = user.role;
+  const rawUser = user?.dataValues || user;
+  let role = rawUser.role;
+
   if (role && typeof role === "object") {
-    role = role?.name || role?.display_name || null;
+    const roleData = role?.dataValues || role;
+    role = roleData?.name || roleData?.role_name || null;
   }
 
   return {
-    id: user.id,
-    name: user.name,
-    email: user.email,
-    phone: user.phone || null,
-
+    id: rawUser.id,
+    name: rawUser.name,
+    email: rawUser.email,
+    phone: rawUser.phone,
     role: typeof role === "string" ? role : null,
-
-    is_active: Boolean(user.is_active),
-    is_email_verified: Boolean(user.is_email_verified),
-
-    // Backward compatibility
-    isActive: Boolean(user.is_active),
-    isEmailVerified: Boolean(user.is_email_verified),
-
-    last_login: user.last_login || null,
-    created_at: user.created_at || null,
+    is_active: Boolean(rawUser.is_active),
+    is_email_verified: Boolean(rawUser.is_email_verified),
+    isActive: Boolean(rawUser.is_active),
+    isEmailVerified: Boolean(rawUser.is_email_verified),
+    last_login: rawUser.last_login,
+    created_at: rawUser.created_at,
   };
 };
 
@@ -55,16 +51,14 @@ const normalizeUser = (user) => {
 // PROVIDER
 // ======================================================
 export const AuthProvider = ({ children }) => {
+  const pathname = usePathname();
+
   // ====================================================
   // STATE
   // ====================================================
   const [token, setToken] = useState(null);
   const [user, setUser] = useState(null);
-
-  // localStorage bootstrap completed
   const [authInitialized, setAuthInitialized] = useState(false);
-
-  // auth fully resolved (profile fetch complete)
   const [authResolved, setAuthResolved] = useState(false);
 
   // ====================================================
@@ -72,31 +66,23 @@ export const AuthProvider = ({ children }) => {
   // ====================================================
   const [loginMutation] = useLoginMutation();
   const [registerMutation] = useRegisterMutation();
-  const [logoutMutation] = useLogoutMutation();
 
   // ====================================================
   // BOOTSTRAP TOKEN FROM LOCALSTORAGE
-  // Runs once on mount to hydrate token
   // ====================================================
   useEffect(() => {
     try {
       const storedToken = localStorage.getItem("access_token");
-
       if (storedToken) {
         setToken(storedToken);
       }
-    } catch (error) {
-      console.error("Failed to read token from localStorage:", error);
     } finally {
       setAuthInitialized(true);
     }
   }, []);
 
   // ====================================================
-  // PROFILE QUERY
-  // Skip until we have a token AND bootstrap is complete
-  // CRITICAL: refetchOnMountOrArgChange ensures profile
-  // is re-verified on EVERY route change
+  // PROFILE QUERY - WITH MANUAL REFETCH CONTROL
   // ====================================================
   const {
     data: profileData,
@@ -105,129 +91,108 @@ export const AuthProvider = ({ children }) => {
     refetch: refetchProfile,
   } = useGetProfileQuery(undefined, {
     skip: !authInitialized || !token,
-
-    // Re-verify on mount or when auth changes
+    // CRITICAL: Don't cache - always fetch fresh
     refetchOnMountOrArgChange: true,
-
-    // Don't refetch on focus/reconnect (backend does validation)
-    refetchOnFocus: false,
-    refetchOnReconnect: false,
+    refetchOnFocus: true,
+    refetchOnReconnect: true,
   });
 
   // ====================================================
-  // SYNC PROFILE TO STATE
-  // Backend validates token on every request
-  // We just handle the response/error
+  // FORCE REFETCH ON ROUTE CHANGE (UUID Routes Fix)
+  // This ensures backend re-validates token every route change
   // ====================================================
   useEffect(() => {
-    // Wait for token bootstrap
+    if (!authInitialized || !token) return;
+
+    console.log(`[AUTH] Route changed to: ${pathname}`);
+
+    // Skip refetch on public routes
+    const publicPaths = ["/login", "/register"];
+    if (
+      publicPaths.some((p) => pathname === p || pathname.startsWith(p + "/"))
+    ) {
+      return;
+    }
+
+    console.log("[AUTH] Refetching profile for route change...");
+
+    // CRITICAL: Force backend re-validation
+    refetchProfile();
+  }, [pathname, authInitialized, token, refetchProfile]);
+
+  // ====================================================
+  // SYNC PROFILE TO STATE
+  // ====================================================
+  useEffect(() => {
     if (!authInitialized) return;
 
-    // No token = not authenticated
+    // No token
     if (!token) {
       setUser(null);
       setAuthResolved(true);
       return;
     }
 
-    // Profile fetch still in progress
+    // Still fetching
     if (profileFetching) {
+      console.log("[AUTH] Profile fetching...");
       return;
     }
 
-    // Profile fetch successful
+    // Success
     if (profileData?.user) {
-      const normalized = normalizeUser(profileData.user);
-      setUser(normalized);
+      console.log("[AUTH] Profile loaded successfully:", profileData.user);
+      setUser(normalizeUser(profileData.user));
       setAuthResolved(true);
       return;
     }
 
-    // Profile fetch failed (401, 403, etc.)
+    // Error - Invalid token
     if (profileError) {
-      console.error("Profile fetch error:", profileError);
-
-      // Clear stale token from storage
+      console.error("[AUTH] Profile error:", profileError);
       localStorage.removeItem("access_token");
-
-      // Clear from cookies
       document.cookie =
         "access_token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT";
-
-      // Reset auth state
       setToken(null);
       setUser(null);
       setAuthResolved(true);
       return;
     }
-
-    // Loading state - don't mark as resolved yet
   }, [authInitialized, token, profileData, profileError, profileFetching]);
 
   // ====================================================
   // LOGIN
-  // Authenticates user and sets token
   // ====================================================
   const login = async (credentials) => {
-    try {
-      // Reset auth state
-      setAuthResolved(false);
+    const res = await loginMutation(credentials).unwrap();
 
-      const res = await loginMutation(credentials).unwrap();
-
-      const accessToken = res?.access_token;
-
-      if (!accessToken) {
-        throw new Error("No access token received");
-      }
-
-      // Persist token to localStorage
-      localStorage.setItem("access_token", accessToken);
-
-      // Persist token to cookies (server will set httpOnly cookie)
-      document.cookie = `access_token=${accessToken}; path=/; max-age=86400; SameSite=Lax`;
-
-      // Update token in state
-      setToken(accessToken);
-
-      // Backend returned user directly in login response
-      if (res?.user) {
-        const normalized = normalizeUser(res.user);
-        setUser(normalized);
-        setAuthResolved(true);
-
-        return {
-          ...res,
-          user: normalized,
-        };
-      }
-
-      // Fallback: Fetch profile if not included in login response
-      const profileRes = await refetchProfile();
-
-      if (profileRes?.data?.user) {
-        const normalized = normalizeUser(profileRes.data.user);
-        setUser(normalized);
-        setAuthResolved(true);
-
-        return {
-          ...res,
-          user: normalized,
-        };
-      }
-
-      throw new Error("Failed to fetch authenticated user");
-    } catch (error) {
-      // Reset state on error
-      localStorage.removeItem("access_token");
-      document.cookie =
-        "access_token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT";
-      setToken(null);
-      setUser(null);
-      setAuthResolved(true);
-
-      throw error;
+    const accessToken = res?.access_token;
+    if (!accessToken) {
+      throw new Error("No access token received");
     }
+
+    setAuthResolved(false);
+    localStorage.setItem("access_token", accessToken);
+    document.cookie = `access_token=${accessToken}; path=/; max-age=86400; SameSite=Lax`;
+    setToken(accessToken);
+
+    if (res?.user) {
+      const normalized = normalizeUser(res.user);
+      setUser(normalized);
+      setAuthResolved(true);
+      return { ...res, user: normalized };
+    }
+
+    // Fallback: fetch profile
+    const profileRes = await refetchProfile();
+    if (profileRes?.data?.user) {
+      const normalized = normalizeUser(profileRes.data.user);
+      setUser(normalized);
+      setAuthResolved(true);
+      return { ...res, user: normalized };
+    }
+
+    throw new Error("Failed to fetch authenticated user");
   };
 
   // ====================================================
@@ -239,50 +204,32 @@ export const AuthProvider = ({ children }) => {
 
   // ====================================================
   // LOGOUT
-  // Calls backend logout and clears local state
   // ====================================================
-  const logout = useCallback(async () => {
-    try {
-      // Call backend logout (optional, for cleanup)
-      await logoutMutation({}).unwrap();
-    } catch (error) {
-      // Continue logout even if backend call fails
-      console.error("Logout API error:", error);
-    } finally {
-      // Clear from localStorage
-      localStorage.removeItem("access_token");
-
-      // Clear from cookies
-      document.cookie =
-        "access_token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT";
-
-      // Reset state
-      setToken(null);
-      setUser(null);
-      setAuthResolved(true);
-    }
-  }, [logoutMutation]);
+  const logout = useCallback(() => {
+    console.log("[AUTH] Logging out...");
+    localStorage.removeItem("access_token");
+    document.cookie =
+      "access_token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT";
+    setToken(null);
+    setUser(null);
+    setAuthResolved(true);
+  }, []);
 
   // ====================================================
   // REFRESH USER
-  // Re-fetches profile from server
-  // Use after user data changes
   // ====================================================
   const refreshUser = useCallback(async () => {
     if (!token) return null;
 
     try {
       const res = await refetchProfile();
-
       if (res?.data?.user) {
         const normalized = normalizeUser(res.data.user);
         setUser(normalized);
         return normalized;
       }
-
       return null;
-    } catch (error) {
-      console.error("Failed to refresh user:", error);
+    } catch {
       return null;
     }
   }, [token, refetchProfile]);
@@ -291,8 +238,6 @@ export const AuthProvider = ({ children }) => {
   // DERIVED STATE
   // ====================================================
   const isAuthenticated = Boolean(user);
-
-  // Loading while bootstrap or profile fetch in progress
   const isLoading = !authInitialized || !authResolved;
 
   const isActive = useMemo(
@@ -309,33 +254,20 @@ export const AuthProvider = ({ children }) => {
   // CONTEXT VALUE
   // ====================================================
   const value = {
-    // Auth data
     token,
     user,
     userMeta: user,
-
-    // Auth methods
     login,
     register,
     logout,
     refreshUser,
-
-    // Auth state flags
     authInitialized,
     authResolved,
-
-    // Derived state
     isAuthenticated,
     isLoading,
-
-    // Profile query state
     profileFetching,
-
-    // User properties
     isActive,
     isEmailVerified,
-
-    // Role checking utility
     hasRole: (roleName) =>
       user?.role?.toLowerCase() === roleName?.toLowerCase(),
   };
@@ -348,10 +280,8 @@ export const AuthProvider = ({ children }) => {
 // ======================================================
 export const useAuth = () => {
   const context = useContext(AuthContext);
-
   if (!context) {
     throw new Error("useAuth must be used within AuthProvider");
   }
-
   return context;
 };
