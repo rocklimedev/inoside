@@ -29,6 +29,7 @@ export default function Home() {
       return;
     }
 
+    // Wait until role is available
     if (!user?.role) return;
 
     const roleKey = user.role.toLowerCase().replace(/\s+/g, "_").trim();
@@ -38,11 +39,12 @@ export default function Home() {
     router.replace(targetRoute);
   }, [isLoading, isAuthenticated, user?.role, router]);
 
+  // Always show spinner — this page only exists to redirect
   return (
     <div className="flex h-screen items-center justify-center bg-white">
       <div className="flex flex-col items-center gap-3">
         <Loader2 className="w-8 h-8 animate-spin text-[#ef7f1b]" />
-        <p className="text-sm text-gray-500">Redirecting to dashboard...</p>
+        <p className="text-sm text-gray-500">Redirecting...</p>
       </div>
     </div>
   );

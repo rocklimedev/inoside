@@ -16,17 +16,24 @@ const appLog = (...args) =>
   console.log("%c[APP]", "color:#3b82f6;font-weight:bold;", ...args);
 
 // ======================================================
-// AUTH PAGE MATCHER
-// Paths that should render WITHOUT DashboardLayout and
-// WITHOUT requiring authentication.
+// PUBLIC PATH MATCHER
+// These paths render without DashboardLayout and without
+// requiring authentication.
 // ======================================================
-const AUTH_PATHS = ["/login", "/register", "/no-access", "/not-found", "/404"];
+const PUBLIC_PATHS = [
+  "/login",
+  "/register",
+  "/no-access",
+  "/not-found",
+  "/404",
+];
 
-function isAuthPath(pathname) {
-  return AUTH_PATHS.some((p) => pathname === p || pathname.startsWith(p + "/"));
+function isPublicPath(pathname) {
+  return PUBLIC_PATHS.some(
+    (p) => pathname === p || pathname.startsWith(p + "/"),
+  );
 }
 
-// Root "/" is handled by the Home page component itself (redirects based on role)
 function isRootPath(pathname) {
   return pathname === "/";
 }
@@ -39,22 +46,24 @@ function AppContent({ children }) {
   const router = useRouter();
   const { isLoading, isAuthenticated, user } = useAuth();
 
-  const onAuthPage = isAuthPath(pathname);
+  const onPublicPage = isPublicPath(pathname);
   const onRootPage = isRootPath(pathname);
+  // Any page that doesn't need the auth gate
+  const skipAuthGate = onPublicPage || onRootPage;
 
   // Redirect unauthenticated users away from protected pages
   useEffect(() => {
     if (isLoading) return; // wait until auth resolves
-    if (onAuthPage || onRootPage) return; // don't redirect on public pages
+    if (skipAuthGate) return; // public or root — no guard needed
     if (!isAuthenticated) {
-      appLog("Not authenticated on protected route — redirecting to /login");
+      appLog("Not authenticated → /login");
       router.replace("/login");
     }
-  }, [isLoading, isAuthenticated, onAuthPage, onRootPage, router]);
+  }, [isLoading, isAuthenticated, skipAuthGate, router]);
 
   appLog("APP STATE", {
     pathname,
-    onAuthPage,
+    onPublicPage,
     isLoading,
     isAuthenticated,
     role: user?.role,
@@ -74,16 +83,13 @@ function AppContent({ children }) {
     );
   }
 
-  // ── Public pages (login, register, etc.) ─────────────
-  if (onAuthPage || onRootPage) {
-    appLog("Rendering public page:", pathname);
+  // ── Public / root pages ───────────────────────────────
+  if (skipAuthGate) {
+    appLog("Rendering public/root page:", pathname);
     return <>{children}</>;
   }
 
-  // ── Not authenticated on a protected page ────────────
-  // Render nothing while the redirect (above useEffect) fires.
-  // This prevents protected page components from mounting with no user,
-  // which is the root cause of crashes on dynamic routes.
+  // ── Not authenticated — spinner while redirect fires ──
   if (!isAuthenticated) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-white">
@@ -93,7 +99,7 @@ function AppContent({ children }) {
   }
 
   // ── Authenticated protected page ──────────────────────
-  appLog("Rendering protected page:", pathname, "role:", user?.role);
+  appLog("Rendering protected page:", pathname, "| role:", user?.role);
   return <DashboardLayout>{children}</DashboardLayout>;
 }
 
