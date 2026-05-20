@@ -42,62 +42,60 @@ function FullScreenLoader({ text = "Initializing application..." }) {
     </div>
   );
 }
+// Add this to your roleRoutes map (same as before)
+const roleRoutes = {
+  architect: "/dashboard/architect",
+  client: "/dashboard/client",
+  builder: "/dashboard/builder",
+  site_supervisor: "/dashboard/site-supervisor",
+  team_member: "/dashboard/team",
+  admin: "/dashboard/admin",
+  super_admin: "/dashboard/admin",
+};
 
-// ======================================================
-// INNER APP CONTENT
-// ======================================================
 function AppContent({ children }) {
   const pathname = usePathname();
   const router = useRouter();
-
-  const { authInitialized, isAuthenticated } = useAuth();
+  const { authInitialized, isAuthenticated, user } = useAuth();
 
   const onPublicPage = isPublicPath(pathname);
   const onRootPage = isRootPath(pathname);
-
-  // Public routes don't require auth
   const skipAuthGate = onPublicPage || onRootPage;
 
-  // ====================================================
-  // AUTH GUARD
-  // ====================================================
   useEffect(() => {
-    // Wait ONLY for initial auth bootstrap
     if (!authInitialized) return;
 
-    // Public routes bypass auth
+    // ✅ Handle root redirect here — not in Home
+    if (onRootPage) {
+      if (!isAuthenticated) {
+        router.replace("/login");
+        return;
+      }
+      if (user?.role) {
+        const roleKey = user.role.toLowerCase().replace(/\s+/g, "_").trim();
+        router.replace(roleRoutes[roleKey] || "/dashboard");
+      }
+      return; // wait for user.role to hydrate if not ready yet
+    }
+
     if (skipAuthGate) return;
 
-    // Redirect unauthenticated users
     if (!isAuthenticated) {
       router.replace("/login");
     }
-  }, [authInitialized, isAuthenticated, skipAuthGate, router]);
+  }, [
+    authInitialized,
+    isAuthenticated,
+    user?.role,
+    onRootPage,
+    skipAuthGate,
+    router,
+  ]);
 
-  // ====================================================
-  // INITIAL APP BOOTSTRAP
-  // ====================================================
-  if (!authInitialized) {
-    return <FullScreenLoader />;
-  }
+  if (!authInitialized) return <FullScreenLoader />;
+  if (skipAuthGate) return <>{children}</>;
+  if (!isAuthenticated) return <FullScreenLoader text="Redirecting..." />;
 
-  // ====================================================
-  // PUBLIC / ROOT ROUTES
-  // ====================================================
-  if (skipAuthGate) {
-    return <>{children}</>;
-  }
-
-  // ====================================================
-  // REDIRECT STATE
-  // ====================================================
-  if (authInitialized && !isAuthenticated) {
-    return <FullScreenLoader text="Redirecting..." />;
-  }
-
-  // ====================================================
-  // AUTHENTICATED APP
-  // ====================================================
   return <DashboardLayout>{children}</DashboardLayout>;
 }
 
