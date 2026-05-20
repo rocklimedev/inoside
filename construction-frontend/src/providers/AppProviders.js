@@ -8,17 +8,7 @@ import { AuthProvider, useAuth } from "@/contexts/AuthContext";
 import DashboardLayout from "@/components/DashboardLayout";
 
 // ======================================================
-// DEBUG LOGGER
-// ======================================================
-const APP_DEBUG = process.env.NODE_ENV === "development";
-const appLog = (...args) =>
-  APP_DEBUG &&
-  console.log("%c[APP]", "color:#3b82f6;font-weight:bold;", ...args);
-
-// ======================================================
-// PUBLIC PATH MATCHER
-// These paths render without DashboardLayout and without
-// requiring authentication.
+// PUBLIC PATHS
 // ======================================================
 const PUBLIC_PATHS = [
   "/login",
@@ -39,67 +29,75 @@ function isRootPath(pathname) {
 }
 
 // ======================================================
+// LOADER
+// ======================================================
+function FullScreenLoader({ text = "Initializing application..." }) {
+  return (
+    <div className="min-h-screen flex items-center justify-center bg-white">
+      <div className="flex flex-col items-center gap-4">
+        <div className="w-10 h-10 border-4 border-[#ef7f1b] border-t-transparent rounded-full animate-spin" />
+
+        <p className="text-sm text-muted-foreground">{text}</p>
+      </div>
+    </div>
+  );
+}
+
+// ======================================================
 // INNER APP CONTENT
 // ======================================================
 function AppContent({ children }) {
   const pathname = usePathname();
   const router = useRouter();
-  const { isLoading, isAuthenticated, user } = useAuth();
+
+  const { authInitialized, isAuthenticated } = useAuth();
 
   const onPublicPage = isPublicPath(pathname);
   const onRootPage = isRootPath(pathname);
-  // Any page that doesn't need the auth gate
+
+  // Public routes don't require auth
   const skipAuthGate = onPublicPage || onRootPage;
 
-  // Redirect unauthenticated users away from protected pages
+  // ====================================================
+  // AUTH GUARD
+  // ====================================================
   useEffect(() => {
-    if (isLoading) return; // wait until auth resolves
-    if (skipAuthGate) return; // public or root — no guard needed
+    // Wait ONLY for initial auth bootstrap
+    if (!authInitialized) return;
+
+    // Public routes bypass auth
+    if (skipAuthGate) return;
+
+    // Redirect unauthenticated users
     if (!isAuthenticated) {
-      appLog("Not authenticated → /login");
       router.replace("/login");
     }
-  }, [isLoading, isAuthenticated, skipAuthGate, router]);
+  }, [authInitialized, isAuthenticated, skipAuthGate, router]);
 
-  appLog("APP STATE", {
-    pathname,
-    onPublicPage,
-    isLoading,
-    isAuthenticated,
-    role: user?.role,
-  });
-
-  // ── Full-screen loader while auth resolves ───────────
-  if (isLoading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-white">
-        <div className="flex flex-col items-center gap-4">
-          <div className="w-10 h-10 border-4 border-[#ef7f1b] border-t-transparent rounded-full animate-spin" />
-          <p className="text-sm text-muted-foreground">
-            Initializing application...
-          </p>
-        </div>
-      </div>
-    );
+  // ====================================================
+  // INITIAL APP BOOTSTRAP
+  // ====================================================
+  if (!authInitialized) {
+    return <FullScreenLoader />;
   }
 
-  // ── Public / root pages ───────────────────────────────
+  // ====================================================
+  // PUBLIC / ROOT ROUTES
+  // ====================================================
   if (skipAuthGate) {
-    appLog("Rendering public/root page:", pathname);
     return <>{children}</>;
   }
 
-  // ── Not authenticated — spinner while redirect fires ──
-  if (!isAuthenticated) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-white">
-        <div className="w-10 h-10 border-4 border-[#ef7f1b] border-t-transparent rounded-full animate-spin" />
-      </div>
-    );
+  // ====================================================
+  // REDIRECT STATE
+  // ====================================================
+  if (authInitialized && !isAuthenticated) {
+    return <FullScreenLoader text="Redirecting..." />;
   }
 
-  // ── Authenticated protected page ──────────────────────
-  appLog("Rendering protected page:", pathname, "| role:", user?.role);
+  // ====================================================
+  // AUTHENTICATED APP
+  // ====================================================
   return <DashboardLayout>{children}</DashboardLayout>;
 }
 
