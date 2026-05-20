@@ -20,6 +20,7 @@ export default function Home() {
   const { user, isAuthenticated, isLoading } = useAuth();
 
   useEffect(() => {
+    // Don't do anything while still loading
     if (isLoading) return;
 
     if (!isAuthenticated || !user) {
@@ -27,10 +28,12 @@ export default function Home() {
       return;
     }
 
-    const roleKey = user.role?.toLowerCase(); // safe
-    const targetRoute = roleRoutes[roleKey] || "/dashboard";
-
-    router.replace(targetRoute);
+    // Only redirect if we are actually on the root "/"
+    if (window.location.pathname === "/") {
+      const roleKey = user.role?.toLowerCase?.() || "";
+      const targetRoute = roleRoutes[roleKey] || "/dashboard";
+      router.replace(targetRoute);
+    }
   }, [isLoading, isAuthenticated, user?.role, router]);
 
   return (

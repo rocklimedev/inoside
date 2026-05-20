@@ -9,9 +9,9 @@ export default function AppProviders({ children }) {
   const pathname = usePathname();
 
   const isAuthPage =
+    pathname === "/login" ||
+    pathname === "/register" ||
     pathname.startsWith("/404") ||
-    pathname.startsWith("/login") ||
-    pathname.startsWith("/register") ||
     pathname.startsWith("/no-access") ||
     pathname === "/not-found";
 

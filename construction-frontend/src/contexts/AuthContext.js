@@ -17,31 +17,39 @@ const AuthContext = createContext(null);
 
 /**
  * Normalize backend user → frontend-safe shape
- * Based on your users table schema
+ * Handles both plain objects and Sequelize nested models
  */
 const normalizeUser = (user) => {
   if (!user) return null;
 
-  return {
-    id: user.id,
-    name: user.name,
-    email: user.email,
-    phone: user.phone,
-    role:
-      typeof user.role === "string"
-        ? user.role
-        : user.role?.name || user.role?.role_name || null,
+  // Handle Sequelize model (has dataValues)
+  const rawUser = user?.dataValues || user;
 
-    // Critical fields from your DB schema
-    is_active: Boolean(user.is_active), // TINYINT(1)
-    is_email_verified: Boolean(user.is_email_verified), // TINYINT(1)
+  // Safely extract role (it can be string, object, or nested dataValues)
+  let role = rawUser.role;
+
+  if (role && typeof role === "object") {
+    const roleData = role?.dataValues || role;
+    role = roleData?.name || roleData?.role_name || null;
+  }
+
+  return {
+    id: rawUser.id,
+    name: rawUser.name,
+    email: rawUser.email,
+    phone: rawUser.phone,
+    role: typeof role === "string" ? role : null, // Always string or null
+
+    // Critical fields
+    is_active: Boolean(rawUser.is_active),
+    is_email_verified: Boolean(rawUser.is_email_verified),
 
     // Backward compatibility
-    isActive: Boolean(user.is_active),
-    isEmailVerified: Boolean(user.is_email_verified),
+    isActive: Boolean(rawUser.is_active),
+    isEmailVerified: Boolean(rawUser.is_email_verified),
 
-    last_login: user.last_login,
-    created_at: user.created_at,
+    last_login: rawUser.last_login,
+    created_at: rawUser.created_at,
   };
 };
 
@@ -59,7 +67,7 @@ export const AuthProvider = ({ children }) => {
     isFetching: profileLoading,
   } = useGetProfileQuery(undefined, {
     skip: !token,
-    refetchOnMountOrArgChange: true, // Important for freshness
+    refetchOnMountOrArgChange: true,
   });
 
   // Hydrate token from localStorage
@@ -133,7 +141,10 @@ export const AuthProvider = ({ children }) => {
   }, [user]);
 
   const isAuthenticated = Boolean(token && user);
-  console.log(user);
+
+  // Optional: Remove console.log in production
+  // console.log(user);
+
   return (
     <AuthContext.Provider
       value={{
@@ -155,7 +166,8 @@ export const AuthProvider = ({ children }) => {
         isLoading: !authReady || profileLoading,
 
         // Helpers
-        hasRole: (roleName) => user?.role === roleName,
+        hasRole: (roleName) =>
+          user?.role?.toLowerCase() === roleName?.toLowerCase(),
       }}
     >
       {children}
