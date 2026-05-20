@@ -10,6 +10,20 @@ exports.JwtAuthGuard = void 0;
 const common_1 = require("@nestjs/common");
 const passport_1 = require("@nestjs/passport");
 let JwtAuthGuard = class JwtAuthGuard extends (0, passport_1.AuthGuard)('jwt') {
+    handleRequest(err, user, info) {
+        if (err || !user) {
+            if (err)
+                console.error('JWT Guard Error:', err.message);
+            if (info)
+                console.error('JWT Guard Info:', info.message);
+            throw (err ||
+                new common_1.UnauthorizedException({
+                    error: 'Unauthorized',
+                    message: info?.message || 'Invalid or expired token',
+                }));
+        }
+        return user;
+    }
 };
 exports.JwtAuthGuard = JwtAuthGuard;
 exports.JwtAuthGuard = JwtAuthGuard = __decorate([

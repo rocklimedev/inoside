@@ -20,7 +20,12 @@ let JwtStrategy = class JwtStrategy extends (0, passport_1.PassportStrategy)(pas
     authService;
     constructor(configService, authService) {
         super({
-            jwtFromRequest: passport_jwt_1.ExtractJwt.fromAuthHeaderAsBearerToken(),
+            jwtFromRequest: (req) => {
+                const fromBearer = passport_jwt_1.ExtractJwt.fromAuthHeaderAsBearerToken()(req);
+                if (fromBearer)
+                    return fromBearer;
+                return req.cookies?.access_token || null;
+            },
             ignoreExpiration: false,
             secretOrKey: configService.getOrThrow('JWT_SECRET'),
         });
@@ -28,7 +33,8 @@ let JwtStrategy = class JwtStrategy extends (0, passport_1.PassportStrategy)(pas
         this.authService = authService;
     }
     async validate(payload) {
-        return this.authService.validateUser(payload.sub);
+        const user = await this.authService.validateUser(payload.sub);
+        return user;
     }
 };
 exports.JwtStrategy = JwtStrategy;

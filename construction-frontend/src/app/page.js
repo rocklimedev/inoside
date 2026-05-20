@@ -1,5 +1,5 @@
-// app/page.jsx
 "use client";
+
 import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/contexts/AuthContext";
@@ -17,10 +17,11 @@ const roleRoutes = {
 
 export default function Home() {
   const router = useRouter();
-  const { authInitialized, isAuthenticated, user, isLoading } = useAuth();
+  const { authInitialized, authResolved, isAuthenticated, user } = useAuth();
 
   useEffect(() => {
-    if (!authInitialized) return;
+    // Wait for initialization AND resolution
+    if (!authInitialized || !authResolved) return;
 
     // Not authenticated → Login
     if (!isAuthenticated) {
@@ -28,14 +29,13 @@ export default function Home() {
       return;
     }
 
-    // Wait for user role to load
+    // Wait for role data
     if (!user?.role) return;
 
-    // Authenticated → Redirect to role dashboard
+    // Redirect to role dashboard
     const roleKey = user.role.toLowerCase().replace(/\s+/g, "_").trim();
-
     router.replace(roleRoutes[roleKey] || "/dashboard");
-  }, [authInitialized, isAuthenticated, user?.role, router]);
+  }, [authInitialized, authResolved, isAuthenticated, user?.role, router]);
 
   // Always show loader - this page never stays visible
   return (

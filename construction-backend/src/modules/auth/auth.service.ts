@@ -35,6 +35,7 @@ export interface LoginResponse {
   user: AuthUserResponse;
 }
 
+// auth/auth.service.ts
 @Injectable()
 export class AuthService {
   constructor(
@@ -66,33 +67,22 @@ export class AuthService {
 
     const user = await this.userModel.create({
       name: rest.name,
-
       email,
       role_id,
       password_hash,
       is_active: rest.is_active ?? true,
-      is_email_verified: false, // Force email verification by default
+      is_email_verified: false,
     });
 
-    // Fetch complete user with role
     const createdUser = await this.userModel.findByPk(user.id, {
-      include: [{ model: Role }],
+      include: [{ model: Role, attributes: ['id', 'name', 'display_name'] }],
     });
 
     if (!createdUser) {
       throw new BadRequestException('Failed to create user');
     }
 
-    return {
-      id: createdUser.id,
-      name: createdUser.name,
-      email: createdUser.email,
-      role: createdUser.role ?? null,
-      is_active: createdUser.is_active,
-      is_email_verified: createdUser.is_email_verified,
-
-      last_login: createdUser.last_login,
-    };
+    return this.formatUserResponse(createdUser);
   }
 
   // ================= LOGIN =================
@@ -118,10 +108,17 @@ export class AuthService {
       throw new UnauthorizedException('Invalid credentials');
     }
 
+    // CRITICAL: Check only is_active, NOT is_email_verified
+    if (!user.is_active) {
+      throw new UnauthorizedException(
+        'Account is inactive. Contact administrator.',
+      );
+    }
+
     // Update last login
     await user.update({ last_login: new Date() });
 
-    // Permissions (for JWT payload)
+    // Get permissions for JWT payload
     const permissions = await Permission.findAll({
       include: [
         {
@@ -141,45 +138,58 @@ export class AuthService {
     };
 
     const access_token = this.jwtService.sign(payload);
-    console.log(user);
+
     return {
       access_token,
-      user: {
-        id: user.id,
-        name: user.name,
-        email: user.email,
-        role: user.role ?? null,
-        is_active: user.is_active,
-        is_email_verified: user.is_email_verified,
-        last_login: user.last_login,
-      },
+      user: this.formatUserResponse(user),
     };
   }
 
-  // ================= VALIDATE USER (JWT Guard) =================
-  async validateUser(userId: string): Promise<User> {
+  // ================= VALIDATE USER (Called by JWT Guard) =================
+  // CRITICAL: This runs on EVERY protected request
+  // Must be fast, reliable, and fetch fresh data
+  async validateUser(userId: string): Promise<AuthUserResponse> {
+    // Fetch FRESH user data from database
     const user = await this.userModel.findByPk(userId, {
-      include: [{ model: Role }],
+      include: [
+        {
+          model: Role,
+          attributes: ['id', 'name', 'display_name'],
+        },
+      ],
     });
 
+    // User deleted
     if (!user) {
       throw new UnauthorizedException('User not found');
     }
 
+    // User deactivated
     if (!user.is_active) {
-      throw new UnauthorizedException(
-        'Account is inactive. Contact administrator.',
-      );
+      throw new UnauthorizedException('Account is inactive');
     }
 
-    if (!user.is_email_verified) {
-      throw new UnauthorizedException('Email is not verified');
-    }
-
+    // No role assigned
     if (!user.role_id || !user.role) {
       throw new UnauthorizedException('No role assigned to this account');
     }
 
-    return user;
+    // REMOVED: Email verification check (user can still use app)
+    // REMOVED: Permission check here (do it in RolesGuard instead)
+
+    return this.formatUserResponse(user);
+  }
+
+  // ================= HELPER: Format User Response =================
+  private formatUserResponse(user: User): AuthUserResponse {
+    return {
+      id: user.id,
+      name: user.name,
+      email: user.email,
+      role: user.role ?? null,
+      is_active: user.is_active,
+      is_email_verified: user.is_email_verified,
+      last_login: user.last_login,
+    };
   }
 }

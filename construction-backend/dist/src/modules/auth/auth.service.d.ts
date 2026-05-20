@@ -23,5 +23,6 @@ export declare class AuthService {
     constructor(userModel: typeof User, roleModel: typeof Role, jwtService: JwtService);
     register(createUserDto: CreateUserDto): Promise<AuthUserResponse>;
     login(loginDto: LoginDto): Promise<LoginResponse>;
-    validateUser(userId: string): Promise<User>;
+    validateUser(userId: string): Promise<AuthUserResponse>;
+    private formatUserResponse;
 }

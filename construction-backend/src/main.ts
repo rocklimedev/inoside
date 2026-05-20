@@ -1,5 +1,6 @@
 import { ValidationPipe } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
+import * as cookieParser from 'cookie-parser';
 
 import helmet from 'helmet';
 import compression from 'compression';
@@ -28,22 +29,24 @@ async function bootstrap() {
   app.use(compression());
 
   // =================================================
+  // COOKIE PARSER (CRITICAL for cookie handling)
+  // =================================================
+  app.use(cookieParser());
+
+  // =================================================
   // API PREFIX
   // =================================================
   app.setGlobalPrefix('api');
 
   // =================================================
-  // CORS
+  // CORS (MUST include credentials: true)
   // =================================================
   app.enableCors({
     origin: [
       'http://localhost:3000',
-
       'https://inoside.vercel.app',
-
       'https://buildcon.rippotaiarchitecture.com',
       'https://buildcon-api.rippotaiarchitecture.com',
-
       'https://media-buildcon.rippotaiarchitecture.com',
     ],
 
@@ -51,7 +54,11 @@ async function bootstrap() {
 
     allowedHeaders: ['Content-Type', 'Authorization', 'x-cdn-key'],
 
+    // ✅ CRITICAL: Allow cookies to be sent/received
     credentials: true,
+
+    // ✅ Allow Set-Cookie header
+    exposedHeaders: ['Set-Cookie'],
   });
 
   // =================================================
@@ -90,12 +97,15 @@ async function bootstrap() {
   // START SERVER
   // =================================================
   const port = process.env.PORT || 5000;
+  const env = process.env.NODE_ENV || 'development';
 
-  await app.listen(port);
+  await app.listen(port, '0.0.0.0');
 
   console.log(`🚀 Server running on port ${port}`);
-
+  console.log(`📍 Environment: ${env}`);
   console.log(`📄 Swagger Docs: http://localhost:${port}/api-docs`);
+  console.log(`🔒 CORS credentials: enabled`);
+  console.log(`🍪 Cookie parser: enabled`);
 }
 
 bootstrap();
