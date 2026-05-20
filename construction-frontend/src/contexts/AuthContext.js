@@ -19,6 +19,7 @@ const AuthContext = createContext(null);
 
 // ======================================================
 // USER NORMALIZER
+// Handles both snake_case (backend) and camelCase formats
 // ======================================================
 const normalizeUser = (user) => {
   if (!user) return null;
@@ -67,7 +68,7 @@ export const AuthProvider = ({ children }) => {
   // localStorage bootstrap completed
   const [authInitialized, setAuthInitialized] = useState(false);
 
-  // auth fully resolved
+  // auth fully resolved (profile fetch complete)
   const [authResolved, setAuthResolved] = useState(false);
 
   // ====================================================
@@ -77,7 +78,8 @@ export const AuthProvider = ({ children }) => {
   const [registerMutation] = useRegisterMutation();
 
   // ====================================================
-  // BOOTSTRAP TOKEN
+  // BOOTSTRAP TOKEN FROM LOCALSTORAGE
+  // Runs once on mount to hydrate token
   // ====================================================
   useEffect(() => {
     try {
@@ -87,12 +89,16 @@ export const AuthProvider = ({ children }) => {
         setToken(storedToken);
       }
     } finally {
+      // Mark bootstrap as complete regardless of token presence
       setAuthInitialized(true);
     }
   }, []);
 
   // ====================================================
   // PROFILE QUERY
+  // Refetch on route changes when token is present
+  // CRITICAL: refetchOnMountOrArgChange ensures profile
+  // is re-verified when navigating to new routes
   // ====================================================
   const {
     data: profileData,
@@ -102,47 +108,63 @@ export const AuthProvider = ({ children }) => {
   } = useGetProfileQuery(undefined, {
     skip: !authInitialized || !token,
 
-    refetchOnMountOrArgChange: false,
+    // Re-verify profile when token changes
+    refetchOnMountOrArgChange: true,
+
     refetchOnFocus: false,
     refetchOnReconnect: false,
   });
 
   // ====================================================
-  // SYNC PROFILE
+  // SYNC PROFILE TO STATE
+  // Handles: success, errors, and stale tokens
   // ====================================================
   useEffect(() => {
-    // Wait for bootstrap
+    // Wait for token bootstrap
     if (!authInitialized) return;
 
-    // No token
+    // No token available
     if (!token) {
       setUser(null);
       setAuthResolved(true);
       return;
     }
 
-    // Profile success
+    // Profile fetch still in progress
+    if (profileFetching) {
+      return;
+    }
+
+    // Profile fetch successful
     if (profileData?.user) {
       setUser(normalizeUser(profileData.user));
       setAuthResolved(true);
       return;
     }
 
-    // Invalid token
+    // Profile fetch failed (invalid token, server error, etc.)
     if (profileError) {
+      // Clear stale token from storage
       localStorage.removeItem("access_token");
 
+      // Clear token from cookies
       document.cookie =
         "access_token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT";
 
+      // Reset auth state
       setToken(null);
       setUser(null);
       setAuthResolved(true);
+      return;
     }
-  }, [authInitialized, token, profileData, profileError]);
+
+    // No data and no error = still loading
+    // Keep authResolved as false until we get a definitive response
+  }, [authInitialized, token, profileData, profileError, profileFetching]);
 
   // ====================================================
   // LOGIN
+  // Authenticates user and fetches profile
   // ====================================================
   const login = async (credentials) => {
     const res = await loginMutation(credentials).unwrap();
@@ -153,17 +175,19 @@ export const AuthProvider = ({ children }) => {
       throw new Error("No access token received");
     }
 
-    // reset auth state
+    // Reset auth state to wait for profile fetch
     setAuthResolved(false);
 
-    // persist token
+    // Persist token to localStorage
     localStorage.setItem("access_token", accessToken);
 
+    // Persist token to cookies for server-side access
     document.cookie = `access_token=${accessToken}; path=/; max-age=86400; SameSite=Lax`;
 
+    // Update token in state
     setToken(accessToken);
 
-    // Backend returned user directly
+    // Backend returned user directly in login response
     if (res?.user) {
       const normalized = normalizeUser(res.user);
 
@@ -176,7 +200,7 @@ export const AuthProvider = ({ children }) => {
       };
     }
 
-    // fallback profile fetch
+    // Fallback: Fetch profile if not included in login response
     const profileRes = await refetchProfile();
 
     if (profileRes?.data?.user) {
@@ -203,13 +227,17 @@ export const AuthProvider = ({ children }) => {
 
   // ====================================================
   // LOGOUT
+  // Clears token and user from state and storage
   // ====================================================
   const logout = useCallback(() => {
+    // Clear from localStorage
     localStorage.removeItem("access_token");
 
+    // Clear from cookies
     document.cookie =
       "access_token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT";
 
+    // Reset state
     setToken(null);
     setUser(null);
     setAuthResolved(true);
@@ -217,6 +245,8 @@ export const AuthProvider = ({ children }) => {
 
   // ====================================================
   // REFRESH USER
+  // Re-fetches profile from server
+  // Useful for updating user data after changes
   // ====================================================
   const refreshUser = useCallback(async () => {
     if (!token) return null;
@@ -243,6 +273,7 @@ export const AuthProvider = ({ children }) => {
   // ====================================================
   const isAuthenticated = Boolean(user);
 
+  // Loading while bootstrap or profile fetch in progress
   const isLoading = !authInitialized || !authResolved;
 
   const isActive = useMemo(
@@ -259,26 +290,33 @@ export const AuthProvider = ({ children }) => {
   // CONTEXT VALUE
   // ====================================================
   const value = {
+    // Auth data
     token,
     user,
     userMeta: user,
 
+    // Auth methods
     login,
     register,
     logout,
     refreshUser,
 
+    // Auth state flags
     authInitialized,
     authResolved,
 
+    // Derived state
     isAuthenticated,
     isLoading,
 
+    // Profile query state
     profileFetching,
 
+    // User properties
     isActive,
     isEmailVerified,
 
+    // Role checking utility
     hasRole: (roleName) =>
       user?.role?.toLowerCase() === roleName?.toLowerCase(),
   };

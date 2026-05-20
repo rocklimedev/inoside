@@ -59,18 +59,24 @@ function AppContent({ children }) {
   const pathname = usePathname();
   const router = useRouter();
 
-  const { authInitialized, isAuthenticated, user } = useAuth();
+  const { authInitialized, authResolved, isAuthenticated, user } = useAuth();
 
   const onPublicPage = isPublicPath(pathname);
   const onRootPage = pathname === "/";
 
   // ====================================================
   // AUTH / ROOT REDIRECTS
+  // CRITICAL: Include authResolved in dependencies
+  // to prevent redirects before auth state is ready
   // ====================================================
   useEffect(() => {
+    // Wait for bootstrap from localStorage
     if (!authInitialized) return;
 
-    // ROOT ROUTE
+    // Wait for auth to fully resolve (profile fetch complete)
+    if (!authResolved) return;
+
+    // ROOT ROUTE - Redirect to role-based dashboard
     if (onRootPage) {
       // Not logged in
       if (!isAuthenticated) {
@@ -78,7 +84,7 @@ function AppContent({ children }) {
         return;
       }
 
-      // Wait for user hydration
+      // Wait for user role to be available
       if (!user?.role) return;
 
       const roleKey = user.role.toLowerCase().replace(/\s+/g, "_").trim();
@@ -88,15 +94,17 @@ function AppContent({ children }) {
       return;
     }
 
-    // PUBLIC ROUTES
+    // PUBLIC ROUTES - No redirect needed
     if (onPublicPage) return;
 
-    // PROTECTED ROUTES
+    // PROTECTED ROUTES - Redirect unauthenticated users to login
     if (!isAuthenticated) {
       router.replace("/login");
+      return;
     }
   }, [
     authInitialized,
+    authResolved, // CRITICAL: Added this dependency
     isAuthenticated,
     user?.role,
     onRootPage,
@@ -106,15 +114,25 @@ function AppContent({ children }) {
 
   // ====================================================
   // INITIAL BOOTSTRAP
+  // Bootstrap from localStorage
   // ====================================================
   if (!authInitialized) {
     return <FullScreenLoader text="Initializing application..." />;
   }
 
   // ====================================================
+  // AUTH RESOLUTION IN PROGRESS
+  // Waiting for profile query to complete
+  // CRITICAL: Block rendering until auth is fully resolved
+  // to prevent premature redirects on route changes
+  // ====================================================
+  if (!authResolved) {
+    return <FullScreenLoader text="Verifying authentication..." />;
+  }
+
+  // ====================================================
   // ROOT ROUTE
-  // IMPORTANT:
-  // Never render children on "/"
+  // IMPORTANT: Never render children on "/"
   // because this page only exists to redirect
   // ====================================================
   if (onRootPage) {
@@ -122,27 +140,31 @@ function AppContent({ children }) {
   }
 
   // ====================================================
-  // PUBLIC ROUTES
+  // PUBLIC ROUTES (login, register, etc.)
   // ====================================================
   if (onPublicPage) {
     return <>{children}</>;
   }
 
   // ====================================================
-  // PROTECTED ROUTES
+  // PROTECTED ROUTES - User not authenticated
+  // Redirect to login
   // ====================================================
   if (!isAuthenticated) {
-    return <FullScreenLoader text="Redirecting..." />;
+    return <FullScreenLoader text="Redirecting to login..." />;
   }
 
   // ====================================================
   // AUTHENTICATED APP
+  // Render dashboard with layout for all protected routes
+  // including dynamic routes like /dashboard/projects/[uuid]
   // ====================================================
   return <DashboardLayout>{children}</DashboardLayout>;
 }
 
 // ======================================================
 // MAIN PROVIDER
+// Wraps entire app with Redux and Auth providers
 // ======================================================
 export default function AppProviders({ children }) {
   return (
