@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect } from "react";
 import { usePathname } from "next/navigation";
 
 import ReduxProvider from "./ReduxProvider";
@@ -9,11 +10,34 @@ import { AuthProvider, useAuth } from "@/contexts/AuthContext";
 import DashboardLayout from "@/components/DashboardLayout";
 
 // ======================================================
+// DEBUG LOGGER
+// ======================================================
+
+const APP_DEBUG = true;
+
+const appLog = (...args) => {
+  if (APP_DEBUG) {
+    console.log("%c[APP]", "color:#3b82f6;font-weight:bold;", ...args);
+  }
+};
+
+const appWarn = (...args) => {
+  if (APP_DEBUG) {
+    console.warn("%c[APP WARNING]", "color:#f59e0b;font-weight:bold;", ...args);
+  }
+};
+
+// ======================================================
 // INNER APP CONTENT
 // ======================================================
 
 function AppContent({ children, pathname }) {
-  const { isLoading } = useAuth();
+  const { isLoading, isAuthenticated, user, token, isActive, isEmailVerified } =
+    useAuth();
+
+  // ======================================================
+  // ROUTE FLAGS
+  // ======================================================
 
   const isAuthPage =
     pathname === "/login" ||
@@ -22,13 +46,63 @@ function AppContent({ children, pathname }) {
     pathname.startsWith("/no-access") ||
     pathname === "/not-found";
 
-  /**
-   * IMPORTANT:
-   * Prevent layout rendering before auth hydration finishes
-   *
-   * This fixes production redirect/logout flicker
-   */
+  // ======================================================
+  // GLOBAL APP LOGGER
+  // ======================================================
+
+  useEffect(() => {
+    appLog("APP STATE UPDATE", {
+      pathname,
+      isAuthPage,
+
+      // Auth
+      isLoading,
+      isAuthenticated,
+      hasToken: Boolean(token),
+      hasUser: Boolean(user),
+
+      // User
+      role: user?.role,
+      email: user?.email,
+
+      // Flags
+      isActive,
+      isEmailVerified,
+    });
+  }, [
+    pathname,
+    isAuthPage,
+    isLoading,
+    isAuthenticated,
+    token,
+    user,
+    isActive,
+    isEmailVerified,
+  ]);
+
+  // ======================================================
+  // PAGE TYPE LOGGER
+  // ======================================================
+
+  useEffect(() => {
+    if (isAuthPage) {
+      appLog("AUTH PAGE DETECTED:", pathname);
+    } else {
+      appLog("PROTECTED PAGE DETECTED:", pathname);
+    }
+  }, [pathname, isAuthPage]);
+
+  // ======================================================
+  // LOADING SCREEN LOGGER
+  // ======================================================
+
   if (isLoading) {
+    appWarn("Application waiting for auth hydration...", {
+      pathname,
+      hasToken: Boolean(token),
+      hasUser: Boolean(user),
+    });
+
     return (
       <div className="min-h-screen flex items-center justify-center bg-white">
         <div className="flex flex-col items-center gap-4">
@@ -37,21 +111,42 @@ function AppContent({ children, pathname }) {
           <p className="text-sm text-muted-foreground">
             Initializing application...
           </p>
+
+          {/* DEBUG PANEL */}
+          <div className="mt-4 text-xs text-gray-500 space-y-1 text-center">
+            <p>Path: {pathname}</p>
+            <p>Loading: {String(isLoading)}</p>
+            <p>Authenticated: {String(isAuthenticated)}</p>
+            <p>Token: {token ? "YES" : "NO"}</p>
+            <p>User: {user ? "YES" : "NO"}</p>
+          </div>
         </div>
       </div>
     );
   }
 
+  // ======================================================
+  // AUTH PAGES
+  // ======================================================
+
   /**
    * Auth pages should NOT use dashboard layout
    */
   if (isAuthPage) {
+    appLog("Rendering AUTH PAGE without DashboardLayout");
+
     return children;
   }
 
-  /**
-   * Protected pages
-   */
+  // ======================================================
+  // PROTECTED PAGES
+  // ======================================================
+
+  appLog("Rendering PROTECTED PAGE with DashboardLayout", {
+    role: user?.role,
+    user: user?.email,
+  });
+
   return <DashboardLayout>{children}</DashboardLayout>;
 }
 
@@ -61,6 +156,12 @@ function AppContent({ children, pathname }) {
 
 export default function AppProviders({ children }) {
   const pathname = usePathname();
+
+  useEffect(() => {
+    appLog("AppProviders mounted");
+
+    appLog("Current pathname:", pathname);
+  }, [pathname]);
 
   return (
     <ReduxProvider>
