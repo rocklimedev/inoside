@@ -83,7 +83,7 @@ export default function NotificationsDropdown({
 
   return (
     <DropdownMenu>
-      {/* Trigger */}
+      {/* TRIGGER */}
       <DropdownMenuTrigger asChild>
         <Button variant="ghost" size="icon" className="relative rounded-full">
           <Bell className="w-5 h-5 text-muted-foreground" />
@@ -94,19 +94,32 @@ export default function NotificationsDropdown({
         </Button>
       </DropdownMenuTrigger>
 
-      {/* Panel */}
+      {/* PANEL */}
       <DropdownMenuContent
         align="end"
-        className="w-[420px] p-0 overflow-hidden rounded-2xl"
+        sideOffset={10}
+        className="
+          w-[92vw]
+          sm:w-[420px]
+          max-w-[95vw]
+
+          p-0
+          overflow-hidden
+
+          rounded-2xl
+          border
+          shadow-xl
+        "
       >
-        {/* Header */}
+        {/* HEADER */}
         <div className="p-4 flex items-center justify-between">
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 min-w-0">
             <Bell className="w-4 h-4 text-orange-500" />
-            <p className="font-semibold text-sm">Activity Center</p>
+
+            <p className="font-semibold text-sm truncate">Activity Center</p>
 
             {unreadCount > 0 && (
-              <Badge variant="secondary" className="text-xs">
+              <Badge variant="secondary" className="text-xs shrink-0">
                 {unreadCount}
               </Badge>
             )}
@@ -119,7 +132,7 @@ export default function NotificationsDropdown({
 
         <Separator />
 
-        {/* Tabs */}
+        {/* TABS */}
         <div className="px-2 pt-2">
           <Tabs value={tab} onValueChange={setTab} className="w-full">
             <TabsList className="grid grid-cols-3 w-full">
@@ -130,8 +143,8 @@ export default function NotificationsDropdown({
           </Tabs>
         </div>
 
-        {/* List */}
-        <ScrollArea className="max-h-[420px] mt-2">
+        {/* LIST (FIXED HEIGHT + SAFE SCROLL) */}
+        <div className="max-h-[60vh] overflow-y-auto mt-2">
           <div className="p-2 space-y-1">
             {filtered.length === 0 ? (
               <div className="py-12 text-center text-sm text-muted-foreground">
@@ -144,19 +157,21 @@ export default function NotificationsDropdown({
                 return (
                   <button
                     key={notif.id}
-                    className={`w-full text-left flex gap-3 p-3 rounded-xl transition
+                    className={`
+                      w-full text-left flex gap-3 p-3 rounded-xl transition
                       ${
                         notif.unread
                           ? "bg-orange-50 border border-orange-100"
                           : "hover:bg-muted border border-transparent"
-                      }`}
+                      }
+                    `}
                   >
-                    {/* Icon */}
+                    {/* ICON */}
                     <div className="p-2 rounded-lg bg-muted h-fit">
                       <Icon className="w-4 h-4 text-muted-foreground" />
                     </div>
 
-                    {/* Content */}
+                    {/* CONTENT */}
                     <div className="flex-1 min-w-0">
                       <div className="flex justify-between gap-2">
                         <p className="text-sm font-medium leading-tight">
@@ -181,9 +196,9 @@ export default function NotificationsDropdown({
               })
             )}
           </div>
-        </ScrollArea>
+        </div>
 
-        {/* Footer */}
+        {/* FOOTER */}
         <Separator />
 
         <div className="p-2">

@@ -2,17 +2,10 @@
 
 import { useState, useEffect, useMemo } from "react";
 import { useRouter } from "next/navigation";
-import {
-  Plus,
-  Save,
-  ArrowLeft,
-  FileSpreadsheet,
-  Sparkles,
-  Layers3,
-  Receipt,
-} from "lucide-react";
+import { Plus, Save, ArrowLeft, FileSpreadsheet } from "lucide-react";
 import { toast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
+
 import { PageHeader } from "@/components/PageHeader";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -29,14 +22,12 @@ import { Textarea } from "@/components/ui/textarea";
 import { Separator } from "@/components/ui/separator";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
-import { cn } from "@/lib/utils";
 
 import { BoqSectionForm } from "@/components/boq/BoqSectionForm";
 import { BoqSubHeadingForm } from "@/components/boq/BoqSubHeadingForm";
 import { BoqItemForm } from "@/components/boq/BoqItemForm";
 import { BoqTreeView } from "@/components/boq/BoqTreeView";
 import { BoqSummary } from "@/components/boq/BoqSummary";
-
 import { ProjectSelector } from "@/components/projects/ProjectSelector";
 
 import {
@@ -47,11 +38,11 @@ import {
   useCreateItemMutation,
 } from "@/api/boqApi";
 
-import { useGetInventoryMasterQuery } from "@/api/inventoryApi"; // ← Added
+import { useGetInventoryMasterQuery } from "@/api/inventoryApi";
 
 export default function BoqPage({ projectId: initialProjectId, boqId }) {
   const router = useRouter();
-  const { isAuthenticated, isLoading: authLoading } = useAuth(); // ← Added
+  const { isAuthenticated, isLoading: authLoading, user } = useAuth();
 
   // ======================================================
   // STATE
@@ -87,7 +78,6 @@ export default function BoqPage({ projectId: initialProjectId, boqId }) {
 
   const { data: categories = [] } = useGetBoqCategoriesQuery();
 
-  // Inventory Master with Search
   const { data: inventoryItems = [], isLoading: isLoadingInventory } =
     useGetInventoryMasterQuery(
       { search: itemSearchTerm },
@@ -98,12 +88,12 @@ export default function BoqPage({ projectId: initialProjectId, boqId }) {
   // AUTH PROTECTION
   // ======================================================
   useEffect(() => {
-    if (!authLoading && !isAuthenticated) {
-      router.replace("/login"); // Use replace to avoid history issues
+    if (authLoading) return;
+    if (!isAuthenticated) {
+      router.replace("/login");
     }
   }, [isAuthenticated, authLoading, router]);
 
-  // Prevent rendering protected content while checking auth
   if (authLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-[#fafafa]">
@@ -116,7 +106,7 @@ export default function BoqPage({ projectId: initialProjectId, boqId }) {
   }
 
   if (!isAuthenticated) {
-    return null; // Will redirect via useEffect
+    return null;
   }
 
   // ======================================================
@@ -194,11 +184,7 @@ export default function BoqPage({ projectId: initialProjectId, boqId }) {
   // ITEMS
   // ======================================================
   const handleAddItem = (sectionId, subheadingId) => {
-    setActiveItem({
-      sectionId,
-      subheadingId,
-      item: null,
-    });
+    setActiveItem({ sectionId, subheadingId, item: null });
   };
 
   const addOrUpdateItem = (sectionId, subheadingId, item) => {
@@ -374,8 +360,6 @@ export default function BoqPage({ projectId: initialProjectId, boqId }) {
   // ======================================================
   // COUNTS
   // ======================================================
-  const sectionCount = boq.sections.length;
-  const subheadingCount = boq.sections.flatMap((s) => s.subheadings).length;
   const itemCount = boq.sections
     .flatMap((s) => s.subheadings)
     .reduce((acc, sh) => acc + sh.items.length, 0);

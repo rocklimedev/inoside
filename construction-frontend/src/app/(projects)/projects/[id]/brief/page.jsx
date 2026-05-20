@@ -2,11 +2,10 @@
 
 import React from "react";
 import Link from "next/link";
-import { useParams } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import { useAuth } from "@/contexts/AuthContext";
 
 import { Button } from "@/components/ui/button";
-
 import { Plus, FileText } from "lucide-react";
 
 import BriefDocument from "@/components/projects/BriefDocument";
@@ -16,18 +15,34 @@ import { useGetBriefQuery } from "@/api/projectsApi";
 
 export default function BriefPage() {
   const { id: projectId } = useParams();
-  const { user } = useAuth();
+  const router = useRouter();
+
+  const { isAuthenticated, isLoading: authLoading, user } = useAuth();
 
   // ================= RTK QUERY =================
-  const { data: brief, isLoading: loading } = useGetBriefQuery(projectId, {
+  const { data: brief, isLoading: briefLoading } = useGetBriefQuery(projectId, {
     skip: !projectId,
   });
 
-  // ================= LOADING =================
-  if (loading) {
+  // ================= AUTH PROTECTION =================
+  if (authLoading) {
     return (
       <div className="flex items-center justify-center h-full min-h-[60vh]">
-        <div className="animate-spin w-8 h-8 border-2 border-[#ef7f1b] border-t-transparent rounded-full" />
+        <div className="animate-spin w-8 h-8 border-4 border-[#ef7f1b] border-t-transparent rounded-full" />
+      </div>
+    );
+  }
+
+  if (!isAuthenticated) {
+    router.replace("/login");
+    return null;
+  }
+
+  // ================= LOADING STATE =================
+  if (briefLoading) {
+    return (
+      <div className="flex items-center justify-center h-full min-h-[60vh]">
+        <div className="animate-spin w-8 h-8 border-4 border-[#ef7f1b] border-t-transparent rounded-full" />
       </div>
     );
   }
@@ -40,9 +55,7 @@ export default function BriefPage() {
         brief={brief}
         user={user}
         onBack={() => window.history.back()}
-        onEdit={() =>
-          (window.location.href = `/projects/${projectId}/brief/add`)
-        }
+        onEdit={() => router.push(`/brief/add?briefId=${brief?.id}`)}
       />
     );
   }
@@ -63,7 +76,7 @@ export default function BriefPage() {
         timelines, and client expectations.
       </p>
 
-      <Link href={`/projects/${projectId}/brief/add`}>
+      <Link href={`/brief/add`}>
         <Button className="bg-[#ef7f1b] hover:bg-[#d66e15]">
           <Plus className="w-4 h-4 mr-2" />
           Create Brief
