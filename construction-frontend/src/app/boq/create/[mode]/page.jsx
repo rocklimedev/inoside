@@ -44,14 +44,6 @@ export default function BoqPage({ projectId: initialProjectId, boqId }) {
   const router = useRouter();
 
   // ======================================================
-  // AUTH — must be called unconditionally at the top
-  // ======================================================
-  // NOTE: Do NOT add per-page auth guards if AppProviders / DashboardLayout
-  // already protects all non-auth routes. Keeping it here only as a safety
-  // net for cases where this component is rendered outside the layout.
-  const { isAuthenticated, isLoading: authLoading } = useAuth();
-
-  // ======================================================
   // STATE — all hooks must come before any conditional return
   // ======================================================
   const [selectedProjectId, setSelectedProjectId] = useState(
@@ -95,14 +87,6 @@ export default function BoqPage({ projectId: initialProjectId, boqId }) {
   // EFFECTS — all before any conditional return
   // ======================================================
 
-  // Auth redirect — only fires if this page is somehow outside the layout
-  useEffect(() => {
-    if (authLoading) return;
-    if (!isAuthenticated) {
-      router.replace("/login");
-    }
-  }, [isAuthenticated, authLoading, router]);
-
   // Keep boq.project_id in sync with the project selector
   useEffect(() => {
     setBoq((prev) => ({
@@ -145,24 +129,6 @@ export default function BoqPage({ projectId: initialProjectId, boqId }) {
         .reduce((acc, sh) => acc + sh.items.length, 0),
     [boq.sections],
   );
-
-  // ======================================================
-  // CONDITIONAL RETURNS — only after all hooks
-  // ======================================================
-  if (authLoading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-[#fafafa]">
-        <div className="text-center">
-          <div className="animate-spin w-8 h-8 border-4 border-[#ef7f1b] border-t-transparent rounded-full mx-auto mb-4" />
-          <p className="text-muted-foreground">Verifying authentication...</p>
-        </div>
-      </div>
-    );
-  }
-
-  if (!isAuthenticated) {
-    return null;
-  }
 
   // ======================================================
   // HANDLERS
