@@ -11,36 +11,48 @@ export const databaseConfig = (
   password: configService.get<string>('DB_PASSWORD'),
   database: configService.get<string>('DB_NAME'),
 
-  // Auto-load all models (recommended)
   autoLoadModels: true,
 
-  // IMPORTANT: Set to FALSE in Production
+  // IMPORTANT: Keep FALSE in Production
   synchronize: configService.get<string>('NODE_ENV') === 'development',
 
-  // Logging
   logging:
     configService.get<string>('NODE_ENV') === 'development'
       ? console.log
       : false,
 
-  // Pool Configuration (Performance)
+  // ──────── IMPROVED CONNECTION POOL ────────
   pool: {
-    max: 10,
-    min: 2,
-    acquire: 30000,
-    idle: 10000,
+    max: 50, // Increased from 10 → Better for concurrent users
+    min: 8, // Increased from 2
+    acquire: 60000, // 60 seconds - wait longer before timeout
+    idle: 30000, // 30 seconds - close idle connections
+    evict: 10000, // Check for idle connections every 10s
   },
 
-  // Charset & Collation
+  // Model Definition Settings
   define: {
     charset: 'utf8mb4',
     collate: 'utf8mb4_unicode_ci',
     timestamps: true,
-    underscored: false, // Use camelCase (matches your models)
+    underscored: false,
   },
 
-  // Timezone
-  timezone: '+05:30', // Change according to your timezone (e.g. '+00:00' for UTC)
+  // Timezone (India)
+  timezone: '+05:30',
+
+  // Retry mechanism (helps with temporary DB glitches)
+  retry: {
+    match: [
+      /SequelizeConnectionError/,
+      /SequelizeConnectionRefusedError/,
+      /SequelizeHostNotFoundError/,
+      /SequelizeHostNotReachableError/,
+      /SequelizeInvalidConnectionError/,
+      /SequelizeConnectionTimedOutError/,
+    ],
+    max: 3,
+  },
 });
 
 export default databaseConfig;

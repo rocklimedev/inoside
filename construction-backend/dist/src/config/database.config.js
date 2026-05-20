@@ -14,10 +14,11 @@ const databaseConfig = (configService) => ({
         ? console.log
         : false,
     pool: {
-        max: 10,
-        min: 2,
-        acquire: 30000,
-        idle: 10000,
+        max: 50,
+        min: 8,
+        acquire: 60000,
+        idle: 30000,
+        evict: 10000,
     },
     define: {
         charset: 'utf8mb4',
@@ -26,6 +27,17 @@ const databaseConfig = (configService) => ({
         underscored: false,
     },
     timezone: '+05:30',
+    retry: {
+        match: [
+            /SequelizeConnectionError/,
+            /SequelizeConnectionRefusedError/,
+            /SequelizeHostNotFoundError/,
+            /SequelizeHostNotReachableError/,
+            /SequelizeInvalidConnectionError/,
+            /SequelizeConnectionTimedOutError/,
+        ],
+        max: 3,
+    },
 });
 exports.databaseConfig = databaseConfig;
 exports.default = exports.databaseConfig;
