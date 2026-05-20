@@ -3,19 +3,16 @@
 import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/contexts/AuthContext";
+import { Loader2 } from "lucide-react";
 
 const roleRoutes = {
   architect: "/dashboard/architect",
-  admin: "/dashboard/admin",
-  vendor: "/dashboard/vendor",
   client: "/dashboard/client",
+  builder: "/dashboard/builder",
   site_supervisor: "/dashboard/site-supervisor",
-};
-
-const normalizeRole = (role) => {
-  if (!role) return null;
-  if (typeof role === "string") return role.toLowerCase();
-  return role.name?.toLowerCase();
+  team_member: "/dashboard/team",
+  admin: "/dashboard/admin",
+  super_admin: "/dashboard/admin",
 };
 
 export default function Home() {
@@ -25,21 +22,23 @@ export default function Home() {
   useEffect(() => {
     if (isLoading) return;
 
-    // 1. Not logged in → login
-    if (!isAuthenticated) {
+    if (!isAuthenticated || !user) {
       router.replace("/login");
       return;
     }
 
-    // 2. Get normalized role
-    const role = normalizeRole(user?.role);
-
-    const targetRoute = roleRoutes[role] || "/dashboard";
+    const roleKey = user.role?.toLowerCase(); // safe
+    const targetRoute = roleRoutes[roleKey] || "/dashboard";
 
     router.replace(targetRoute);
   }, [isLoading, isAuthenticated, user?.role, router]);
 
   return (
-    <div className="flex h-screen items-center justify-center">Loading...</div>
+    <div className="flex h-screen items-center justify-center bg-white">
+      <div className="flex flex-col items-center gap-3">
+        <Loader2 className="w-8 h-8 animate-spin text-[#ef7f1b]" />
+        <p className="text-sm text-gray-500">Redirecting to dashboard...</p>
+      </div>
+    </div>
   );
 }

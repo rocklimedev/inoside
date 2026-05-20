@@ -7,17 +7,19 @@ import { Eye, EyeOff, ArrowRight, Loader2, Lock } from "lucide-react";
 import { toast } from "sonner";
 
 const roleRoutes = {
-  Architect: "/dashboard/architect",
-  Client: "/dashboard/client",
-  Builder: "/dashboard/builder",
-  "Site Supervisor": "/dashboard/site-supervisor",
-  "Team Member": "/dashboard/team",
-  Admin: "/dashboard/admin",
+  architect: "/dashboard/architect",
+  client: "/dashboard/client",
+  builder: "/dashboard/builder",
+  site_supervisor: "/dashboard/site-supervisor",
+  team_member: "/dashboard/team",
+  admin: "/dashboard/admin",
+  super_admin: "/dashboard/admin",
+  developer: "/dashboard/developer", // if needed
 };
 
 export default function LoginPage() {
   const router = useRouter();
-  const { login, isLoading: authLoading, userMeta } = useAuth();
+  const { login, refreshUser, userMeta, isLoading: authLoading } = useAuth();
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -29,7 +31,6 @@ export default function LoginPage() {
 
   const validate = () => {
     const errs = {};
-
     if (!email) errs.email = "Email is required";
     else if (!/\S+@\S+\.\S+/.test(email)) errs.email = "Enter a valid email";
 
@@ -50,7 +51,14 @@ export default function LoginPage() {
     try {
       const res = await login({ email, password });
 
-      const userData = res?.user || userMeta;
+      let userData = res?.user || userMeta;
+
+      // Safety refresh if needed
+      if (!userData?.role || !userData?.is_active) {
+        await refreshUser();
+        await new Promise((resolve) => setTimeout(resolve, 250));
+        userData = userMeta;
+      }
 
       if (!userData) {
         toast.error("Login failed. Please try again.");
@@ -58,15 +66,15 @@ export default function LoginPage() {
       }
 
       // ================= POST LOGIN VALIDATIONS =================
-      if (!userData.is_email_verified) {
+      if (!userData.is_email_verified && !userData.isEmailVerified) {
         toast.error("Please verify your email address first.");
-        router.replace("/no-access"); // Change path if needed
+        router.replace("/no-access");
         return;
       }
 
-      if (!userData.is_active) {
+      if (!userData.is_active && !userData.isActive) {
         toast.info("Account is not active yet");
-        router.replace("/no-access"); // Your NoAccessPage
+        router.replace("/no-access");
         return;
       }
 
@@ -75,15 +83,16 @@ export default function LoginPage() {
         return;
       }
 
-      // ================= SUCCESS - REDIRECT TO DASHBOARD =================
+      // ================= SUCCESS =================
       toast.success("Login successful!");
 
-      const route = roleRoutes[userData.role] || "/dashboard";
+      const roleKey = userData.role.toLowerCase();
+      const route = roleRoutes[roleKey] || "/dashboard";
+
       router.replace(route);
     } catch (err) {
       const message =
         err?.data?.message || err?.message || "Invalid credentials";
-
       toast.error(message);
       setErrors({ general: message });
     } finally {
@@ -91,7 +100,6 @@ export default function LoginPage() {
     }
   };
 
-  // auth loading screen
   if (authLoading) {
     return (
       <div className="flex h-screen items-center justify-center bg-white">
@@ -132,7 +140,6 @@ export default function LoginPage() {
       {/* RIGHT PANEL */}
       <div className="flex-1 flex items-center justify-center p-6 bg-white">
         <div className="w-full max-w-[420px]">
-          {/* HEADER */}
           <div className="mb-10">
             <h1 className="text-3xl font-black">
               BUILD<span className="text-[#ef7f1b]">CON</span>
@@ -149,7 +156,7 @@ export default function LoginPage() {
               </div>
             )}
 
-            {/* EMAIL */}
+            {/* Email Input */}
             <div className="relative">
               <input
                 type="email"
@@ -163,9 +170,7 @@ export default function LoginPage() {
                 className="w-full h-14 px-4 pt-5 pb-2 border rounded-lg outline-none"
               />
               <label
-                className={`absolute left-4 transition-all ${
-                  emailActive ? "top-1 text-xs" : "top-4 text-sm"
-                }`}
+                className={`absolute left-4 transition-all ${emailActive ? "top-1 text-xs" : "top-4 text-sm"}`}
               >
                 Email
               </label>
@@ -174,7 +179,7 @@ export default function LoginPage() {
               )}
             </div>
 
-            {/* PASSWORD */}
+            {/* Password Input */}
             <div className="relative">
               <input
                 type={showPassword ? "text" : "password"}
@@ -188,9 +193,7 @@ export default function LoginPage() {
                 className="w-full h-14 px-4 pr-10 pt-5 pb-2 border rounded-lg outline-none"
               />
               <label
-                className={`absolute left-4 transition-all ${
-                  passwordActive ? "top-1 text-xs" : "top-4 text-sm"
-                }`}
+                className={`absolute left-4 transition-all ${passwordActive ? "top-1 text-xs" : "top-4 text-sm"}`}
               >
                 Password
               </label>
@@ -208,7 +211,6 @@ export default function LoginPage() {
               )}
             </div>
 
-            {/* LOGIN BUTTON */}
             <button
               type="submit"
               disabled={loading}
@@ -223,7 +225,6 @@ export default function LoginPage() {
               )}
             </button>
 
-            {/* REGISTER */}
             <button
               type="button"
               onClick={() => router.push("/register")}

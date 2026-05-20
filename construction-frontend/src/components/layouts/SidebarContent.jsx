@@ -22,16 +22,22 @@ export default function SidebarContent({
   const router = useRouter();
   const { user } = useAuth();
 
+  // Updated role mapping to match actual DB values (lowercase)
+  const roleRoutes = {
+    architect: "/dashboard/architect",
+    client: "/dashboard/client",
+    builder: "/dashboard/builder",
+    site_supervisor: "/dashboard/site-supervisor",
+    team_member: "/dashboard/team",
+    admin: "/dashboard/admin",
+    super_admin: "/dashboard/admin",
+  };
+
   const handleNavClick = (path) => {
     if (path === "/dashboard") {
-      const roleRoute = {
-        Architect: "/dashboard/architect",
-        Client: "/dashboard/client",
-        Builder: "/dashboard/builder",
-        "Site Supervisor": "/dashboard/site-supervisor",
-        "Team Member": "/dashboard/team",
-      };
-      router.push(roleRoute[user?.role] || "/dashboard/architect");
+      const roleKey = user?.role?.toLowerCase?.();
+      const targetRoute = roleRoutes[roleKey] || "/dashboard/architect";
+      router.push(targetRoute);
     } else {
       router.push(path);
     }
@@ -102,7 +108,7 @@ export default function SidebarContent({
 
               if (collapsed && !isMobile) {
                 return (
-                  <Tooltip key={`${si}-${ii}`}>
+                  <Tooltip key={`${si}-${ii}`} provider={TooltipProvider}>
                     <TooltipTrigger asChild>{buttonContent}</TooltipTrigger>
                     <TooltipContent
                       side="right"
@@ -124,7 +130,7 @@ export default function SidebarContent({
       {!isMobile && (
         <button
           onClick={() => {
-            /* Handled in parent */
+            /* Handled in parent component */
           }}
           className="flex items-center justify-center h-12 border-t border-gray-100 text-gray-400 hover:text-gray-600 hover:bg-gray-50 transition-colors shrink-0"
         >
