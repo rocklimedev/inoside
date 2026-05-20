@@ -21,6 +21,13 @@ export interface AuthUserResponse {
   name: string;
   email: string;
   role: Role | null;
+
+  is_active: boolean;
+  is_email_verified: boolean;
+
+  // Optional fields
+
+  last_login?: Date | null;
 }
 
 export interface LoginResponse {
@@ -44,16 +51,13 @@ export class AuthService {
   async register(createUserDto: CreateUserDto): Promise<AuthUserResponse> {
     const { email, password, role_id, ...rest } = createUserDto;
 
-    const existingUser = await this.userModel.findOne({
-      where: { email },
-    });
+    const existingUser = await this.userModel.findOne({ where: { email } });
 
     if (existingUser) {
       throw new ConflictException('User with this email already exists');
     }
 
     const role = await this.roleModel.findByPk(role_id);
-
     if (!role) {
       throw new BadRequestException('Invalid role_id provided');
     }
@@ -62,13 +66,15 @@ export class AuthService {
 
     const user = await this.userModel.create({
       name: rest.name,
-      phone: rest.phone,
-      is_active: rest.is_active ?? true,
+
       email,
       role_id,
       password_hash,
+      is_active: rest.is_active ?? true,
+      is_email_verified: false, // Force email verification by default
     });
 
+    // Fetch complete user with role
     const createdUser = await this.userModel.findByPk(user.id, {
       include: [{ model: Role }],
     });
@@ -82,6 +88,10 @@ export class AuthService {
       name: createdUser.name,
       email: createdUser.email,
       role: createdUser.role ?? null,
+      is_active: createdUser.is_active,
+      is_email_verified: createdUser.is_email_verified,
+
+      last_login: createdUser.last_login,
     };
   }
 
@@ -90,10 +100,7 @@ export class AuthService {
     const { email, password } = loginDto;
 
     const user = await this.userModel.findOne({
-      where: {
-        email,
-        is_active: true,
-      },
+      where: { email },
       include: [
         {
           model: Role,
@@ -107,34 +114,26 @@ export class AuthService {
     }
 
     const isPasswordValid = await bcrypt.compare(password, user.password_hash);
-
     if (!isPasswordValid) {
       throw new UnauthorizedException('Invalid credentials');
     }
 
-    // update last login
-    await user.update({
-      last_login: new Date(),
-    });
+    // Update last login
+    await user.update({ last_login: new Date() });
 
-    // ================= PERMISSIONS =================
+    // Permissions (for JWT payload)
     const permissions = await Permission.findAll({
       include: [
         {
           model: Role,
-          where: {
-            id: user.role_id,
-          },
-          through: {
-            attributes: [],
-          },
+          where: { id: user.role_id },
+          through: { attributes: [] },
         },
       ],
     });
 
-    // ================= JWT PAYLOAD (FIXED) =================
     const payload = {
-      sub: user.id, // ✅ UUID string (FIXED)
+      sub: user.id,
       email: user.email,
       name: user.name,
       role: user.role?.name ?? null,
@@ -146,22 +145,39 @@ export class AuthService {
     return {
       access_token,
       user: {
-        id: user.id, // ✅ FIXED (NO Number())
+        id: user.id,
         name: user.name,
         email: user.email,
         role: user.role ?? null,
+        is_active: user.is_active,
+        is_email_verified: user.is_email_verified,
+        last_login: user.last_login,
       },
     };
   }
 
-  // ================= VALIDATE USER =================
+  // ================= VALIDATE USER (JWT Guard) =================
   async validateUser(userId: string): Promise<User> {
     const user = await this.userModel.findByPk(userId, {
       include: [{ model: Role }],
     });
 
-    if (!user || !user.is_active) {
-      throw new UnauthorizedException();
+    if (!user) {
+      throw new UnauthorizedException('User not found');
+    }
+
+    if (!user.is_active) {
+      throw new UnauthorizedException(
+        'Account is inactive. Contact administrator.',
+      );
+    }
+
+    if (!user.is_email_verified) {
+      throw new UnauthorizedException('Email is not verified');
+    }
+
+    if (!user.role_id || !user.role) {
+      throw new UnauthorizedException('No role assigned to this account');
     }
 
     return user;

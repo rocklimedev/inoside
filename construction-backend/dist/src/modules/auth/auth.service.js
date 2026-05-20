@@ -64,9 +64,7 @@ let AuthService = class AuthService {
     }
     async register(createUserDto) {
         const { email, password, role_id, ...rest } = createUserDto;
-        const existingUser = await this.userModel.findOne({
-            where: { email },
-        });
+        const existingUser = await this.userModel.findOne({ where: { email } });
         if (existingUser) {
             throw new common_1.ConflictException('User with this email already exists');
         }
@@ -77,11 +75,11 @@ let AuthService = class AuthService {
         const password_hash = await bcrypt.hash(password, 10);
         const user = await this.userModel.create({
             name: rest.name,
-            phone: rest.phone,
-            is_active: rest.is_active ?? true,
             email,
             role_id,
             password_hash,
+            is_active: rest.is_active ?? true,
+            is_email_verified: false,
         });
         const createdUser = await this.userModel.findByPk(user.id, {
             include: [{ model: role_model_1.Role }],
@@ -94,15 +92,15 @@ let AuthService = class AuthService {
             name: createdUser.name,
             email: createdUser.email,
             role: createdUser.role ?? null,
+            is_active: createdUser.is_active,
+            is_email_verified: createdUser.is_email_verified,
+            last_login: createdUser.last_login,
         };
     }
     async login(loginDto) {
         const { email, password } = loginDto;
         const user = await this.userModel.findOne({
-            where: {
-                email,
-                is_active: true,
-            },
+            where: { email },
             include: [
                 {
                     model: role_model_1.Role,
@@ -117,19 +115,13 @@ let AuthService = class AuthService {
         if (!isPasswordValid) {
             throw new common_1.UnauthorizedException('Invalid credentials');
         }
-        await user.update({
-            last_login: new Date(),
-        });
+        await user.update({ last_login: new Date() });
         const permissions = await permission_model_1.Permission.findAll({
             include: [
                 {
                     model: role_model_1.Role,
-                    where: {
-                        id: user.role_id,
-                    },
-                    through: {
-                        attributes: [],
-                    },
+                    where: { id: user.role_id },
+                    through: { attributes: [] },
                 },
             ],
         });
@@ -148,6 +140,9 @@ let AuthService = class AuthService {
                 name: user.name,
                 email: user.email,
                 role: user.role ?? null,
+                is_active: user.is_active,
+                is_email_verified: user.is_email_verified,
+                last_login: user.last_login,
             },
         };
     }
@@ -155,8 +150,17 @@ let AuthService = class AuthService {
         const user = await this.userModel.findByPk(userId, {
             include: [{ model: role_model_1.Role }],
         });
-        if (!user || !user.is_active) {
-            throw new common_1.UnauthorizedException();
+        if (!user) {
+            throw new common_1.UnauthorizedException('User not found');
+        }
+        if (!user.is_active) {
+            throw new common_1.UnauthorizedException('Account is inactive. Contact administrator.');
+        }
+        if (!user.is_email_verified) {
+            throw new common_1.UnauthorizedException('Email is not verified');
+        }
+        if (!user.role_id || !user.role) {
+            throw new common_1.UnauthorizedException('No role assigned to this account');
         }
         return user;
     }

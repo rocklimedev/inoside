@@ -71,7 +71,11 @@ export class User extends Model<
     defaultValue: true,
   })
   declare is_active: CreationOptional<boolean>;
-
+  @Column({
+    type: DataType.BOOLEAN,
+    defaultValue: false,
+  })
+  declare is_email_verified: CreationOptional<boolean>;
   @Column({
     type: DataType.DATE,
     allowNull: true,

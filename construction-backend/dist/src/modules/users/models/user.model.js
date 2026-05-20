@@ -69,6 +69,13 @@ __decorate([
 ], User.prototype, "is_active", void 0);
 __decorate([
     (0, sequelize_typescript_1.Column)({
+        type: sequelize_typescript_1.DataType.BOOLEAN,
+        defaultValue: false,
+    }),
+    __metadata("design:type", Object)
+], User.prototype, "is_email_verified", void 0);
+__decorate([
+    (0, sequelize_typescript_1.Column)({
         type: sequelize_typescript_1.DataType.DATE,
         allowNull: true,
     }),

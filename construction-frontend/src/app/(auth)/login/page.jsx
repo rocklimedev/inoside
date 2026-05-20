@@ -15,16 +15,9 @@ const roleRoutes = {
   Admin: "/dashboard/admin",
 };
 
-// safe role extractor
-const getRoleName = (role) => {
-  if (!role) return null;
-  if (typeof role === "string") return role;
-  return role.name;
-};
-
 export default function LoginPage() {
   const router = useRouter();
-  const { login, isLoading: authLoading } = useAuth();
+  const { login, isLoading: authLoading, userMeta } = useAuth();
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -57,12 +50,35 @@ export default function LoginPage() {
     try {
       const res = await login({ email, password });
 
+      const userData = res?.user || userMeta;
+
+      if (!userData) {
+        toast.error("Login failed. Please try again.");
+        return;
+      }
+
+      // ================= POST LOGIN VALIDATIONS =================
+      if (!userData.is_email_verified) {
+        toast.error("Please verify your email address first.");
+        router.replace("/no-access"); // Change path if needed
+        return;
+      }
+
+      if (!userData.is_active) {
+        toast.info("Account is not active yet");
+        router.replace("/no-access"); // Your NoAccessPage
+        return;
+      }
+
+      if (!userData.role) {
+        toast.error("No role assigned to your account. Contact administrator.");
+        return;
+      }
+
+      // ================= SUCCESS - REDIRECT TO DASHBOARD =================
       toast.success("Login successful!");
 
-      const role = getRoleName(res?.user?.role);
-      const route = roleRoutes[role] || "/dashboard";
-
-      // SINGLE SAFE REDIRECT (NO useEffect, NO timeout)
+      const route = roleRoutes[userData.role] || "/dashboard";
       router.replace(route);
     } catch (err) {
       const message =
@@ -121,7 +137,6 @@ export default function LoginPage() {
             <h1 className="text-3xl font-black">
               BUILD<span className="text-[#ef7f1b]">CON</span>
             </h1>
-
             <p className="text-sm text-gray-400 mt-3">
               Project planning, approvals, execution & handover
             </p>
@@ -147,7 +162,6 @@ export default function LoginPage() {
                 onBlur={() => setEmailFocused(false)}
                 className="w-full h-14 px-4 pt-5 pb-2 border rounded-lg outline-none"
               />
-
               <label
                 className={`absolute left-4 transition-all ${
                   emailActive ? "top-1 text-xs" : "top-4 text-sm"
@@ -155,7 +169,6 @@ export default function LoginPage() {
               >
                 Email
               </label>
-
               {errors.email && (
                 <p className="text-red-500 text-xs mt-1">{errors.email}</p>
               )}
@@ -174,7 +187,6 @@ export default function LoginPage() {
                 onBlur={() => setPasswordFocused(false)}
                 className="w-full h-14 px-4 pr-10 pt-5 pb-2 border rounded-lg outline-none"
               />
-
               <label
                 className={`absolute left-4 transition-all ${
                   passwordActive ? "top-1 text-xs" : "top-4 text-sm"
@@ -186,9 +198,9 @@ export default function LoginPage() {
               <button
                 type="button"
                 onClick={() => setShowPassword(!showPassword)}
-                className="absolute right-3 top-4"
+                className="absolute right-3 top-4 text-gray-400 hover:text-gray-600"
               >
-                {showPassword ? <EyeOff /> : <Eye />}
+                {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
               </button>
 
               {errors.password && (
@@ -196,14 +208,14 @@ export default function LoginPage() {
               )}
             </div>
 
-            {/* LOGIN */}
+            {/* LOGIN BUTTON */}
             <button
               type="submit"
               disabled={loading}
-              className="w-full h-12 bg-[#ef7f1b] text-white rounded-lg flex items-center justify-center gap-2"
+              className="w-full h-12 bg-[#ef7f1b] hover:bg-[#d66e15] text-white rounded-lg flex items-center justify-center gap-2 font-medium transition-all disabled:opacity-70"
             >
               {loading ? (
-                <Loader2 className="animate-spin w-4 h-4" />
+                <Loader2 className="animate-spin w-5 h-5" />
               ) : (
                 <>
                   Sign in <ArrowRight className="w-4 h-4" />
@@ -215,7 +227,7 @@ export default function LoginPage() {
             <button
               type="button"
               onClick={() => router.push("/register")}
-              className="w-full h-12 border rounded-lg flex items-center justify-center gap-2"
+              className="w-full h-12 border border-gray-300 hover:bg-gray-50 rounded-lg flex items-center justify-center gap-2 font-medium transition-all"
             >
               <Lock className="w-4 h-4" />
               Create Account

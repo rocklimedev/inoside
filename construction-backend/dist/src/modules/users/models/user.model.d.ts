@@ -9,6 +9,7 @@ export declare class User extends Model<InferAttributes<User>, InferCreationAttr
     phone: CreationOptional<string | null>;
     password_hash: string;
     is_active: CreationOptional<boolean>;
+    is_email_verified: CreationOptional<boolean>;
     last_login: CreationOptional<Date | null>;
     role?: NonAttribute<Role>;
 }

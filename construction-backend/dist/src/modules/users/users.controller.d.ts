@@ -13,6 +13,7 @@ export declare class UsersController {
             email: string;
             phone: import("sequelize").CreationOptional<string | null>;
             is_active: import("sequelize").CreationOptional<boolean>;
+            is_email_verified: import("sequelize").CreationOptional<boolean>;
             last_login: import("sequelize").CreationOptional<Date | null>;
             createdAt?: Date | any;
             updatedAt?: Date | any;

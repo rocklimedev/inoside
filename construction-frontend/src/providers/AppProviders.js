@@ -12,6 +12,7 @@ export default function AppProviders({ children }) {
     pathname.startsWith("/404") ||
     pathname.startsWith("/login") ||
     pathname.startsWith("/register") ||
+    pathname.startsWith("/no-access") ||
     pathname === "/not-found";
 
   return (

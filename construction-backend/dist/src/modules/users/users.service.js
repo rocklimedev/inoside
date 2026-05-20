@@ -77,6 +77,7 @@ let UsersService = class UsersService {
             email,
             role_id,
             password_hash,
+            is_email_verified: false,
         });
         const { password_hash: _, ...result } = user.toJSON();
         return {
@@ -119,13 +120,14 @@ let UsersService = class UsersService {
     }
     async update(id, updateUserDto) {
         const user = await this.findOne(id);
-        if (updateUserDto.email) {
+        if (updateUserDto.email && updateUserDto.email !== user.email) {
             const existing = await this.userModel.findOne({
                 where: { email: updateUserDto.email },
             });
             if (existing && existing.id !== id) {
                 throw new common_1.ConflictException(user_messages_1.USER_MESSAGES.EMAIL_IN_USE);
             }
+            updateUserDto['is_email_verified'] = false;
         }
         if (updateUserDto.role_id) {
             const role = await this.roleModel.findByPk(updateUserDto.role_id);

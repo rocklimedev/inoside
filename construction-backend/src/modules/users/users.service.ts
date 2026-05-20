@@ -14,8 +14,6 @@ import * as bcrypt from 'bcryptjs';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 
-// ================= CENTRAL MESSAGES =================
-
 import { USER_MESSAGES } from '@/common/messages/user.messages';
 
 @Injectable()
@@ -29,7 +27,6 @@ export class UsersService {
   ) {}
 
   // ================= CREATE =================
-
   async create(createUserDto: CreateUserDto) {
     const { email, password, role_id, ...rest } = createUserDto;
 
@@ -54,6 +51,9 @@ export class UsersService {
       email,
       role_id,
       password_hash,
+
+      // ================= IMPORTANT =================
+      is_email_verified: false,
     });
 
     const { password_hash: _, ...result } = user.toJSON();
@@ -65,7 +65,6 @@ export class UsersService {
   }
 
   // ================= READ ALL =================
-
   async findAll() {
     return this.userModel.findAll({
       attributes: { exclude: ['password_hash'] },
@@ -80,7 +79,6 @@ export class UsersService {
   }
 
   // ================= READ ONE =================
-
   async findOne(id: string) {
     const user = await this.userModel.findByPk(id, {
       attributes: { exclude: ['password_hash'] },
@@ -100,7 +98,6 @@ export class UsersService {
   }
 
   // ================= FIND BY EMAIL =================
-
   async findByEmail(email: string) {
     return this.userModel.findOne({
       where: { email },
@@ -109,11 +106,11 @@ export class UsersService {
   }
 
   // ================= UPDATE =================
-
   async update(id: string, updateUserDto: UpdateUserDto) {
     const user = await this.findOne(id);
 
-    if (updateUserDto.email) {
+    // ================= EMAIL CHANGE SAFETY =================
+    if (updateUserDto.email && updateUserDto.email !== user.email) {
       const existing = await this.userModel.findOne({
         where: { email: updateUserDto.email },
       });
@@ -121,6 +118,10 @@ export class UsersService {
       if (existing && existing.id !== id) {
         throw new ConflictException(USER_MESSAGES.EMAIL_IN_USE);
       }
+
+      // ================= IMPORTANT RULE =================
+      // If email changes → reset verification
+      updateUserDto['is_email_verified'] = false;
     }
 
     if (updateUserDto.role_id) {
@@ -140,7 +141,6 @@ export class UsersService {
   }
 
   // ================= DELETE =================
-
   async remove(id: string) {
     const user = await this.findOne(id);
 
@@ -152,7 +152,6 @@ export class UsersService {
   }
 
   // ================= TOGGLE ACTIVE =================
-
   async toggleActive(id: string) {
     const user = await this.findOne(id);
 

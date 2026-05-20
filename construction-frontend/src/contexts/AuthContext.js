@@ -9,6 +9,27 @@ import {
 
 const AuthContext = createContext(null);
 
+/**
+ * Normalize backend user → frontend-safe shape
+ * KEEP IMPORTANT STATUS FIELDS
+ */
+const normalizeUser = (user) => {
+  if (!user) return null;
+
+  return {
+    id: user.id,
+    name: user.name,
+    email: user.email,
+    role: typeof user.role === "string" ? user.role : user.role?.name || null,
+
+    // ← ADD THESE FIELDS
+    is_active: user.is_active ?? user.isActive ?? false,
+    is_email_verified: user.is_email_verified ?? user.isEmailVerified ?? false,
+    isActive: user.is_active ?? user.isActive ?? false, // for backward compatibility
+    isEmailVerified: user.is_email_verified ?? user.isEmailVerified ?? false,
+  };
+};
+
 export const AuthProvider = ({ children }) => {
   const [token, setToken] = useState(null);
   const [user, setUser] = useState(null);
@@ -21,42 +42,40 @@ export const AuthProvider = ({ children }) => {
     data: profileData,
     refetch: refetchProfile,
     isFetching: profileLoading,
-  } = useGetProfileQuery(undefined, {
-    skip: !token,
-  });
+  } = useGetProfileQuery(undefined, { skip: !token });
 
-  // hydrate token
+  // Hydrate token
   useEffect(() => {
     const savedToken = localStorage.getItem("access_token");
     if (savedToken) setToken(savedToken);
     setAuthReady(true);
   }, []);
 
-  // hydrate user
+  // Hydrate user from profile
   useEffect(() => {
     if (profileData?.user) {
-      setUser(profileData.user);
+      setUser(normalizeUser(profileData.user));
     }
-  }, [profileData?.user]);
+  }, [profileData]);
 
   const login = async (credentials) => {
     const res = await loginMutation(credentials).unwrap();
 
-    const accessToken = res.access_token || res.token;
+    const accessToken = res.access_token || res.accessToken;
+    if (!accessToken) throw new Error("No access token received");
 
     localStorage.setItem("access_token", accessToken);
     setToken(accessToken);
 
-    if (res.user) {
-      setUser(res.user);
-    }
+    // Use normalized user
+    const normalized = normalizeUser(res.user);
+    if (normalized) setUser(normalized);
 
-    return res;
+    return { ...res, user: normalized };
   };
 
   const register = async (data) => {
-    const res = await registerMutation(data).unwrap();
-    return res;
+    return await registerMutation(data).unwrap();
   };
 
   const logout = () => {
@@ -66,7 +85,12 @@ export const AuthProvider = ({ children }) => {
   };
 
   const refreshUser = async () => {
-    if (token) await refetchProfile();
+    if (token) {
+      const res = await refetchProfile();
+      if (res?.data?.user) {
+        setUser(normalizeUser(res.data.user));
+      }
+    }
   };
 
   const isUserActive = () => {
@@ -74,22 +98,29 @@ export const AuthProvider = ({ children }) => {
     return user.is_active === true || user.isActive === true;
   };
 
+  const isEmailVerified = () => {
+    if (!user) return false;
+    return user.is_email_verified === true || user.isEmailVerified === true;
+  };
+
   return (
     <AuthContext.Provider
       value={{
         token,
         user,
+        userMeta: user,
+
         login,
         register,
         logout,
         refreshUser,
 
-        // IMPORTANT FIX
-        isAuthenticated: !!token,
-
+        isAuthenticated: Boolean(token),
         isActive: isUserActive(),
-        isLoading: !authReady,
-        profileLoading,
+        isEmailVerified: isEmailVerified(),
+        isLoading: !authReady || profileLoading,
+
+        hasRole: (roleName) => user?.role === roleName,
       }}
     >
       {children}

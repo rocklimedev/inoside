@@ -8,6 +8,9 @@ export interface AuthUserResponse {
     name: string;
     email: string;
     role: Role | null;
+    is_active: boolean;
+    is_email_verified: boolean;
+    last_login?: Date | null;
 }
 export interface LoginResponse {
     access_token: string;
