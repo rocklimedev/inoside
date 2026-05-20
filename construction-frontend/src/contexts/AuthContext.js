@@ -7,6 +7,7 @@ import React, {
   useState,
   useCallback,
 } from "react";
+
 import {
   useLoginMutation,
   useRegisterMutation,
@@ -17,15 +18,13 @@ const AuthContext = createContext(null);
 
 /**
  * Normalize backend user → frontend-safe shape
- * Handles both plain objects and Sequelize nested models
+ * Handles Sequelize nested models safely
  */
 const normalizeUser = (user) => {
   if (!user) return null;
 
-  // Handle Sequelize model (has dataValues)
   const rawUser = user?.dataValues || user;
 
-  // Safely extract role (it can be string, object, or nested dataValues)
   let role = rawUser.role;
 
   if (role && typeof role === "object") {
@@ -38,9 +37,11 @@ const normalizeUser = (user) => {
     name: rawUser.name,
     email: rawUser.email,
     phone: rawUser.phone,
-    role: typeof role === "string" ? role : null, // Always string or null
 
-    // Critical fields
+    // Always normalized string
+    role: typeof role === "string" ? role : null,
+
+    // Account flags
     is_active: Boolean(rawUser.is_active),
     is_email_verified: Boolean(rawUser.is_email_verified),
 
@@ -48,90 +49,166 @@ const normalizeUser = (user) => {
     isActive: Boolean(rawUser.is_active),
     isEmailVerified: Boolean(rawUser.is_email_verified),
 
+    // Metadata
     last_login: rawUser.last_login,
     created_at: rawUser.created_at,
   };
 };
 
 export const AuthProvider = ({ children }) => {
-  const [token, setToken] = useState(null);
+  /**
+   * IMPORTANT:
+   * Initialize token immediately from localStorage
+   * to avoid hydration race conditions in production
+   */
+  const [token, setToken] = useState(() => {
+    if (typeof window !== "undefined") {
+      return localStorage.getItem("access_token");
+    }
+    return null;
+  });
+
   const [user, setUser] = useState(null);
+
+  /**
+   * Tracks whether auth system has fully booted
+   */
   const [authReady, setAuthReady] = useState(false);
+
+  // ======================================================
+  // MUTATIONS
+  // ======================================================
 
   const [loginMutation] = useLoginMutation();
   const [registerMutation] = useRegisterMutation();
+
+  // ======================================================
+  // PROFILE QUERY
+  // ======================================================
 
   const {
     data: profileData,
     refetch: refetchProfile,
     isFetching: profileLoading,
   } = useGetProfileQuery(undefined, {
-    skip: !token,
+    /**
+     * Prevent query before hydration completes
+     */
+    skip: !authReady || !token,
+
+    /**
+     * Always refresh profile when mounting
+     */
     refetchOnMountOrArgChange: true,
   });
 
-  // Hydrate token from localStorage
+  // ======================================================
+  // AUTH BOOTSTRAP
+  // ======================================================
+
   useEffect(() => {
-    const savedToken = localStorage.getItem("access_token");
-    if (savedToken) {
-      setToken(savedToken);
-    }
+    /**
+     * Mark auth as initialized
+     * token already restored synchronously
+     */
     setAuthReady(true);
   }, []);
 
-  // Sync user when profile data changes
+  // ======================================================
+  // SYNC USER FROM PROFILE
+  // ======================================================
+
   useEffect(() => {
     if (profileData?.user) {
       setUser(normalizeUser(profileData.user));
     }
   }, [profileData]);
 
+  // ======================================================
+  // LOGIN
+  // ======================================================
+
   const login = async (credentials) => {
     const res = await loginMutation(credentials).unwrap();
 
     const accessToken = res.access_token || res.accessToken;
-    if (!accessToken) throw new Error("No access token received from server");
+
+    if (!accessToken) {
+      throw new Error("No access token received from server");
+    }
 
     // Save token
     localStorage.setItem("access_token", accessToken);
+
+    // Update state immediately
     setToken(accessToken);
 
-    // Prioritize user data from login response
+    /**
+     * PRIORITY:
+     * Use login response user directly
+     * avoids extra race condition
+     */
     if (res.user) {
       const normalized = normalizeUser(res.user);
+
       setUser(normalized);
-      return { ...res, user: normalized };
+
+      return {
+        ...res,
+        user: normalized,
+      };
     }
 
-    // Fallback: force fetch latest profile
+    /**
+     * FALLBACK:
+     * Refetch profile manually
+     */
     const profileRes = await refetchProfile();
+
     if (profileRes?.data?.user) {
-      const normalized = normalizeUser(profileRes.data.user);
-      setUser(normalized);
+      setUser(normalizeUser(profileRes.data.user));
     }
 
     return res;
   };
 
+  // ======================================================
+  // REGISTER
+  // ======================================================
+
   const register = async (data) => {
     return await registerMutation(data).unwrap();
   };
 
+  // ======================================================
+  // LOGOUT
+  // ======================================================
+
   const logout = () => {
     localStorage.removeItem("access_token");
+
     setToken(null);
     setUser(null);
   };
 
+  // ======================================================
+  // REFRESH USER
+  // ======================================================
+
   const refreshUser = useCallback(async () => {
     if (!token) return;
+
     const res = await refetchProfile();
+
     if (res?.data?.user) {
       setUser(normalizeUser(res.data.user));
     }
   }, [token, refetchProfile]);
 
-  // Computed values
+  // ======================================================
+  // COMPUTED HELPERS
+  // ======================================================
+
   const isUserActive = useCallback(() => {
     return Boolean(user?.is_active ?? user?.isActive);
   }, [user]);
@@ -140,10 +217,22 @@ export const AuthProvider = ({ children }) => {
     return Boolean(user?.is_email_verified ?? user?.isEmailVerified);
   }, [user]);
 
-  const isAuthenticated = Boolean(token && user);
+  /**
+   * IMPORTANT:
+   * Auth = token existence
+   * NOT token + user
+   */
+  const isAuthenticated = Boolean(token);
 
-  // Optional: Remove console.log in production
-  // console.log(user);
+  /**
+   * IMPORTANT:
+   * Wait for hydration and profile fetch
+   */
+  const isLoading = !authReady || (token && profileLoading);
+
+  // ======================================================
+  // PROVIDER
+  // ======================================================
 
   return (
     <AuthContext.Provider
@@ -161,9 +250,9 @@ export const AuthProvider = ({ children }) => {
 
         // Status
         isAuthenticated,
+        isLoading,
         isActive: isUserActive(),
         isEmailVerified: isEmailVerified(),
-        isLoading: !authReady || profileLoading,
 
         // Helpers
         hasRole: (roleName) =>
@@ -175,10 +264,16 @@ export const AuthProvider = ({ children }) => {
   );
 };
 
+// ======================================================
+// HOOK
+// ======================================================
+
 export const useAuth = () => {
   const ctx = useContext(AuthContext);
+
   if (!ctx) {
     throw new Error("useAuth must be used within AuthProvider");
   }
+
   return ctx;
 };

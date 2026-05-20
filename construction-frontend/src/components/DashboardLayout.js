@@ -52,8 +52,8 @@ export default function DashboardLayout({ children }) {
   }, []);
 
   const handleLogout = async () => {
-    await logout();
-    router.push("/login");
+    logout();
+    router.replace("/login");
   };
 
   return (
@@ -113,7 +113,7 @@ export default function DashboardLayout({ children }) {
 
               <div>
                 <h1 className="text-base font-bold text-black leading-tight">
-                  {user?.role?.display_name || user?.role?.name || "Dashboard"}
+                  {user?.role || "Dashboard"}
                 </h1>
                 <p className="text-[11px] text-gray-400">
                   Welcome back, {user?.name}
@@ -205,7 +205,7 @@ export default function DashboardLayout({ children }) {
                     <p className="text-sm font-semibold">{user?.name}</p>
                     <p className="text-xs text-gray-400">{user?.email}</p>
                     <p className="text-[10px] text-[#ef7f1b] font-bold uppercase mt-1">
-                      {user?.role?.display_name || user?.role?.name}
+                      {user?.role || "User"}
                     </p>
                   </div>
 
