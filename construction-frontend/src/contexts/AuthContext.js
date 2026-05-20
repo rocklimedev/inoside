@@ -62,11 +62,13 @@ export const AuthProvider = ({ children }) => {
   // ====================================================
   const [token, setToken] = useState(null);
 
-  // Persist user during refetches
   const [user, setUser] = useState(null);
 
-  // Only for initial bootstrap
+  // localStorage bootstrap completed
   const [authInitialized, setAuthInitialized] = useState(false);
+
+  // auth fully resolved
+  const [authResolved, setAuthResolved] = useState(false);
 
   // ====================================================
   // MUTATIONS
@@ -98,9 +100,8 @@ export const AuthProvider = ({ children }) => {
     isFetching: profileFetching,
     refetch: refetchProfile,
   } = useGetProfileQuery(undefined, {
-    skip: !token,
+    skip: !authInitialized || !token,
 
-    // IMPORTANT
     refetchOnMountOrArgChange: false,
     refetchOnFocus: false,
     refetchOnReconnect: false,
@@ -110,18 +111,24 @@ export const AuthProvider = ({ children }) => {
   // SYNC PROFILE
   // ====================================================
   useEffect(() => {
+    // Wait for bootstrap
+    if (!authInitialized) return;
+
+    // No token
     if (!token) {
       setUser(null);
+      setAuthResolved(true);
       return;
     }
 
-    // SUCCESS
+    // Profile success
     if (profileData?.user) {
       setUser(normalizeUser(profileData.user));
+      setAuthResolved(true);
       return;
     }
 
-    // INVALID TOKEN
+    // Invalid token
     if (profileError) {
       localStorage.removeItem("access_token");
 
@@ -130,8 +137,9 @@ export const AuthProvider = ({ children }) => {
 
       setToken(null);
       setUser(null);
+      setAuthResolved(true);
     }
-  }, [profileData, profileError, token]);
+  }, [authInitialized, token, profileData, profileError]);
 
   // ====================================================
   // LOGIN
@@ -139,24 +147,28 @@ export const AuthProvider = ({ children }) => {
   const login = async (credentials) => {
     const res = await loginMutation(credentials).unwrap();
 
-    const accessToken = res?.access_token || res?.accessToken;
+    const accessToken = res?.access_token;
 
     if (!accessToken) {
       throw new Error("No access token received");
     }
 
-    // Persist token
+    // reset auth state
+    setAuthResolved(false);
+
+    // persist token
     localStorage.setItem("access_token", accessToken);
 
     document.cookie = `access_token=${accessToken}; path=/; max-age=86400; SameSite=Lax`;
 
     setToken(accessToken);
 
-    // Backend returned user
+    // Backend returned user directly
     if (res?.user) {
       const normalized = normalizeUser(res.user);
 
       setUser(normalized);
+      setAuthResolved(true);
 
       return {
         ...res,
@@ -164,13 +176,14 @@ export const AuthProvider = ({ children }) => {
       };
     }
 
-    // Fallback profile fetch
+    // fallback profile fetch
     const profileRes = await refetchProfile();
 
     if (profileRes?.data?.user) {
       const normalized = normalizeUser(profileRes.data.user);
 
       setUser(normalized);
+      setAuthResolved(true);
 
       return {
         ...res,
@@ -178,7 +191,7 @@ export const AuthProvider = ({ children }) => {
       };
     }
 
-    return res;
+    throw new Error("Failed to fetch authenticated user");
   };
 
   // ====================================================
@@ -199,6 +212,7 @@ export const AuthProvider = ({ children }) => {
 
     setToken(null);
     setUser(null);
+    setAuthResolved(true);
   }, []);
 
   // ====================================================
@@ -227,11 +241,9 @@ export const AuthProvider = ({ children }) => {
   // ====================================================
   // DERIVED STATE
   // ====================================================
-  const isAuthenticated = Boolean(token);
+  const isAuthenticated = Boolean(user);
 
-  // ONLY initial bootstrap loading
-  // NOT background refetches
-  const isLoading = !authInitialized;
+  const isLoading = !authInitialized || !authResolved;
 
   const isActive = useMemo(
     () => Boolean(user?.is_active ?? user?.isActive),
@@ -257,6 +269,7 @@ export const AuthProvider = ({ children }) => {
     refreshUser,
 
     authInitialized,
+    authResolved,
 
     isAuthenticated,
     isLoading,

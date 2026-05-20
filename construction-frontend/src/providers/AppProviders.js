@@ -24,25 +24,9 @@ function isPublicPath(pathname) {
   );
 }
 
-function isRootPath(pathname) {
-  return pathname === "/";
-}
-
 // ======================================================
-// LOADER
+// ROLE ROUTES
 // ======================================================
-function FullScreenLoader({ text = "Initializing application..." }) {
-  return (
-    <div className="min-h-screen flex items-center justify-center bg-white">
-      <div className="flex flex-col items-center gap-4">
-        <div className="w-10 h-10 border-4 border-[#ef7f1b] border-t-transparent rounded-full animate-spin" />
-
-        <p className="text-sm text-muted-foreground">{text}</p>
-      </div>
-    </div>
-  );
-}
-// Add this to your roleRoutes map (same as before)
 const roleRoutes = {
   architect: "/dashboard/architect",
   client: "/dashboard/client",
@@ -53,33 +37,61 @@ const roleRoutes = {
   super_admin: "/dashboard/admin",
 };
 
+// ======================================================
+// LOADER
+// ======================================================
+function FullScreenLoader({ text = "Loading..." }) {
+  return (
+    <div className="min-h-screen flex items-center justify-center bg-white">
+      <div className="flex flex-col items-center gap-4">
+        <div className="w-10 h-10 border-4 border-[#ef7f1b] border-t-transparent rounded-full animate-spin" />
+
+        <p className="text-sm text-muted-foreground">{text}</p>
+      </div>
+    </div>
+  );
+}
+
+// ======================================================
+// APP CONTENT
+// ======================================================
 function AppContent({ children }) {
   const pathname = usePathname();
   const router = useRouter();
+
   const { authInitialized, isAuthenticated, user } = useAuth();
 
   const onPublicPage = isPublicPath(pathname);
-  const onRootPage = isRootPath(pathname);
-  const skipAuthGate = onPublicPage || onRootPage;
+  const onRootPage = pathname === "/";
 
+  // ====================================================
+  // AUTH / ROOT REDIRECTS
+  // ====================================================
   useEffect(() => {
     if (!authInitialized) return;
 
-    // ✅ Handle root redirect here — not in Home
+    // ROOT ROUTE
     if (onRootPage) {
+      // Not logged in
       if (!isAuthenticated) {
         router.replace("/login");
         return;
       }
-      if (user?.role) {
-        const roleKey = user.role.toLowerCase().replace(/\s+/g, "_").trim();
-        router.replace(roleRoutes[roleKey] || "/dashboard");
-      }
-      return; // wait for user.role to hydrate if not ready yet
+
+      // Wait for user hydration
+      if (!user?.role) return;
+
+      const roleKey = user.role.toLowerCase().replace(/\s+/g, "_").trim();
+
+      router.replace(roleRoutes[roleKey] || "/dashboard");
+
+      return;
     }
 
-    if (skipAuthGate) return;
+    // PUBLIC ROUTES
+    if (onPublicPage) return;
 
+    // PROTECTED ROUTES
     if (!isAuthenticated) {
       router.replace("/login");
     }
@@ -88,14 +100,44 @@ function AppContent({ children }) {
     isAuthenticated,
     user?.role,
     onRootPage,
-    skipAuthGate,
+    onPublicPage,
     router,
   ]);
 
-  if (!authInitialized) return <FullScreenLoader />;
-  if (skipAuthGate) return <>{children}</>;
-  if (!isAuthenticated) return <FullScreenLoader text="Redirecting..." />;
+  // ====================================================
+  // INITIAL BOOTSTRAP
+  // ====================================================
+  if (!authInitialized) {
+    return <FullScreenLoader text="Initializing application..." />;
+  }
 
+  // ====================================================
+  // ROOT ROUTE
+  // IMPORTANT:
+  // Never render children on "/"
+  // because this page only exists to redirect
+  // ====================================================
+  if (onRootPage) {
+    return <FullScreenLoader text="Redirecting..." />;
+  }
+
+  // ====================================================
+  // PUBLIC ROUTES
+  // ====================================================
+  if (onPublicPage) {
+    return <>{children}</>;
+  }
+
+  // ====================================================
+  // PROTECTED ROUTES
+  // ====================================================
+  if (!isAuthenticated) {
+    return <FullScreenLoader text="Redirecting..." />;
+  }
+
+  // ====================================================
+  // AUTHENTICATED APP
+  // ====================================================
   return <DashboardLayout>{children}</DashboardLayout>;
 }
 

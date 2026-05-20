@@ -17,15 +17,6 @@ export const authApi = baseApi.injectEndpoints({
         method: "POST",
         body: credentials,
       }),
-      async onQueryStarted(_, { queryFulfilled }) {
-        try {
-          const { data } = await queryFulfilled;
-          // assuming backend returns { accessToken }
-          localStorage.setItem("access_token", data.accessToken);
-        } catch (err) {
-          console.error("Login failed", err);
-        }
-      },
     }),
 
     // PROFILE (protected)
