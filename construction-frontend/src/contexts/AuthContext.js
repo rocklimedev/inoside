@@ -91,35 +91,10 @@ export const AuthProvider = ({ children }) => {
     refetch: refetchProfile,
   } = useGetProfileQuery(undefined, {
     skip: !authInitialized || !token,
-    // CRITICAL: Don't cache - always fetch fresh
-    refetchOnMountOrArgChange: true,
     refetchOnFocus: true,
     refetchOnReconnect: true,
+    refetchOnMountOrArgChange: false,
   });
-
-  // ====================================================
-  // FORCE REFETCH ON ROUTE CHANGE (UUID Routes Fix)
-  // This ensures backend re-validates token every route change
-  // ====================================================
-  useEffect(() => {
-    if (!authInitialized || !token) return;
-
-    console.log(`[AUTH] Route changed to: ${pathname}`);
-
-    // Skip refetch on public routes
-    const publicPaths = ["/login", "/register"];
-    if (
-      publicPaths.some((p) => pathname === p || pathname.startsWith(p + "/"))
-    ) {
-      return;
-    }
-
-    console.log("[AUTH] Refetching profile for route change...");
-
-    // CRITICAL: Force backend re-validation
-    refetchProfile();
-  }, [pathname, authInitialized, token, refetchProfile]);
-
   // ====================================================
   // SYNC PROFILE TO STATE
   // ====================================================
