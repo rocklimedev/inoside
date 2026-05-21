@@ -1,11 +1,12 @@
 "use client";
 
 import { useEffect } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, usePathname } from "next/navigation";
 import { useAuth } from "@/contexts/AuthContext";
 
 export default function HomePage() {
   const router = useRouter();
+  const pathname = usePathname();
 
   const { user, authInitialized, authResolved, isAuthenticated } = useAuth();
 
@@ -29,12 +30,15 @@ export default function HomePage() {
       return;
     }
 
-    // logged in → role-based redirect
+    // 🔥 ONLY redirect from root path (/) to prevent breaking nested routes
+    if (pathname !== "/") return;
+
+    // logged in AND on root → role-based redirect
     const roleKey = user?.role?.toLowerCase?.();
     const targetRoute = roleRoutes[roleKey] || "/dashboard/architect";
 
     router.replace(targetRoute);
-  }, [authInitialized, authResolved, isAuthenticated, user, router]);
+  }, [authInitialized, authResolved, isAuthenticated, user, pathname, router]);
 
   return (
     <div className="h-screen flex items-center justify-center text-sm text-gray-400">
