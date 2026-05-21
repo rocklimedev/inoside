@@ -16,7 +16,6 @@ function FullScreenLoader() {
 
 export default function DashboardGroupLayout({ children }) {
   const router = useRouter();
-
   const { authInitialized, authResolved, isAuthenticated } = useAuth();
 
   useEffect(() => {
@@ -32,7 +31,7 @@ export default function DashboardGroupLayout({ children }) {
   }
 
   if (!isAuthenticated) {
-    return <FullScreenLoader />;
+    return null; // 👈 IMPORTANT (not loader)
   }
 
   return <DashboardLayout>{children}</DashboardLayout>;
