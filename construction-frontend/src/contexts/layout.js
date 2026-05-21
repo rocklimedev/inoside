@@ -19,32 +19,39 @@ function FullScreenLoader() {
 
 export default function DashboardGroupLayout({ children }) {
   const router = useRouter();
-  const { authInitialized, authResolved, isAuthenticated, profileFetching } =
-    useAuth();
+  const {
+    authInitialized,
+    authResolved,
+    isAuthenticated,
+    profileFetching,
+    user,
+  } = useAuth();
 
   useEffect(() => {
-    // 🔴 WAIT for auth to fully resolve before checking
-    if (!authInitialized || !authResolved) return;
+    if (!authInitialized || !authResolved || profileFetching) return;
 
-    // 🔴 WAIT for profile to finish fetching (critical for nested routes!)
-    if (profileFetching) return;
-
-    // Now it's safe to check
     if (!isAuthenticated) {
       router.replace("/login");
+      return;
     }
-  }, [authInitialized, authResolved, isAuthenticated, profileFetching, router]);
+  }, [
+    authInitialized,
+    authResolved,
+    isAuthenticated,
+    profileFetching,
+    user,
+    router,
+  ]);
 
-  // Show loader while auth is resolving OR profile is fetching
-  if (!authInitialized || !authResolved || profileFetching) {
+  // Strict loader - never render children until everything is rock solid
+  if (
+    !authInitialized ||
+    !authResolved ||
+    profileFetching ||
+    !isAuthenticated
+  ) {
     return <FullScreenLoader />;
   }
 
-  // Not authenticated - return null (don't render content)
-  if (!isAuthenticated) {
-    return null;
-  }
-
-  // ✅ Auth is valid and stable - render protected content
   return <DashboardLayout>{children}</DashboardLayout>;
 }
