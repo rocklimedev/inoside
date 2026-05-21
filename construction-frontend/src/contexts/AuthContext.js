@@ -25,7 +25,6 @@ const normalizeUser = (user) => {
   if (!user) return null;
 
   const rawUser = user?.dataValues || user;
-
   let role = rawUser.role;
 
   if (role && typeof role === "object") {
@@ -41,6 +40,8 @@ const normalizeUser = (user) => {
     role: typeof role === "string" ? role : null,
     is_active: Boolean(rawUser.is_active),
     is_email_verified: Boolean(rawUser.is_email_verified),
+    isActive: Boolean(rawUser.is_active),
+    isEmailVerified: Boolean(rawUser.is_email_verified),
     last_login: rawUser.last_login,
     created_at: rawUser.created_at,
   };
@@ -52,31 +53,37 @@ const normalizeUser = (user) => {
 export const AuthProvider = ({ children }) => {
   const pathname = usePathname();
 
+  // ====================================================
+  // STATE
+  // ====================================================
   const [token, setToken] = useState(null);
   const [user, setUser] = useState(null);
-
   const [authInitialized, setAuthInitialized] = useState(false);
   const [authResolved, setAuthResolved] = useState(false);
 
+  // ====================================================
+  // MUTATIONS
+  // ====================================================
   const [loginMutation] = useLoginMutation();
   const [registerMutation] = useRegisterMutation();
 
-  // ======================================================
-  // BOOTSTRAP TOKEN
-  // ======================================================
+  // ====================================================
+  // BOOTSTRAP TOKEN FROM LOCALSTORAGE
+  // ====================================================
   useEffect(() => {
-    const storedToken = localStorage.getItem("access_token");
-
-    if (storedToken) {
-      setToken(storedToken);
+    try {
+      const storedToken = localStorage.getItem("access_token");
+      if (storedToken) {
+        setToken(storedToken);
+      }
+    } finally {
+      setAuthInitialized(true);
     }
-
-    setAuthInitialized(true);
   }, []);
 
-  // ======================================================
-  // PROFILE QUERY
-  // ======================================================
+  // ====================================================
+  // PROFILE QUERY - WITH MANUAL REFETCH CONTROL
+  // ====================================================
   const {
     data: profileData,
     error: profileError,
@@ -88,113 +95,156 @@ export const AuthProvider = ({ children }) => {
     refetchOnReconnect: true,
     refetchOnMountOrArgChange: false,
   });
-
-  // ======================================================
-  // AUTH SYNC (IMPORTANT FIX)
-  // ======================================================
+  // ====================================================
+  // SYNC PROFILE TO STATE
+  // ====================================================
   useEffect(() => {
     if (!authInitialized) return;
 
-    // no token → logged out (but resolved)
+    // No token
     if (!token) {
       setUser(null);
       setAuthResolved(true);
       return;
     }
 
-    // still loading profile → DO NOTHING (critical fix)
-    if (profileFetching) return;
+    // Still fetching
+    if (profileFetching) {
+      console.log("[AUTH] Profile fetching...");
+      return;
+    }
 
-    // success
+    // Success
     if (profileData?.user) {
+      console.log("[AUTH] Profile loaded successfully:", profileData.user);
       setUser(normalizeUser(profileData.user));
       setAuthResolved(true);
       return;
     }
 
-    // invalid token
+    // Error - Invalid token
     if (profileError) {
+      console.error("[AUTH] Profile error:", profileError);
       localStorage.removeItem("access_token");
       document.cookie =
         "access_token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT";
-
       setToken(null);
       setUser(null);
       setAuthResolved(true);
+      return;
     }
   }, [authInitialized, token, profileData, profileError, profileFetching]);
 
-  // ======================================================
+  // ====================================================
   // LOGIN
-  // ======================================================
+  // ====================================================
   const login = async (credentials) => {
     const res = await loginMutation(credentials).unwrap();
 
     const accessToken = res?.access_token;
-    if (!accessToken) throw new Error("No access token");
-
-    setAuthResolved(false);
-
-    localStorage.setItem("access_token", accessToken);
-    document.cookie = `access_token=${accessToken}; path=/; max-age=86400`;
-
-    setToken(accessToken);
-
-    // allow profile query to resolve auth properly
-    const profileRes = await refetchProfile();
-
-    if (profileRes?.data?.user) {
-      setUser(normalizeUser(profileRes.data.user));
+    if (!accessToken) {
+      throw new Error("No access token received");
     }
 
-    setAuthResolved(true);
+    setAuthResolved(false);
+    localStorage.setItem("access_token", accessToken);
+    document.cookie = `access_token=${accessToken}; path=/; max-age=86400; SameSite=Lax`;
+    setToken(accessToken);
 
-    return res;
+    if (res?.user) {
+      const normalized = normalizeUser(res.user);
+      setUser(normalized);
+      setAuthResolved(true);
+      return { ...res, user: normalized };
+    }
+
+    // Fallback: fetch profile
+    const profileRes = await refetchProfile();
+    if (profileRes?.data?.user) {
+      const normalized = normalizeUser(profileRes.data.user);
+      setUser(normalized);
+      setAuthResolved(true);
+      return { ...res, user: normalized };
+    }
+
+    throw new Error("Failed to fetch authenticated user");
   };
 
-  // ======================================================
+  // ====================================================
+  // REGISTER
+  // ====================================================
+  const register = async (data) => {
+    return await registerMutation(data).unwrap();
+  };
+
+  // ====================================================
   // LOGOUT
-  // ======================================================
+  // ====================================================
   const logout = useCallback(() => {
+    console.log("[AUTH] Logging out...");
     localStorage.removeItem("access_token");
     document.cookie =
       "access_token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT";
-
     setToken(null);
     setUser(null);
     setAuthResolved(true);
   }, []);
 
-  // ======================================================
-  // DERIVED STATE (🔥 FIX HERE)
-  // ======================================================
+  // ====================================================
+  // REFRESH USER
+  // ====================================================
+  const refreshUser = useCallback(async () => {
+    if (!token) return null;
 
-  // IMPORTANT: not just user-based
-  const isAuthenticated = useMemo(() => {
-    return Boolean(token && user);
-  }, [token, user]);
+    try {
+      const res = await refetchProfile();
+      if (res?.data?.user) {
+        const normalized = normalizeUser(res.data.user);
+        setUser(normalized);
+        return normalized;
+      }
+      return null;
+    } catch {
+      return null;
+    }
+  }, [token, refetchProfile]);
 
+  // ====================================================
+  // DERIVED STATE
+  // ====================================================
+  const isAuthenticated = Boolean(user);
   const isLoading = !authInitialized || !authResolved;
 
-  // ======================================================
+  const isActive = useMemo(
+    () => Boolean(user?.is_active ?? user?.isActive),
+    [user],
+  );
+
+  const isEmailVerified = useMemo(
+    () => Boolean(user?.is_email_verified ?? user?.isEmailVerified),
+    [user],
+  );
+
+  // ====================================================
   // CONTEXT VALUE
-  // ======================================================
+  // ====================================================
   const value = {
     token,
     user,
-
+    userMeta: user,
     login,
-    register: registerMutation,
+    register,
     logout,
-
+    refreshUser,
     authInitialized,
     authResolved,
-
     isAuthenticated,
     isLoading,
     profileFetching,
-
-    hasRole: (role) => user?.role?.toLowerCase?.() === role?.toLowerCase?.(),
+    isActive,
+    isEmailVerified,
+    hasRole: (roleName) =>
+      user?.role?.toLowerCase() === roleName?.toLowerCase(),
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
@@ -204,7 +254,9 @@ export const AuthProvider = ({ children }) => {
 // HOOK
 // ======================================================
 export const useAuth = () => {
-  const ctx = useContext(AuthContext);
-  if (!ctx) throw new Error("useAuth must be used within AuthProvider");
-  return ctx;
+  const context = useContext(AuthContext);
+  if (!context) {
+    throw new Error("useAuth must be used within AuthProvider");
+  }
+  return context;
 };

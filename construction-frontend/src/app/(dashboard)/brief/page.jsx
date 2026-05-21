@@ -276,9 +276,8 @@ export default function BriefList() {
   const handleEditBrief = (briefId) =>
     router.push(`/brief/add?briefId=${briefId}`);
 
-  const handleCardClick = (projectId) =>
-    router.push(`/projects/${projectId}/brief`);
-
+  const handleCardClick = (projectId, briefId) =>
+    router.push(`/brief/view?briefId=${briefId}&projectId=${projectId}`);
   const handleNewBrief = () => router.push("/brief/add");
 
   // ======================================================
@@ -580,7 +579,7 @@ export default function BriefList() {
                     }}
                   >
                     <Card
-                      onClick={() => handleCardClick(brief.id)}
+                      onClick={() => handleCardClick(brief.id, brief.briefId)}
                       className="
                           group
                           relative
@@ -682,7 +681,9 @@ export default function BriefList() {
                           <Button
                             variant="outline"
                             className="h-11 flex-1 rounded-2xl"
-                            onClick={() => handleCardClick(brief.id)}
+                            onClick={() =>
+                              handleCardClick(brief.id, brief.briefId)
+                            }
                           >
                             <Eye className="mr-2 h-4 w-4" />
                             View
@@ -793,7 +794,9 @@ export default function BriefList() {
                       {filteredBriefs.map((brief) => (
                         <tr
                           key={brief.briefId}
-                          onClick={() => handleCardClick(brief.id)}
+                          onClick={() =>
+                            handleCardClick(brief.id, brief.briefId)
+                          }
                           className="cursor-pointer border-b transition-colors hover:bg-muted/30"
                         >
                           <td className="px-6 py-5">
@@ -843,7 +846,9 @@ export default function BriefList() {
                               <Button
                                 size="icon"
                                 variant="ghost"
-                                onClick={() => handleCardClick(brief.id)}
+                                onClick={() =>
+                                  handleCardClick(brief.id, brief.briefId)
+                                }
                               >
                                 <ArrowUpRight className="h-4 w-4" />
                               </Button>

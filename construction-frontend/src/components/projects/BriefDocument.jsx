@@ -7,33 +7,19 @@ import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 
 import { ArrowLeft, Download, Send, Loader2, Edit3 } from "lucide-react";
-
 import { toast } from "sonner";
 
 // RTK Query
 import { useSendBriefMutation } from "@/api/projectsApi";
 
 const STATUS_MAP = {
-  draft: {
-    label: "Draft",
-    color: "bg-gray-100 text-gray-600",
-  },
-
-  completed: {
-    label: "Document Ready",
-    color: "bg-blue-50 text-blue-600",
-  },
-
+  draft: { label: "Draft", color: "bg-gray-100 text-gray-600" },
+  completed: { label: "Document Ready", color: "bg-blue-50 text-blue-600" },
   sent_to_client: {
     label: "Sent to Client",
     color: "bg-orange-50 text-[#ef7f1b]",
   },
-
-  approved: {
-    label: "Approved",
-    color: "bg-green-50 text-green-600",
-  },
-
+  approved: { label: "Approved", color: "bg-green-50 text-green-600" },
   changes_requested: {
     label: "Changes Requested",
     color: "bg-red-50 text-[#e31d3b]",
@@ -42,8 +28,8 @@ const STATUS_MAP = {
 
 export default function BriefDocument({
   brief,
+  briefId,
   projectId,
-  user,
   onBack,
   onEdit,
 }) {
@@ -53,10 +39,7 @@ export default function BriefDocument({
 
   const handleDownload = () => {
     if (data?.document_url) {
-      const fullUrl = `${
-        process.env.NEXT_PUBLIC_BACKEND_URL || ""
-      }${data.document_url}`;
-
+      const fullUrl = `${process.env.NEXT_PUBLIC_BACKEND_URL || ""}${data.document_url}`;
       window.open(fullUrl, "_blank");
     } else {
       toast.error("Document not available yet");
@@ -71,11 +54,9 @@ export default function BriefDocument({
 
     try {
       await sendBrief(data.id).unwrap();
-
       toast.success("Brief sent to client successfully");
     } catch (err) {
       console.error(err);
-
       toast.error(err?.data?.message || "Failed to send brief");
     }
   };
@@ -84,13 +65,8 @@ export default function BriefDocument({
 
   const formatValue = (value) => {
     if (value === true) return "Yes";
-
     if (value === false) return "No";
-
-    if (value === null || value === undefined || value === "") {
-      return "—";
-    }
-
+    if (value === null || value === undefined || value === "") return "—";
     return value;
   };
 
@@ -98,105 +74,12 @@ export default function BriefDocument({
     return value === null || value === undefined || value === "";
   };
 
-  const docSections = [
-    {
-      title: "Client Information",
-
-      fields: [
-        ["Client Name", data.client_name],
-        ["Phone", data.client_phone],
-        ["Email", data.client_email],
-        ["Location", data.client_location],
-        ["Communication", data.comm_preference],
-      ],
-    },
-
-    {
-      title: "Project Overview",
-
-      fields: [
-        ["Project Name", data.project_name],
-        ["Project Type", data.project_type],
-        ["Address", data.project_address],
-        ["City", data.project_city],
-        ["Area", data.project_area],
-        ["Timeline", data.timeline_expectations],
-      ],
-    },
-
-    {
-      title: "Project Understanding",
-
-      fields: [
-        ["Decision Readiness", data.decision_readiness],
-
-        ["Parking Required", data.parking_required],
-
-        ["First Construction Project", data.first_construction_project],
-
-        ["End To End Services", data.end_to_end_services],
-      ],
-    },
-
-    {
-      title: "Client Lifestyle & Needs",
-
-      fields: [
-        ["Family Members", data.family_members],
-
-        ["Usage Requirements", data.usage_requirements],
-
-        ["Special Needs", data.special_needs],
-
-        ["Future Expansion", data.future_expansion],
-      ],
-    },
-
-    {
-      title: "Design Preferences",
-
-      fields: [
-        ["Style", data.design_style],
-
-        ["Materials", data.material_preferences],
-
-        ["Lighting", data.lighting_preference],
-
-        ["Colors", data.color_preferences],
-      ],
-    },
-
-    {
-      title: "Budget Understanding",
-
-      fields: [
-        ["Range", data.budget_range],
-
-        ["Flexibility", data.budget_flexibility],
-
-        ["Priority Areas", data.priority_areas],
-
-        ["Optimization Areas", data.cost_optimization_areas],
-      ],
-    },
-
-    {
-      title: "References & Inspirations",
-
-      fields: [
-        ["Reference Links", data.reference_links],
-
-        ["Likes", data.client_likes],
-
-        ["Dislikes", data.client_dislikes],
-      ],
-    },
-  ];
+  // ... (keep all your docSections as they are)
 
   return (
     <div className="flex flex-col h-full" data-testid="brief-document">
       {/* Header */}
-      <div className="p-4 md:px-6 border-b border-gray-200 bg-white">
+      <div className="p-4 md:px-6 border-b border-gray-200 bg-white sticky top-0 z-10">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
             <button
@@ -210,8 +93,14 @@ export default function BriefDocument({
               <h1 className="text-base font-bold text-black">
                 {formatValue(data.project_name)}
               </h1>
-
-              <p className="text-[11px] text-gray-400">Brief Document</p>
+              <p className="text-[11px] text-gray-400 flex items-center gap-2">
+                Brief Document
+                {projectId && (
+                  <span className="text-gray-300">
+                    • Project ID: {projectId}
+                  </span>
+                )}
+              </p>
             </div>
 
             <Badge className={`${st.color} text-[10px] border-0 ml-2`}>
