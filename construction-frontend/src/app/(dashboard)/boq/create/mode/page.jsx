@@ -40,13 +40,17 @@ import {
 
 import { useGetInventoryMasterQuery } from "@/api/inventoryApi";
 
-export default function BoqPage({ projectId: initialProjectId, boqId }) {
+export default function BoqPage({
+  projectId: initialProjectId,
+  boqId: boqIdProp,
+}) {
   const router = useRouter();
   const searchParams = useSearchParams();
 
-  const boqId = searchParams.get("boqId"); // For editing
-  const categoryIdFromUrl = searchParams.get("categoryId"); // For new BOQ
+  const boqIdFromUrl = searchParams.get("boqId"); // For editing via query param
+  const boqId = boqIdProp || boqIdFromUrl; // Final effective ID
 
+  const categoryIdFromUrl = searchParams.get("categoryId");
   // ======================================================
   // STATE — all hooks must come before any conditional return
   // ======================================================
