@@ -1,13 +1,11 @@
 "use client";
 
 import { useEffect } from "react";
-import { useRouter, usePathname } from "next/navigation";
+import { useRouter } from "next/navigation";
 import { useAuth } from "@/contexts/AuthContext";
 
 export default function HomePage() {
   const router = useRouter();
-  const pathname = usePathname();
-
   const { user, authInitialized, authResolved, isAuthenticated } = useAuth();
 
   const roleRoutes = {
@@ -21,28 +19,27 @@ export default function HomePage() {
   };
 
   useEffect(() => {
-    // 🔒 wait until auth is fully stable
+    // Wait for auth to resolve
     if (!authInitialized || !authResolved) return;
 
-    // not logged in → login
+    // Not logged in → login
     if (!isAuthenticated) {
       router.replace("/login");
       return;
     }
 
-    // 🔥 ONLY redirect from root path (/) to prevent breaking nested routes
-    if (pathname !== "/") return;
-
-    // logged in AND on root → role-based redirect
+    // Logged in → role-based redirect
     const roleKey = user?.role?.toLowerCase?.();
     const targetRoute = roleRoutes[roleKey] || "/dashboard/architect";
-
     router.replace(targetRoute);
-  }, [authInitialized, authResolved, isAuthenticated, user, pathname, router]);
+  }, [authInitialized, authResolved, isAuthenticated, user, router]);
 
   return (
-    <div className="h-screen flex items-center justify-center text-sm text-gray-400">
-      Initializing workspace...
+    <div className="h-screen flex items-center justify-center">
+      <div className="text-center">
+        <div className="w-8 h-8 border-2 border-[#ef7f1b] border-t-transparent rounded-full animate-spin mx-auto" />
+        <p className="mt-4 text-sm text-gray-500">Initializing workspace...</p>
+      </div>
     </div>
   );
 }
