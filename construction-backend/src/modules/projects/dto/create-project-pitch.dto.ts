@@ -9,10 +9,6 @@ import {
 } from 'class-validator';
 
 export class CreateProjectPitchDto {
-  @ApiProperty({ description: 'Project ID' })
-  @IsUUID()
-  project_id!: string;
-
   @ApiPropertyOptional({ example: 'Modern Minimalist' })
   @IsOptional()
   @IsString()

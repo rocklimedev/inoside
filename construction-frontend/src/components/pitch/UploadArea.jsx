@@ -1,9 +1,8 @@
 "use client";
 
-import React, { useState, useRef } from "react";
-
-import { useCreatePitchGlobalMutation } from "@/api/projectsApi";
-import { useAuth } from "@/contexts/AuthContext";
+import React, { useState, useRef, useMemo } from "react";
+import { useGetProjectsQuery, useCreatePitchMutation } from "@/api/projectsApi";
+import { useUploadFileMutation } from "@/api/cdnApi"; // ← Import from cdnApi
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -16,22 +15,48 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
 import { Switch } from "@/components/ui/switch";
 
-import { Upload, File, X, Loader2, Plus, Sparkles } from "lucide-react";
+import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+} from "@/components/ui/command";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
 
+import {
+  Upload,
+  File,
+  X,
+  Loader2,
+  Plus,
+  Sparkles,
+  ChevronsUpDown,
+} from "lucide-react";
 import { toast } from "sonner";
 
 const ALLOWED_TYPES = [".pdf", ".ppt", ".pptx", ".key"];
 
 export default function UploadArea({ onUploaded }) {
-  const { api } = useAuth();
+  const [createPitchGlobal, { isLoading: isCreating }] =
+    useCreatePitchMutation();
+  const [uploadFile, { isLoading: isUploading }] = useUploadFileMutation();
 
-  const [createPitchGlobal, { isLoading }] = useCreatePitchGlobalMutation();
+  const { data: projects = [], isLoading: projectsLoading } =
+    useGetProjectsQuery();
 
   // ======================================================
   // STATE
   // ======================================================
+  const [selectedProject, setSelectedProject] = useState(null);
+  const [projectSearch, setProjectSearch] = useState("");
+  const [openProjectCombobox, setOpenProjectCombobox] = useState(false);
 
-  const [projectName, setProjectName] = useState("");
   const [preferredDesignStyle, setPreferredDesignStyle] = useState("");
   const [colorTone, setColorTone] = useState("Not Sure");
   const [luxuryLevel, setLuxuryLevel] = useState("Medium");
@@ -46,39 +71,40 @@ export default function UploadArea({ onUploaded }) {
   const [specialRequirements, setSpecialRequirements] = useState("");
 
   const [status, setStatus] = useState("Draft");
-
   const [file, setFile] = useState(null);
-
   const [progress, setProgress] = useState(0);
-
   const [dragActive, setDragActive] = useState(false);
 
   const inputRef = useRef(null);
 
   // ======================================================
-  // FILE HANDLER
+  // FILTERED PROJECTS
   // ======================================================
+  const filteredProjects = useMemo(() => {
+    if (!projectSearch.trim()) return projects;
+    const term = projectSearch.toLowerCase();
+    return projects.filter(
+      (p) =>
+        p.name?.toLowerCase().includes(term) ||
+        p.client?.name?.toLowerCase().includes(term),
+    );
+  }, [projects, projectSearch]);
 
+  // ======================================================
+  // HANDLERS
+  // ======================================================
   const handleFile = (f) => {
     const ext = f.name.substring(f.name.lastIndexOf(".")).toLowerCase();
-
     if (!ALLOWED_TYPES.includes(ext)) {
       toast.error("Supported formats: PDF, PPT, PPTX, Keynote");
       return;
     }
-
     setFile(f);
   };
 
-  // ======================================================
-  // PRIORITY AREAS
-  // ======================================================
-
   const addPriorityArea = () => {
     if (!priorityInput.trim()) return;
-
     setPriorityAreas((prev) => [...prev, priorityInput.trim()]);
-
     setPriorityInput("");
   };
 
@@ -86,163 +112,156 @@ export default function UploadArea({ onUploaded }) {
     setPriorityAreas((prev) => prev.filter((_, i) => i !== index));
   };
 
-  // ======================================================
-  // UPLOAD
-  // ======================================================
+  const resetForm = () => {
+    setSelectedProject(null);
+    setProjectSearch("");
+    setPreferredDesignStyle("");
+    setColorTone("Not Sure");
+    setLuxuryLevel("Medium");
+    setFunctionalVsAesthetic("");
+    setBudgetFlexibility(false);
+    setPriorityAreas([]);
+    setLikesDislikes("");
+    setNonNegotiables("");
+    setSpecialRequirements("");
+    setStatus("Draft");
+    setFile(null);
+    setProgress(0);
+  };
 
   const handleUpload = async () => {
-    if (!projectName.trim()) {
-      return toast.error("Project name required");
-    }
-
-    if (!file) {
-      return toast.error("Select a file");
-    }
+    if (!selectedProject) return toast.error("Please select a project");
+    if (!file) return toast.error("Please select a pitch file");
 
     try {
       setProgress(0);
 
-      const formData = new FormData();
-
-      formData.append("file", file);
-
       const interval = setInterval(() => {
-        setProgress((p) => Math.min(p + 10, 90));
-      }, 200);
+        setProgress((p) => Math.min(p + 10, 92));
+      }, 220);
 
-      const uploadRes = await api.post("/upload", formData, {
-        headers: {
-          "Content-Type": "multipart/form-data",
-        },
-      });
+      // Upload file using CDN API
+      const uploadRes = await uploadFile(file).unwrap();
 
       clearInterval(interval);
-
       setProgress(95);
 
+      // Create Pitch
       await createPitchGlobal({
-        project_name: projectName,
-
-        preferred_design_style: preferredDesignStyle,
-
+        projectId: selectedProject.id,
+        preferred_design_style: preferredDesignStyle || null,
         color_tone: colorTone,
-
         luxury_level: luxuryLevel,
-
-        functional_vs_aesthetic: functionalVsAesthetic,
-
+        functional_vs_aesthetic: functionalVsAesthetic || null,
         budget_flexibility: budgetFlexibility,
 
-        priority_areas: priorityAreas,
-
-        likes_dislikes: likesDislikes,
-
-        non_negotiables: nonNegotiables,
-
-        special_requirements: specialRequirements,
-
-        moodboard_pdf_url: "",
-
-        pitch_pdf_url: uploadRes.data.url,
-
-        status,
-
-        file_id: uploadRes.data.file_id,
-        filename: file.name,
-        file_size: uploadRes.data.size,
+        likes_dislikes: likesDislikes || null,
+        non_negotiables: nonNegotiables || null,
+        special_requirements: specialRequirements || null,
+        pitch_pdf_url: uploadRes.url || uploadRes.data?.url,
       }).unwrap();
 
       setProgress(100);
+      toast.success("Project Pitch uploaded successfully!");
 
-      toast.success("Pitch uploaded successfully");
-
-      // RESET
-      setProjectName("");
-      setPreferredDesignStyle("");
-      setColorTone("Not Sure");
-      setLuxuryLevel("Medium");
-      setFunctionalVsAesthetic("");
-      setBudgetFlexibility(false);
-      setPriorityAreas([]);
-      setLikesDislikes("");
-      setNonNegotiables("");
-      setSpecialRequirements("");
-      setStatus("Draft");
-      setFile(null);
-
-      if (onUploaded) {
-        onUploaded();
-      }
+      resetForm();
+      if (onUploaded) onUploaded();
     } catch (err) {
-      console.error(err);
-      toast.error("Upload failed");
+      console.error("=== UPLOAD ERROR ===");
+      console.error("Full error:", err);
+      console.error("Status:", err?.status);
+      console.error("Data:", err?.data);
+      console.error("Original Error:", err?.error);
+
+      if (err?.status === 401 || err?.status === 403) {
+        toast.error("CDN Authentication failed - Check secret key");
+      } else if (err?.status === "FETCH_ERROR") {
+        toast.error(
+          "Cannot connect to server. Check if backend is running + CORS",
+        );
+      } else if (err?.data?.message) {
+        toast.error(err.data.message);
+      } else {
+        toast.error("Failed to upload pitch");
+      }
     }
   };
 
   return (
     <div className="w-full">
-      {/* ====================================================== */}
-      {/* MODAL CONTENT WRAPPER */}
-      {/* ====================================================== */}
-
       <ScrollArea className="h-[85vh] pr-4">
         <div className="max-w-6xl mx-auto pb-10">
-          {/* HEADER */}
-
-          <div className="sticky top-0 z-10 bg-white pb-4">
-            <div className="flex items-center gap-3 mb-2">
-              <div className="w-11 h-11 rounded-2xl bg-orange-100 flex items-center justify-center">
-                <Sparkles className="w-5 h-5 text-[#ef7f1b]" />
-              </div>
-
-              <div>
-                <h2 className="text-2xl font-bold text-black">
-                  Upload Project Pitch
-                </h2>
-
-                <p className="text-sm text-gray-500">
-                  Submit your project presentation and details
-                </p>
-              </div>
-            </div>
-
-            <Separator className="mt-4" />
-          </div>
-
-          {/* GRID */}
-
           <div className="grid grid-cols-1 xl:grid-cols-2 gap-6 mt-6">
-            {/* ====================================================== */}
             {/* LEFT SIDE */}
-            {/* ====================================================== */}
-
             <Card className="rounded-2xl border shadow-sm">
               <CardContent className="p-6 space-y-6">
                 <div>
                   <h3 className="font-semibold text-lg">Project Information</h3>
-
                   <p className="text-sm text-gray-500">
-                    Basic project configuration
+                    Select existing project
                   </p>
                 </div>
 
-                {/* PROJECT NAME */}
-
                 <div className="space-y-2">
-                  <Label>Project Name *</Label>
-
-                  <Input
-                    value={projectName}
-                    onChange={(e) => setProjectName(e.target.value)}
-                    placeholder="e.g. Sunrise Villa"
-                  />
+                  <Label>
+                    Project <span className="text-red-500">*</span>
+                  </Label>
+                  <Popover
+                    open={openProjectCombobox}
+                    onOpenChange={setOpenProjectCombobox}
+                  >
+                    <PopoverTrigger asChild>
+                      <Button
+                        variant="outline"
+                        role="combobox"
+                        className="w-full justify-between"
+                        disabled={projectsLoading}
+                      >
+                        {selectedProject
+                          ? selectedProject.name
+                          : "Select or search project..."}
+                        <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-full p-0" align="start">
+                      <Command>
+                        <CommandInput
+                          placeholder="Search projects..."
+                          value={projectSearch}
+                          onValueChange={setProjectSearch}
+                        />
+                        <CommandList>
+                          <CommandEmpty>No project found.</CommandEmpty>
+                          <CommandGroup>
+                            {filteredProjects.map((project) => (
+                              <CommandItem
+                                key={project.id}
+                                onSelect={() => {
+                                  setSelectedProject(project);
+                                  setProjectSearch("");
+                                  setOpenProjectCombobox(false);
+                                }}
+                              >
+                                <div>
+                                  <p className="font-medium">{project.name}</p>
+                                  {project.client?.name && (
+                                    <p className="text-xs text-muted-foreground">
+                                      {project.client.name}
+                                    </p>
+                                  )}
+                                </div>
+                              </CommandItem>
+                            ))}
+                          </CommandGroup>
+                        </CommandList>
+                      </Command>
+                    </PopoverContent>
+                  </Popover>
                 </div>
 
-                {/* DESIGN STYLE */}
-
+                {/* Other fields (Design Style, Color, etc.) */}
                 <div className="space-y-2">
                   <Label>Preferred Design Style</Label>
-
                   <Input
                     value={preferredDesignStyle}
                     onChange={(e) => setPreferredDesignStyle(e.target.value)}
@@ -250,16 +269,13 @@ export default function UploadArea({ onUploaded }) {
                   />
                 </div>
 
-                {/* COLOR + LUXURY */}
-
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label>Color Tone</Label>
-
                     <select
                       value={colorTone}
                       onChange={(e) => setColorTone(e.target.value)}
-                      className="w-full border rounded-lg px-3 py-2 bg-white"
+                      className="w-full border rounded-lg px-3 py-2"
                     >
                       <option>Light</option>
                       <option>Dark</option>
@@ -267,14 +283,12 @@ export default function UploadArea({ onUploaded }) {
                       <option>Not Sure</option>
                     </select>
                   </div>
-
                   <div className="space-y-2">
                     <Label>Luxury Level</Label>
-
                     <select
                       value={luxuryLevel}
                       onChange={(e) => setLuxuryLevel(e.target.value)}
-                      className="w-full border rounded-lg px-3 py-2 bg-white"
+                      className="w-full border rounded-lg px-3 py-2"
                     >
                       <option>Low</option>
                       <option>Medium</option>
@@ -283,45 +297,34 @@ export default function UploadArea({ onUploaded }) {
                   </div>
                 </div>
 
-                {/* FUNCTIONAL */}
-
                 <div className="space-y-2">
                   <Label>Functional vs Aesthetic</Label>
-
                   <Textarea
                     rows={5}
                     value={functionalVsAesthetic}
                     onChange={(e) => setFunctionalVsAesthetic(e.target.value)}
-                    placeholder="Describe balance between function and aesthetics..."
                   />
                 </div>
-
-                {/* BUDGET */}
 
                 <div className="flex items-center justify-between rounded-xl border p-4">
                   <div>
                     <p className="font-medium">Budget Flexible</p>
-
                     <p className="text-sm text-gray-500">
                       Allow flexibility in budget planning
                     </p>
                   </div>
-
                   <Switch
                     checked={budgetFlexibility}
                     onCheckedChange={setBudgetFlexibility}
                   />
                 </div>
 
-                {/* STATUS */}
-
                 <div className="space-y-2">
                   <Label>Status</Label>
-
                   <select
                     value={status}
                     onChange={(e) => setStatus(e.target.value)}
-                    className="w-full border rounded-lg px-3 py-2 bg-white"
+                    className="w-full border rounded-lg px-3 py-2"
                   >
                     <option>Draft</option>
                     <option>Pending Review</option>
@@ -332,51 +335,34 @@ export default function UploadArea({ onUploaded }) {
               </CardContent>
             </Card>
 
-            {/* ====================================================== */}
             {/* RIGHT SIDE */}
-            {/* ====================================================== */}
-
             <Card className="rounded-2xl border shadow-sm">
               <CardContent className="p-6 space-y-6">
                 <div>
                   <h3 className="font-semibold text-lg">Additional Details</h3>
-
-                  <p className="text-sm text-gray-500">
-                    Priorities, notes and uploads
-                  </p>
                 </div>
 
-                {/* PRIORITY AREAS */}
-
+                {/* Priority Areas */}
                 <div className="space-y-3">
                   <Label>Priority Areas</Label>
-
                   <div className="flex gap-2">
                     <Input
                       value={priorityInput}
                       onChange={(e) => setPriorityInput(e.target.value)}
-                      placeholder="Kitchen"
+                      placeholder="e.g. Kitchen"
                     />
-
-                    <Button
-                      type="button"
-                      size="icon"
-                      onClick={addPriorityArea}
-                      className="bg-[#ef7f1b] hover:bg-[#d66e15]"
-                    >
+                    <Button type="button" size="icon" onClick={addPriorityArea}>
                       <Plus className="w-4 h-4" />
                     </Button>
                   </div>
-
                   <div className="flex flex-wrap gap-2">
                     {priorityAreas.map((item, index) => (
                       <Badge
                         key={index}
                         variant="secondary"
-                        className="px-3 py-1 text-sm rounded-full flex items-center gap-2"
+                        className="flex items-center gap-2"
                       >
                         {item}
-
                         <button onClick={() => removePriorityArea(index)}>
                           <X className="w-3 h-3" />
                         </button>
@@ -385,11 +371,8 @@ export default function UploadArea({ onUploaded }) {
                   </div>
                 </div>
 
-                {/* TEXTAREAS */}
-
                 <div className="space-y-2">
                   <Label>Likes / Dislikes</Label>
-
                   <Textarea
                     rows={4}
                     value={likesDislikes}
@@ -399,7 +382,6 @@ export default function UploadArea({ onUploaded }) {
 
                 <div className="space-y-2">
                   <Label>Non Negotiables</Label>
-
                   <Textarea
                     rows={4}
                     value={nonNegotiables}
@@ -409,7 +391,6 @@ export default function UploadArea({ onUploaded }) {
 
                 <div className="space-y-2">
                   <Label>Special Requirements</Label>
-
                   <Textarea
                     rows={4}
                     value={specialRequirements}
@@ -417,11 +398,11 @@ export default function UploadArea({ onUploaded }) {
                   />
                 </div>
 
-                {/* FILE UPLOAD */}
-
+                {/* File Upload */}
                 <div>
-                  <Label className="mb-2 block">Pitch File</Label>
-
+                  <Label className="mb-2 block">
+                    Pitch File <span className="text-red-500">*</span>
+                  </Label>
                   <div
                     className={`border-2 border-dashed rounded-2xl p-8 text-center transition-all cursor-pointer ${
                       dragActive
@@ -435,12 +416,9 @@ export default function UploadArea({ onUploaded }) {
                     onDragLeave={() => setDragActive(false)}
                     onDrop={(e) => {
                       e.preventDefault();
-
                       setDragActive(false);
-
-                      if (e.dataTransfer.files?.[0]) {
+                      if (e.dataTransfer.files?.[0])
                         handleFile(e.dataTransfer.files[0]);
-                      }
                     }}
                     onClick={() => inputRef.current?.click()}
                   >
@@ -457,17 +435,14 @@ export default function UploadArea({ onUploaded }) {
                     {file ? (
                       <div className="flex flex-col items-center gap-3">
                         <File className="w-10 h-10 text-[#ef7f1b]" />
-
-                        <div>
+                        <div className="text-center">
                           <p className="font-medium text-sm break-all">
                             {file.name}
                           </p>
-
                           <p className="text-xs text-gray-400">
                             {(file.size / 1024 / 1024).toFixed(2)} MB
                           </p>
                         </div>
-
                         <Button
                           size="sm"
                           variant="outline"
@@ -482,11 +457,7 @@ export default function UploadArea({ onUploaded }) {
                     ) : (
                       <>
                         <Upload className="w-10 h-10 text-gray-300 mx-auto mb-3" />
-
-                        <p className="font-medium text-sm">
-                          Drag & drop your file
-                        </p>
-
+                        <p className="font-medium">Drag & drop your file</p>
                         <p className="text-xs text-gray-400 mt-1">
                           PDF, PPT, PPTX, Keynote
                         </p>
@@ -495,29 +466,26 @@ export default function UploadArea({ onUploaded }) {
                   </div>
                 </div>
 
-                {/* PROGRESS */}
-
-                {isLoading && (
+                {progress > 0 && (
                   <div className="space-y-2">
                     <Progress value={progress} className="h-2" />
-
-                    <p className="text-xs text-gray-500 text-center">
+                    <p className="text-xs text-center text-gray-500">
                       {progress}% uploaded
                     </p>
                   </div>
                 )}
 
-                {/* SUBMIT */}
-
                 <Button
                   onClick={handleUpload}
-                  disabled={isLoading || !file || !projectName.trim()}
-                  className="w-full h-11 bg-[#ef7f1b] hover:bg-[#d66e15] text-white rounded-xl"
+                  disabled={
+                    isCreating || isUploading || !file || !selectedProject
+                  }
+                  className="w-full h-12 bg-[#ef7f1b] hover:bg-[#d66e15] text-white rounded-xl"
                 >
-                  {isLoading ? (
+                  {isCreating || isUploading ? (
                     <>
                       <Loader2 className="w-4 h-4 animate-spin mr-2" />
-                      Uploading...
+                      Uploading Pitch...
                     </>
                   ) : (
                     <>

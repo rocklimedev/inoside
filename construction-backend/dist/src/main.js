@@ -28,7 +28,7 @@ async function bootstrap() {
             'https://media-buildcon.rippotaiarchitecture.com',
         ],
         methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
-        allowedHeaders: ['Content-Type', 'Authorization', 'x-cdn-key'],
+        allowedHeaders: ['Content-Type', 'Authorization', 'x-cdn-secret'],
         credentials: true,
         exposedHeaders: ['Set-Cookie'],
     });

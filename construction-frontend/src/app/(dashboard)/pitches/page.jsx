@@ -13,23 +13,23 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
+import { Dialog, DialogContent } from "@/components/ui/dialog";
 
 import { ScrollArea } from "@/components/ui/scroll-area";
 
 import { toast } from "sonner";
 
-import { Plus, Presentation, Trash2, Sparkles } from "lucide-react";
+import {
+  Plus,
+  Presentation,
+  Trash2,
+  FileText,
+  CalendarDays,
+  User2,
+} from "lucide-react";
 
 import UploadArea from "@/components/pitch/UploadArea";
 import PitchDetail from "@/components/pitch/PitchDetail";
-
-const BACKEND = process.env.NEXT_PUBLIC_BACKEND_URL;
 
 export default function PitchPage() {
   const { user } = useAuth();
@@ -90,7 +90,6 @@ export default function PitchPage() {
         user={user}
         onBack={() => {
           setMode("list");
-
           refetch();
         }}
       />
@@ -109,25 +108,25 @@ export default function PitchPage() {
 
       <div className="sticky top-0 z-10 bg-white border-b border-gray-200 px-4 md:px-6 py-4">
         <div className="flex items-center justify-between gap-4">
-          <div>
-            <div className="flex items-center gap-3">
-              <div className="w-11 h-11 rounded-2xl bg-orange-100 flex items-center justify-center">
-                <Presentation className="w-5 h-5 text-[#ef7f1b]" />
-              </div>
+          {/* LEFT */}
+          <div className="flex items-center gap-3">
+            <div className="w-11 h-11 rounded-2xl bg-orange-100 flex items-center justify-center">
+              <Presentation className="w-5 h-5 text-[#ef7f1b]" />
+            </div>
 
-              <div>
-                <h1 className="text-2xl font-black text-black">
-                  Project Pitches
-                </h1>
+            <div>
+              <h1 className="text-2xl font-black text-black">
+                Project Pitches
+              </h1>
 
-                <p className="text-sm text-gray-500 mt-1">
-                  {pitches.length} pitch
-                  {pitches.length !== 1 ? "es" : ""}
-                </p>
-              </div>
+              <p className="text-sm text-gray-500 mt-1">
+                {pitches.length} pitch
+                {pitches.length !== 1 ? "es" : ""}
+              </p>
             </div>
           </div>
 
+          {/* RIGHT */}
           {user?.role !== "Client" && (
             <Button
               onClick={() => setShowNewDialog(true)}
@@ -173,127 +172,165 @@ export default function PitchPage() {
             </div>
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-5">
-              {pitches.map((p) => (
-                <Card
-                  key={p.id}
-                  onClick={() => {
-                    setActivePitch(p);
+              {pitches.map((p) => {
+                const fileName =
+                  p.pitch_pdf_url?.split("/").pop() || "Pitch File";
 
-                    setMode("detail");
-                  }}
-                  className="
-                    group
-                    relative
-                    overflow-hidden
-                    rounded-2xl
-                    border
-                    bg-white
-                    p-5
-                    cursor-pointer
-                    transition-all
-                    duration-300
-                    hover:shadow-xl
-                    hover:-translate-y-1
-                    hover:border-[#ef7f1b]/30
-                  "
-                >
-                  {/* TOP */}
+                return (
+                  <Card
+                    key={p.id}
+                    onClick={() => {
+                      setActivePitch({
+                        ...p,
+                        filename: fileName,
+                        file_url: p.pitch_pdf_url,
+                        project_name: p.project?.name,
+                        uploaded_by: p.createdByUser?.name,
+                        version: p.version || "v1.0",
+                      });
 
-                  <div className="flex items-start justify-between">
-                    <div className="w-12 h-12 rounded-2xl bg-orange-50 flex items-center justify-center">
-                      <Presentation className="w-6 h-6 text-[#ef7f1b]" />
+                      setMode("detail");
+                    }}
+                    className="
+                      group
+                      relative
+                      overflow-hidden
+                      rounded-3xl
+                      border
+                      border-gray-200
+                      bg-white
+                      p-5
+                      cursor-pointer
+                      transition-all
+                      duration-300
+                      hover:shadow-2xl
+                      hover:-translate-y-1
+                      hover:border-[#ef7f1b]/30
+                    "
+                  >
+                    {/* TOP */}
+
+                    <div className="flex items-start justify-between">
+                      <div className="w-12 h-12 rounded-2xl bg-orange-50 flex items-center justify-center">
+                        <Presentation className="w-6 h-6 text-[#ef7f1b]" />
+                      </div>
+
+                      <div className="flex items-center gap-2">
+                        <Badge className="bg-blue-50 text-blue-600 border-0 rounded-full">
+                          {p.version || "v1.0"}
+                        </Badge>
+
+                        {user?.role !== "Client" && (
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleDelete(p.id);
+                            }}
+                            className="
+                              opacity-0
+                              group-hover:opacity-100
+                              transition-opacity
+                              text-red-500
+                              hover:text-red-700
+                            "
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        )}
+                      </div>
                     </div>
 
-                    <div className="flex items-center gap-2">
-                      <Badge className="bg-blue-50 text-blue-600 border-0 rounded-full">
-                        {p.version || "v1.0"}
+                    {/* BODY */}
+
+                    <div className="mt-5">
+                      <h3 className="text-lg font-bold text-black line-clamp-1">
+                        {p.project?.name || "Untitled Project"}
+                      </h3>
+
+                      <div className="mt-2 flex items-center gap-2 text-sm text-gray-500">
+                        <FileText className="w-4 h-4 shrink-0" />
+
+                        <span className="line-clamp-1">{fileName}</span>
+                      </div>
+                    </div>
+
+                    {/* STATUS */}
+
+                    <div className="mt-4 flex items-center gap-2 flex-wrap">
+                      <Badge
+                        className={`
+                          rounded-full border-0
+                          ${
+                            p.status === "Approved"
+                              ? "bg-green-100 text-green-700"
+                              : p.status === "Rejected"
+                                ? "bg-red-100 text-red-700"
+                                : p.status === "Pending Review"
+                                  ? "bg-yellow-100 text-yellow-700"
+                                  : "bg-gray-100 text-gray-700"
+                          }
+                        `}
+                      >
+                        {p.status || "Draft"}
                       </Badge>
 
-                      {user?.role !== "Client" && (
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-
-                            handleDelete(p.id);
-                          }}
-                          className="
-                            opacity-0
-                            group-hover:opacity-100
-                            transition-opacity
-                            text-red-500
-                            hover:text-red-700
-                          "
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </button>
+                      {p.luxury_level && (
+                        <Badge variant="outline" className="rounded-full">
+                          {p.luxury_level} Luxury
+                        </Badge>
                       )}
                     </div>
-                  </div>
 
-                  {/* BODY */}
+                    {/* DETAILS */}
 
-                  <div className="mt-5">
-                    <h3 className="text-lg font-bold text-black line-clamp-1">
-                      {p.project_name}
-                    </h3>
+                    <div className="mt-5 space-y-2">
+                      <div className="flex items-center gap-2 text-xs text-gray-500">
+                        <User2 className="w-3.5 h-3.5" />
 
-                    <p className="text-sm text-gray-500 mt-1 line-clamp-1">
-                      {p.filename}
-                    </p>
-                  </div>
+                        <span className="truncate">
+                          {p.createdByUser?.name || "Unknown User"}
+                        </span>
+                      </div>
 
-                  {/* STATUS */}
+                      <div className="flex items-center gap-2 text-xs text-gray-500">
+                        <CalendarDays className="w-3.5 h-3.5" />
 
-                  <div className="mt-4 flex items-center gap-2 flex-wrap">
-                    <Badge
-                      className={`
-                        rounded-full border-0
-                        ${
-                          p.status === "Approved"
-                            ? "bg-green-100 text-green-700"
-                            : p.status === "Rejected"
-                              ? "bg-red-100 text-red-700"
-                              : p.status === "Pending Review"
-                                ? "bg-yellow-100 text-yellow-700"
-                                : "bg-gray-100 text-gray-700"
-                        }
-                      `}
-                    >
-                      {p.status || "Draft"}
-                    </Badge>
+                        <span>
+                          {new Date(p.created_at).toLocaleDateString()}
+                        </span>
+                      </div>
+                    </div>
 
-                    {p.priority_areas?.length > 0 && (
-                      <Badge variant="outline" className="rounded-full">
-                        {p.priority_areas.length} priorities
-                      </Badge>
-                    )}
-                  </div>
+                    {/* FOOTER */}
 
-                  {/* FOOTER */}
+                    <div className="mt-5 pt-4 border-t border-gray-100 flex items-center justify-between">
+                      <div className="text-xs text-gray-400">
+                        {p.comments?.length || 0} comments
+                      </div>
 
-                  <div className="mt-5 pt-4 border-t border-gray-100 flex items-center justify-between text-xs text-gray-400">
-                    <span className="truncate max-w-[120px]">
-                      By {p.uploaded_by}
-                    </span>
+                      {p.color_tone && (
+                        <div className="text-xs font-medium text-[#ef7f1b]">
+                          {p.color_tone}
+                        </div>
+                      )}
+                    </div>
 
-                    <span>{new Date(p.created_at).toLocaleDateString()}</span>
-                  </div>
+                    {/* HOVER GLOW */}
 
-                  {/* HOVER GLOW */}
-
-                  <div
-                    className="
-                      absolute
-                      inset-0
-                      rounded-2xl
-                      ring-1
-                      ring-transparent
-                      group-hover:ring-[#ef7f1b]/20
-                      pointer-events-none
-                    "
-                  />
-                </Card>
-              ))}
+                    <div
+                      className="
+                        absolute
+                        inset-0
+                        rounded-3xl
+                        ring-1
+                        ring-transparent
+                        group-hover:ring-[#ef7f1b]/20
+                        pointer-events-none
+                      "
+                    />
+                  </Card>
+                );
+              })}
             </div>
           )}
         </div>

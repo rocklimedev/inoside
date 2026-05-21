@@ -96,13 +96,11 @@ export default function BoqsPage() {
   const filteredBoqs = useMemo(() => {
     let result = [...boqs];
 
-    // Search
     if (search.trim()) {
       const term = search.toLowerCase();
       result = result.filter((b) => b.title?.toLowerCase().includes(term));
     }
 
-    // Filters
     if (filters.statuses.length > 0) {
       result = result.filter((b) => filters.statuses.includes(b.status));
     }
@@ -110,7 +108,6 @@ export default function BoqsPage() {
       result = result.filter((b) => filters.projects.includes(b.project_id));
     }
 
-    // Sorting
     result.sort((a, b) => {
       if (sortBy === "name") {
         return (a.title || "").localeCompare(b.title || "");
@@ -282,7 +279,8 @@ export default function BoqsPage() {
               <GridView
                 boqs={filteredBoqs}
                 projectMap={projectMap}
-                onView={setSelectedBoqId}
+                onQuickView={setSelectedBoqId}
+                onView={(id) => router.push(`/boq/view?boqId=${id}`)}
                 onEdit={(id) => router.push(`/boq/${id}/edit`)}
                 onDelete={setBoqToDelete}
               />
@@ -290,7 +288,8 @@ export default function BoqsPage() {
               <ListView
                 boqs={filteredBoqs}
                 projectMap={projectMap}
-                onView={setSelectedBoqId}
+                onQuickView={setSelectedBoqId}
+                onView={(id) => router.push(`/boq/view?boqId=${id}`)}
                 onEdit={(id) => router.push(`/boq/${id}/edit`)}
                 onDelete={setBoqToDelete}
               />
@@ -299,7 +298,7 @@ export default function BoqsPage() {
         </ScrollArea>
       </div>
 
-      {/* Detail Sheet */}
+      {/* Detail Sheet - Quick View */}
       <Sheet open={!!selectedBoqId} onOpenChange={() => setSelectedBoqId(null)}>
         <SheetContent className="w-[440px] sm:w-[520px]">
           {selectedBoq && (
@@ -440,8 +439,9 @@ function FilterSection({
   );
 }
 
-/* Grid & List Views remain the same as you had */
-function GridView({ boqs, projectMap, onView, onEdit, onDelete }) {
+/* ===================== Updated Views ===================== */
+
+function GridView({ boqs, projectMap, onQuickView, onView, onEdit, onDelete }) {
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
       {boqs.map((b) => (
@@ -449,7 +449,6 @@ function GridView({ boqs, projectMap, onView, onEdit, onDelete }) {
           key={b.id}
           className="p-5 hover:shadow-lg hover:border-[#ef7f1b]/30 transition-all group cursor-pointer"
         >
-          {/* ... same as your original GridView ... */}
           <div className="flex justify-between items-start mb-4">
             <div className="min-w-0 flex-1">
               <h3 className="font-bold truncate">{b.title}</h3>
@@ -464,8 +463,11 @@ function GridView({ boqs, projectMap, onView, onEdit, onDelete }) {
                 </button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
+                <DropdownMenuItem onClick={() => onQuickView(b.id)}>
+                  <Eye className="w-4 h-4 mr-2" /> Quick View
+                </DropdownMenuItem>
                 <DropdownMenuItem onClick={() => onView(b.id)}>
-                  <Eye className="w-4 h-4 mr-2" /> View
+                  <Eye className="w-4 h-4 mr-2" /> View Full BOQ
                 </DropdownMenuItem>
                 <DropdownMenuItem onClick={() => onEdit(b.id)}>
                   <Edit className="w-4 h-4 mr-2" /> Edit
@@ -499,14 +501,13 @@ function GridView({ boqs, projectMap, onView, onEdit, onDelete }) {
           <div className="text-xl font-bold text-[#ef7f1b] mb-1">
             ₹{Number(b.grand_total || 0).toLocaleString()}
           </div>
-          <p className="text-xs text-gray-500">Grand Total</p>
         </Card>
       ))}
     </div>
   );
 }
 
-function ListView({ boqs, projectMap, onView, onEdit, onDelete }) {
+function ListView({ boqs, projectMap, onQuickView, onView, onEdit, onDelete }) {
   return (
     <div className="bg-white rounded-xl border">
       <div className="grid grid-cols-12 gap-4 px-6 py-3 bg-gray-50 text-xs font-bold uppercase text-gray-500 border-b">
@@ -551,8 +552,11 @@ function ListView({ boqs, projectMap, onView, onEdit, onDelete }) {
                 </button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
+                <DropdownMenuItem onClick={() => onQuickView(b.id)}>
+                  <Eye className="w-4 h-4 mr-2" /> Quick View
+                </DropdownMenuItem>
                 <DropdownMenuItem onClick={() => onView(b.id)}>
-                  <Eye className="w-4 h-4 mr-2" /> View
+                  <Eye className="w-4 h-4 mr-2" /> View Full BOQ
                 </DropdownMenuItem>
                 <DropdownMenuItem onClick={() => onEdit(b.id)}>
                   <Edit className="w-4 h-4 mr-2" /> Edit

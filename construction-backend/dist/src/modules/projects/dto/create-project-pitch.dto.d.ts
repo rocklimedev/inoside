@@ -1,5 +1,4 @@
 export declare class CreateProjectPitchDto {
-    project_id: string;
     preferred_design_style?: string;
     color_tone?: 'Light' | 'Dark' | 'Mixed' | 'Not Sure';
     luxury_level?: 'Low' | 'Medium' | 'High';

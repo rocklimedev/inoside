@@ -55,72 +55,6 @@ let ProjectsController = class ProjectsController {
         this.approvalLogService = approvalLogService;
         this.pitchService = pitchService;
     }
-    create(dto) {
-        return this.projectsService.create(dto);
-    }
-    findAll() {
-        return this.projectsService.findAll();
-    }
-    findOne(id) {
-        return this.projectsService.findOne(id);
-    }
-    update(id, dto) {
-        return this.projectsService.update(id, dto);
-    }
-    remove(id) {
-        return this.projectsService.remove(id);
-    }
-    updateProgress(id, progress) {
-        return this.projectsService.updateProgress(id, progress);
-    }
-    createBrief(id, dto) {
-        return this.briefService.create({ ...dto, project_id: id });
-    }
-    getBrief(id) {
-        return this.briefService.getBrief(id);
-    }
-    updateBrief(id, dto) {
-        return this.briefService.updateBrief(id, dto);
-    }
-    approveBrief(briefId, req) {
-        const user = req.user;
-        return this.briefService.approveBrief(briefId, user.id);
-    }
-    unapproveBrief(briefId) {
-        return this.briefService.unapproveBrief(briefId);
-    }
-    requestBriefChanges(briefId, dto, req) {
-        const user = req.user;
-        return this.briefService.requestBriefChanges(briefId, {
-            note: dto.note,
-            requested_by: user.id,
-        });
-    }
-    sendBriefToClient(briefId) {
-        return this.briefService.sendBriefToClient(briefId);
-    }
-    markBriefAsDraft(briefId) {
-        return this.briefService.markBriefAsDraft(briefId);
-    }
-    getAllBriefs() {
-        return this.briefService.getAllBriefs();
-    }
-    getBriefById(briefId) {
-        return this.briefService.getBriefById(briefId);
-    }
-    createPitch(id, dto, req) {
-        const user = req.user;
-        return this.pitchService.createPitch(id, {
-            ...dto,
-            created_by: user.id,
-        });
-    }
-    getPitch(id) {
-        return this.pitchService.getPitch(id);
-    }
-    updatePitch(id, dto) {
-        return this.pitchService.updatePitch(id, dto);
-    }
     getAllPitches() {
         return this.pitchService.getAllPitches();
     }
@@ -146,8 +80,80 @@ let ProjectsController = class ProjectsController {
     rejectPitch(pitchId) {
         return this.pitchService.rejectPitch(pitchId);
     }
+    getAllBriefs() {
+        return this.briefService.getAllBriefs();
+    }
+    getBriefById(briefId) {
+        return this.briefService.getBriefById(briefId);
+    }
+    approveBrief(briefId, req) {
+        const user = req.user;
+        return this.briefService.approveBrief(briefId, user.id);
+    }
+    unapproveBrief(briefId) {
+        return this.briefService.unapproveBrief(briefId);
+    }
+    requestBriefChanges(briefId, dto, req) {
+        const user = req.user;
+        return this.briefService.requestBriefChanges(briefId, {
+            note: dto.note,
+            requested_by: user.id,
+        });
+    }
+    sendBriefToClient(briefId) {
+        return this.briefService.sendBriefToClient(briefId);
+    }
+    markBriefAsDraft(briefId) {
+        return this.briefService.markBriefAsDraft(briefId);
+    }
+    create(dto) {
+        return this.projectsService.create(dto);
+    }
+    findAll() {
+        return this.projectsService.findAll();
+    }
+    findOne(id) {
+        return this.projectsService.findOne(id);
+    }
+    update(id, dto) {
+        return this.projectsService.update(id, dto);
+    }
+    remove(id) {
+        return this.projectsService.remove(id);
+    }
+    updateProgress(id, progress) {
+        return this.projectsService.updateProgress(id, progress);
+    }
+    createBrief(id, dto) {
+        return this.briefService.create({
+            ...dto,
+            project_id: id,
+        });
+    }
+    getBrief(id) {
+        return this.briefService.getBrief(id);
+    }
+    updateBrief(id, dto) {
+        return this.briefService.updateBrief(id, dto);
+    }
+    createPitch(id, dto, req) {
+        const user = req.user;
+        return this.pitchService.createPitch(id, {
+            ...dto,
+            created_by: user.id,
+        });
+    }
+    getPitch(id) {
+        return this.pitchService.getPitch(id);
+    }
+    updatePitch(id, dto) {
+        return this.pitchService.updatePitch(id, dto);
+    }
     addPitchReference(id, dto) {
-        return this.pitchRefService.add({ ...dto, project_id: id });
+        return this.pitchRefService.add({
+            ...dto,
+            project_id: id,
+        });
     }
     getPitchReferences(id) {
         return this.pitchRefService.findByProject(id);
@@ -156,7 +162,10 @@ let ProjectsController = class ProjectsController {
         return this.pitchRefService.delete(refId);
     }
     createReki(id, dto) {
-        return this.rekiService.create({ ...dto, project_id: id });
+        return this.rekiService.create({
+            ...dto,
+            project_id: id,
+        });
     }
     getReki(id) {
         return this.rekiService.findOne(id);
@@ -165,7 +174,10 @@ let ProjectsController = class ProjectsController {
         return this.rekiService.update(id, dto);
     }
     addRekiPhoto(id, dto) {
-        return this.rekiPhotoService.add({ ...dto, project_id: id });
+        return this.rekiPhotoService.add({
+            ...dto,
+            project_id: id,
+        });
     }
     getRekiPhotos(rekiId) {
         return this.rekiPhotoService.findByReki(rekiId);
@@ -174,7 +186,10 @@ let ProjectsController = class ProjectsController {
         return this.rekiPhotoService.delete(photoId);
     }
     createScope(id, dto) {
-        return this.scopeService.create({ ...dto, project_id: id });
+        return this.scopeService.create({
+            ...dto,
+            project_id: id,
+        });
     }
     getScope(id) {
         return this.scopeService.findOne(id);
@@ -183,7 +198,10 @@ let ProjectsController = class ProjectsController {
         return this.scopeService.update(id, dto);
     }
     addCostEstimate(id, dto) {
-        return this.costService.add({ ...dto, project_id: id });
+        return this.costService.add({
+            ...dto,
+            project_id: id,
+        });
     }
     getCostEstimates(id) {
         return this.costService.findByProject(id);
@@ -192,7 +210,10 @@ let ProjectsController = class ProjectsController {
         return this.costService.update(estimateId, dto);
     }
     uploadDrawing(id, dto) {
-        return this.drawingService.upload({ ...dto, project_id: id });
+        return this.drawingService.upload({
+            ...dto,
+            project_id: id,
+        });
     }
     getDrawings(id) {
         return this.drawingService.findByProject(id);
@@ -201,13 +222,118 @@ let ProjectsController = class ProjectsController {
         return this.drawingService.approve(drawingId, user_id);
     }
     addApprovalLog(drawingId, dto) {
-        return this.approvalLogService.create({ ...dto, drawing_id: drawingId });
+        return this.approvalLogService.create({
+            ...dto,
+            drawing_id: drawingId,
+        });
     }
     getApprovalLogs(drawingId) {
         return this.approvalLogService.findByDrawing(drawingId);
     }
 };
 exports.ProjectsController = ProjectsController;
+__decorate([
+    (0, common_1.Get)('pitches/all'),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", []),
+    __metadata("design:returntype", void 0)
+], ProjectsController.prototype, "getAllPitches", null);
+__decorate([
+    (0, common_1.Get)('pitches/:pitchId'),
+    __param(0, (0, common_1.Param)('pitchId')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String]),
+    __metadata("design:returntype", void 0)
+], ProjectsController.prototype, "getPitchById", null);
+__decorate([
+    (0, common_1.Delete)('pitches/:pitchId'),
+    __param(0, (0, common_1.Param)('pitchId')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String]),
+    __metadata("design:returntype", void 0)
+], ProjectsController.prototype, "deletePitch", null);
+__decorate([
+    (0, common_1.Post)('pitches/:pitchId/comments'),
+    __param(0, (0, common_1.Param)('pitchId')),
+    __param(1, (0, common_1.Body)('content')),
+    __param(2, (0, common_1.Req)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String, String, Object]),
+    __metadata("design:returntype", void 0)
+], ProjectsController.prototype, "addPitchComment", null);
+__decorate([
+    (0, common_1.Patch)('pitches/:pitchId/files'),
+    __param(0, (0, common_1.Param)('pitchId')),
+    __param(1, (0, common_1.Body)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String, Object]),
+    __metadata("design:returntype", void 0)
+], ProjectsController.prototype, "replacePitchFile", null);
+__decorate([
+    (0, common_1.Patch)('pitches/:pitchId/approve'),
+    __param(0, (0, common_1.Param)('pitchId')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String]),
+    __metadata("design:returntype", void 0)
+], ProjectsController.prototype, "approvePitch", null);
+__decorate([
+    (0, common_1.Patch)('pitches/:pitchId/reject'),
+    __param(0, (0, common_1.Param)('pitchId')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String]),
+    __metadata("design:returntype", void 0)
+], ProjectsController.prototype, "rejectPitch", null);
+__decorate([
+    (0, common_1.Get)('briefs/all'),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", []),
+    __metadata("design:returntype", void 0)
+], ProjectsController.prototype, "getAllBriefs", null);
+__decorate([
+    (0, common_1.Get)('briefs/:briefId'),
+    __param(0, (0, common_1.Param)('briefId')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String]),
+    __metadata("design:returntype", void 0)
+], ProjectsController.prototype, "getBriefById", null);
+__decorate([
+    (0, common_1.Patch)('briefs/:briefId/approve'),
+    __param(0, (0, common_1.Param)('briefId')),
+    __param(1, (0, common_1.Req)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String, Object]),
+    __metadata("design:returntype", void 0)
+], ProjectsController.prototype, "approveBrief", null);
+__decorate([
+    (0, common_1.Patch)('briefs/:briefId/unapprove'),
+    __param(0, (0, common_1.Param)('briefId')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String]),
+    __metadata("design:returntype", void 0)
+], ProjectsController.prototype, "unapproveBrief", null);
+__decorate([
+    (0, common_1.Patch)('briefs/:briefId/request-changes'),
+    __param(0, (0, common_1.Param)('briefId')),
+    __param(1, (0, common_1.Body)()),
+    __param(2, (0, common_1.Req)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String, request_brief_changes_dto_1.RequestBriefChangesDto, Object]),
+    __metadata("design:returntype", void 0)
+], ProjectsController.prototype, "requestBriefChanges", null);
+__decorate([
+    (0, common_1.Patch)('briefs/:briefId/send-to-client'),
+    __param(0, (0, common_1.Param)('briefId')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String]),
+    __metadata("design:returntype", void 0)
+], ProjectsController.prototype, "sendBriefToClient", null);
+__decorate([
+    (0, common_1.Patch)('briefs/:briefId/draft'),
+    __param(0, (0, common_1.Param)('briefId')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String]),
+    __metadata("design:returntype", void 0)
+], ProjectsController.prototype, "markBriefAsDraft", null);
 __decorate([
     (0, common_1.Post)(),
     __param(0, (0, common_1.Body)()),
@@ -275,57 +401,6 @@ __decorate([
     __metadata("design:returntype", void 0)
 ], ProjectsController.prototype, "updateBrief", null);
 __decorate([
-    (0, common_1.Patch)('briefs/:briefId/approve'),
-    __param(0, (0, common_1.Param)('briefId')),
-    __param(1, (0, common_1.Req)()),
-    __metadata("design:type", Function),
-    __metadata("design:paramtypes", [String, Object]),
-    __metadata("design:returntype", void 0)
-], ProjectsController.prototype, "approveBrief", null);
-__decorate([
-    (0, common_1.Patch)('briefs/:briefId/unapprove'),
-    __param(0, (0, common_1.Param)('briefId')),
-    __metadata("design:type", Function),
-    __metadata("design:paramtypes", [String]),
-    __metadata("design:returntype", void 0)
-], ProjectsController.prototype, "unapproveBrief", null);
-__decorate([
-    (0, common_1.Patch)('briefs/:briefId/request-changes'),
-    __param(0, (0, common_1.Param)('briefId')),
-    __param(1, (0, common_1.Body)()),
-    __param(2, (0, common_1.Req)()),
-    __metadata("design:type", Function),
-    __metadata("design:paramtypes", [String, request_brief_changes_dto_1.RequestBriefChangesDto, Object]),
-    __metadata("design:returntype", void 0)
-], ProjectsController.prototype, "requestBriefChanges", null);
-__decorate([
-    (0, common_1.Patch)('briefs/:briefId/send-to-client'),
-    __param(0, (0, common_1.Param)('briefId')),
-    __metadata("design:type", Function),
-    __metadata("design:paramtypes", [String]),
-    __metadata("design:returntype", void 0)
-], ProjectsController.prototype, "sendBriefToClient", null);
-__decorate([
-    (0, common_1.Patch)('briefs/:briefId/draft'),
-    __param(0, (0, common_1.Param)('briefId')),
-    __metadata("design:type", Function),
-    __metadata("design:paramtypes", [String]),
-    __metadata("design:returntype", void 0)
-], ProjectsController.prototype, "markBriefAsDraft", null);
-__decorate([
-    (0, common_1.Get)('briefs/all'),
-    __metadata("design:type", Function),
-    __metadata("design:paramtypes", []),
-    __metadata("design:returntype", void 0)
-], ProjectsController.prototype, "getAllBriefs", null);
-__decorate([
-    (0, common_1.Get)('briefs/:briefId'),
-    __param(0, (0, common_1.Param)('briefId')),
-    __metadata("design:type", Function),
-    __metadata("design:paramtypes", [String]),
-    __metadata("design:returntype", void 0)
-], ProjectsController.prototype, "getBriefById", null);
-__decorate([
     (0, common_1.Post)(':id/pitch'),
     __param(0, (0, common_1.Param)('id')),
     __param(1, (0, common_1.Body)()),
@@ -349,57 +424,6 @@ __decorate([
     __metadata("design:paramtypes", [String, update_project_pitch_dto_1.UpdateProjectPitchDto]),
     __metadata("design:returntype", void 0)
 ], ProjectsController.prototype, "updatePitch", null);
-__decorate([
-    (0, common_1.Get)('pitches/all'),
-    __metadata("design:type", Function),
-    __metadata("design:paramtypes", []),
-    __metadata("design:returntype", void 0)
-], ProjectsController.prototype, "getAllPitches", null);
-__decorate([
-    (0, common_1.Get)('pitches/:pitchId'),
-    __param(0, (0, common_1.Param)('pitchId')),
-    __metadata("design:type", Function),
-    __metadata("design:paramtypes", [String]),
-    __metadata("design:returntype", void 0)
-], ProjectsController.prototype, "getPitchById", null);
-__decorate([
-    (0, common_1.Delete)('pitches/:pitchId'),
-    __param(0, (0, common_1.Param)('pitchId')),
-    __metadata("design:type", Function),
-    __metadata("design:paramtypes", [String]),
-    __metadata("design:returntype", void 0)
-], ProjectsController.prototype, "deletePitch", null);
-__decorate([
-    (0, common_1.Post)('pitches/:pitchId/comments'),
-    __param(0, (0, common_1.Param)('pitchId')),
-    __param(1, (0, common_1.Body)('content')),
-    __param(2, (0, common_1.Req)()),
-    __metadata("design:type", Function),
-    __metadata("design:paramtypes", [String, String, Object]),
-    __metadata("design:returntype", void 0)
-], ProjectsController.prototype, "addPitchComment", null);
-__decorate([
-    (0, common_1.Patch)('pitches/:pitchId/files'),
-    __param(0, (0, common_1.Param)('pitchId')),
-    __param(1, (0, common_1.Body)()),
-    __metadata("design:type", Function),
-    __metadata("design:paramtypes", [String, Object]),
-    __metadata("design:returntype", void 0)
-], ProjectsController.prototype, "replacePitchFile", null);
-__decorate([
-    (0, common_1.Patch)('pitches/:pitchId/approve'),
-    __param(0, (0, common_1.Param)('pitchId')),
-    __metadata("design:type", Function),
-    __metadata("design:paramtypes", [String]),
-    __metadata("design:returntype", void 0)
-], ProjectsController.prototype, "approvePitch", null);
-__decorate([
-    (0, common_1.Patch)('pitches/:pitchId/reject'),
-    __param(0, (0, common_1.Param)('pitchId')),
-    __metadata("design:type", Function),
-    __metadata("design:paramtypes", [String]),
-    __metadata("design:returntype", void 0)
-], ProjectsController.prototype, "rejectPitch", null);
 __decorate([
     (0, common_1.Post)(':id/pitch-references'),
     __param(0, (0, common_1.Param)('id')),

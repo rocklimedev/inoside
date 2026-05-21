@@ -11,8 +11,15 @@ import {
 } from "@/api/clientsApi";
 
 import ClientForm from "@/components/client/ClientForm";
-
-import { Card } from "@/components/ui/card";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -276,50 +283,51 @@ export default function ClientsPage() {
             <>
               {/* ================= CARD VIEW ================= */}
               {view === "cards" && (
-                <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
-                  {filteredClients.map((client, index) => (
+                <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
+                  {filteredClients.map((client) => (
                     <Card
                       key={client.id}
-                      className="group relative overflow-hidden rounded-3xl border border-border/60 bg-card/80 backdrop-blur-sm transition-all duration-500 hover:-translate-y-1 hover:shadow-2xl hover:border-orange-500/30"
-                      style={{
-                        animationDelay: `${index * 80}ms`,
-                      }}
+                      className="group relative overflow-hidden rounded-2xl border bg-card/80 backdrop-blur transition-all duration-300 hover:shadow-lg hover:-translate-y-1"
                     >
-                      {/* Glow */}
-                      <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500">
-                        <div className="absolute -right-10 -top-10 h-40 w-40 rounded-full bg-orange-500/10 blur-3xl" />
-                      </div>
+                      {/* Accent Line */}
+                      <div className="absolute inset-x-0 top-0 h-[3px] bg-gradient-to-r from-primary via-orange-500 to-primary" />
 
-                      {/* Top Line */}
-                      <div className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-orange-500 via-primary to-orange-500" />
-
-                      <div className="relative p-6">
+                      <CardContent className="p-5">
                         {/* HEADER */}
-                        <div className="flex items-start justify-between gap-4">
-                          <div className="flex items-center gap-4 min-w-0">
-                            <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-orange-500 to-orange-600 text-white flex items-center justify-center shadow-lg shrink-0">
-                              <Building2 className="w-7 h-7" />
-                            </div>
+                        <div className="flex items-start justify-between gap-3">
+                          <div className="min-w-0 flex-1">
+                            <div className="flex items-center gap-2">
+                              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10 text-primary font-semibold">
+                                {client.name?.charAt(0)}
+                              </div>
 
-                            <div className="min-w-0">
-                              <h3 className="text-lg font-bold truncate">
-                                {client.name}
-                              </h3>
+                              <div className="min-w-0">
+                                <h3 className="truncate font-semibold text-base">
+                                  {client.name}
+                                </h3>
 
-                              <p className="text-sm text-muted-foreground truncate">
-                                {client.email || "No email provided"}
-                              </p>
+                                <p className="truncate text-xs text-muted-foreground">
+                                  {client.email || "No email"}
+                                </p>
+                              </div>
                             </div>
                           </div>
-
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="rounded-xl"
+                            onClick={() => setEditingClient(client)}
+                          >
+                            <Pencil className="mr-2 h-4 w-4" />
+                          </Button>
                           <DropdownMenu>
                             <DropdownMenuTrigger asChild>
                               <Button
                                 variant="ghost"
                                 size="icon"
-                                className="rounded-xl"
+                                className="h-8 w-8 rounded-lg"
                               >
-                                <MoreVertical className="w-5 h-5" />
+                                <MoreVertical className="h-4 w-4" />
                               </Button>
                             </DropdownMenuTrigger>
 
@@ -328,7 +336,7 @@ export default function ClientsPage() {
                                 onClick={() => setEditingClient(client)}
                               >
                                 <Pencil className="mr-2 h-4 w-4" />
-                                Edit Client
+                                Edit
                               </DropdownMenuItem>
 
                               <DropdownMenuSeparator />
@@ -338,37 +346,27 @@ export default function ClientsPage() {
                                 onClick={() => handleDelete(client.id)}
                               >
                                 <Trash2 className="mr-2 h-4 w-4" />
-                                Delete Client
+                                Delete
                               </DropdownMenuItem>
                             </DropdownMenuContent>
                           </DropdownMenu>
                         </div>
 
-                        {/* DETAILS */}
-                        <div className="mt-6 space-y-4">
+                        {/* INFO */}
+                        <div className="mt-5 space-y-3">
                           <div className="flex items-center gap-3 text-sm">
-                            <div className="w-9 h-9 rounded-xl bg-muted flex items-center justify-center">
-                              <Phone className="w-4 h-4 text-primary" />
+                            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-muted">
+                              <Phone className="h-4 w-4 text-primary" />
                             </div>
 
-                            <span className="font-medium">
+                            <span className="truncate">
                               {client.contact_number}
                             </span>
                           </div>
 
                           <div className="flex items-center gap-3 text-sm">
-                            <div className="w-9 h-9 rounded-xl bg-muted flex items-center justify-center">
-                              <Mail className="w-4 h-4 text-primary" />
-                            </div>
-
-                            <span className="truncate">
-                              {client.email || "No email"}
-                            </span>
-                          </div>
-
-                          <div className="flex items-center gap-3 text-sm">
-                            <div className="w-9 h-9 rounded-xl bg-muted flex items-center justify-center">
-                              <MessageSquare className="w-4 h-4 text-primary" />
+                            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-muted">
+                              <MessageSquare className="h-4 w-4 text-primary" />
                             </div>
 
                             <Badge
@@ -386,43 +384,21 @@ export default function ClientsPage() {
                         </div>
 
                         {/* TAGS */}
-                        <div className="mt-6 flex flex-wrap gap-2">
+                        <div className="mt-4 flex flex-wrap gap-2">
                           {client.is_owner && (
-                            <Badge className="rounded-full bg-emerald-100 text-emerald-700 border-emerald-200">
-                              <UserCheck className="w-3 h-3 mr-1" />
+                            <Badge variant="secondary" className="rounded-full">
+                              <UserCheck className="mr-1 h-3 w-3" />
                               Owner
                             </Badge>
                           )}
 
                           {client.representative_involved && (
-                            <Badge className="rounded-full bg-violet-100 text-violet-700 border-violet-200">
+                            <Badge variant="outline" className="rounded-full">
                               Representative
                             </Badge>
                           )}
                         </div>
-
-                        {/* FOOTER */}
-                        <div className="mt-6 pt-5 border-t border-border/60 flex items-center justify-between">
-                          <div>
-                            <p className="text-xs text-muted-foreground">
-                              Created
-                            </p>
-
-                            <p className="text-sm font-medium">
-                              {new Date(client.created_at).toLocaleDateString()}
-                            </p>
-                          </div>
-
-                          <Button
-                            variant="outline"
-                            className="rounded-xl"
-                            onClick={() => setEditingClient(client)}
-                          >
-                            <Pencil className="w-4 h-4 mr-2" />
-                            Edit
-                          </Button>
-                        </div>
-                      </div>
+                      </CardContent>
                     </Card>
                   ))}
                 </div>
@@ -430,66 +406,49 @@ export default function ClientsPage() {
 
               {/* ================= TABLE VIEW ================= */}
               {view === "table" && (
-                <div className="border rounded-3xl overflow-hidden bg-card">
+                <Card className="overflow-hidden rounded-2xl border">
                   <div className="overflow-x-auto">
-                    <table className="w-full min-w-[950px]">
-                      <thead className="bg-muted/60 border-b">
-                        <tr>
-                          <th className="text-left p-4 text-xs uppercase tracking-wider font-bold text-muted-foreground">
-                            Client
-                          </th>
+                    <Table>
+                      <TableHeader className="bg-muted/50">
+                        <TableRow>
+                          <TableHead>Client</TableHead>
+                          <TableHead>Phone</TableHead>
+                          <TableHead>Communication</TableHead>
+                          <TableHead>Tags</TableHead>
 
-                          <th className="text-left p-4 text-xs uppercase tracking-wider font-bold text-muted-foreground">
-                            Contact
-                          </th>
+                          <TableHead className="text-right">Actions</TableHead>
+                        </TableRow>
+                      </TableHeader>
 
-                          <th className="text-left p-4 text-xs uppercase tracking-wider font-bold text-muted-foreground">
-                            Communication
-                          </th>
-
-                          <th className="text-left p-4 text-xs uppercase tracking-wider font-bold text-muted-foreground">
-                            Ownership
-                          </th>
-
-                          <th className="text-left p-4 text-xs uppercase tracking-wider font-bold text-muted-foreground">
-                            Created
-                          </th>
-
-                          <th className="text-right p-4 text-xs uppercase tracking-wider font-bold text-muted-foreground">
-                            Actions
-                          </th>
-                        </tr>
-                      </thead>
-
-                      <tbody>
+                      <TableBody>
                         {filteredClients.map((client) => (
-                          <tr
+                          <TableRow
                             key={client.id}
-                            className="border-b hover:bg-muted/50 transition-colors"
+                            className="hover:bg-muted/40"
                           >
-                            <td className="p-4">
+                            <TableCell>
                               <div className="flex items-center gap-3">
-                                <div className="w-11 h-11 rounded-xl bg-gradient-to-br from-orange-500 to-orange-600 text-white flex items-center justify-center shadow-md">
-                                  <Building2 className="w-5 h-5" />
+                                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10 text-primary font-semibold">
+                                  {client.name?.charAt(0)}
                                 </div>
 
-                                <div>
-                                  <p className="font-semibold">{client.name}</p>
+                                <div className="min-w-0">
+                                  <p className="font-medium truncate">
+                                    {client.name}
+                                  </p>
 
-                                  <p className="text-sm text-muted-foreground">
+                                  <p className="text-xs text-muted-foreground truncate">
                                     {client.email || "No email"}
                                   </p>
                                 </div>
                               </div>
-                            </td>
+                            </TableCell>
 
-                            <td className="p-4">
-                              <div className="text-sm">
-                                {client.contact_number}
-                              </div>
-                            </td>
+                            <TableCell className="text-sm">
+                              {client.contact_number}
+                            </TableCell>
 
-                            <td className="p-4">
+                            <TableCell>
                               <Badge
                                 className={
                                   COMMUNICATION_COLORS[
@@ -501,33 +460,29 @@ export default function ClientsPage() {
                                 {client.preferred_communication ||
                                   "Not specified"}
                               </Badge>
-                            </td>
+                            </TableCell>
 
-                            <td className="p-4">
+                            <TableCell>
                               <div className="flex flex-wrap gap-2">
                                 {client.is_owner && (
-                                  <Badge className="bg-emerald-100 text-emerald-700 border-emerald-200">
-                                    Owner
-                                  </Badge>
+                                  <Badge variant="secondary">Owner</Badge>
                                 )}
 
                                 {client.representative_involved && (
-                                  <Badge className="bg-violet-100 text-violet-700 border-violet-200">
-                                    Representative
-                                  </Badge>
+                                  <Badge variant="outline">Rep</Badge>
                                 )}
                               </div>
-                            </td>
+                            </TableCell>
 
-                            <td className="p-4 text-sm text-muted-foreground">
-                              {new Date(client.created_at).toLocaleDateString()}
-                            </td>
-
-                            <td className="p-4 text-right">
+                            <TableCell className="text-right">
                               <DropdownMenu>
                                 <DropdownMenuTrigger asChild>
-                                  <Button variant="ghost" size="icon">
-                                    <MoreVertical className="w-5 h-5" />
+                                  <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    className="h-8 w-8 rounded-lg"
+                                  >
+                                    <MoreVertical className="h-4 w-4" />
                                   </Button>
                                 </DropdownMenuTrigger>
 
@@ -536,7 +491,7 @@ export default function ClientsPage() {
                                     onClick={() => setEditingClient(client)}
                                   >
                                     <Pencil className="mr-2 h-4 w-4" />
-                                    Edit Client
+                                    Edit
                                   </DropdownMenuItem>
 
                                   <DropdownMenuSeparator />
@@ -546,17 +501,17 @@ export default function ClientsPage() {
                                     onClick={() => handleDelete(client.id)}
                                   >
                                     <Trash2 className="mr-2 h-4 w-4" />
-                                    Delete Client
+                                    Delete
                                   </DropdownMenuItem>
                                 </DropdownMenuContent>
                               </DropdownMenu>
-                            </td>
-                          </tr>
+                            </TableCell>
+                          </TableRow>
                         ))}
-                      </tbody>
-                    </table>
+                      </TableBody>
+                    </Table>
                   </div>
-                </div>
+                </Card>
               )}
             </>
           )}

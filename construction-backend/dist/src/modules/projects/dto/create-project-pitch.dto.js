@@ -13,7 +13,6 @@ exports.CreateProjectPitchDto = void 0;
 const swagger_1 = require("@nestjs/swagger");
 const class_validator_1 = require("class-validator");
 class CreateProjectPitchDto {
-    project_id;
     preferred_design_style;
     color_tone;
     luxury_level;
@@ -27,11 +26,6 @@ class CreateProjectPitchDto {
     pitch_pdf_url;
 }
 exports.CreateProjectPitchDto = CreateProjectPitchDto;
-__decorate([
-    (0, swagger_1.ApiProperty)({ description: 'Project ID' }),
-    (0, class_validator_1.IsUUID)(),
-    __metadata("design:type", String)
-], CreateProjectPitchDto.prototype, "project_id", void 0);
 __decorate([
     (0, swagger_1.ApiPropertyOptional)({ example: 'Modern Minimalist' }),
     (0, class_validator_1.IsOptional)(),

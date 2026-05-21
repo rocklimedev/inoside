@@ -3,17 +3,16 @@ import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
 
 const baseQuery = fetchBaseQuery({
   baseUrl: API_URL,
-
-  prepareHeaders: (headers) => {
-    if (typeof window !== "undefined") {
-      const token = localStorage.getItem("access_token");
-
-      if (token) {
-        headers.set("Authorization", `Bearer ${token}`);
-      }
+  prepareHeaders: (headers, { endpoint }) => {
+    const token = localStorage.getItem("access_token");
+    if (token) {
+      headers.set("Authorization", `Bearer ${token}`);
     }
 
-    headers.set("Content-Type", "application/json");
+    // ← Only set JSON for non-file endpoints
+    if (!endpoint?.includes("upload")) {
+      headers.set("Content-Type", "application/json");
+    }
 
     return headers;
   },

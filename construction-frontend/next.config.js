@@ -3,14 +3,14 @@ const isDev = process.env.NODE_ENV === "development";
 
 const API_URL = isDev
   ? "http://localhost:5000"
-  : "https://buildcon-api.rippotaiarchitecture.com"; // ← Change if needed
+  : "https://buildcon-api.rippotaiarchitecture.com";
 
 const nextConfig = {
   async rewrites() {
     return [
       {
         source: "/api/:path*",
-        destination: `${API_URL}/:path*`, // Important: removed extra /api
+        destination: `${API_URL}/:path*`,
       },
     ];
   },
@@ -24,16 +24,38 @@ const nextConfig = {
             key: "Content-Security-Policy",
             value: `
               default-src 'self';
-              connect-src 'self' 
-                ${isDev ? "http://localhost:5000" : "https://buildcon-api.rippotaiarchitecture.com"}
+
+              connect-src 'self'
+                ${
+                  isDev
+                    ? "http://localhost:5000"
+                    : "https://buildcon-api.rippotaiarchitecture.com"
+                }
                 https://buildcon.rippotaiarchitecture.com;
+
               script-src 'self' 'unsafe-inline' 'unsafe-eval';
+
               style-src 'self' 'unsafe-inline';
-              img-src 'self' data: https:;
+
+              img-src 'self' data: https: blob:;
+
               font-src 'self' data: https:;
+
+              frame-src 'self'
+                https://docs.google.com
+                https://mozilla.github.io
+                https://media-buildcon.rippotaiarchitecture.com;
+
+              child-src 'self'
+                https://docs.google.com
+                https://mozilla.github.io
+                https://media-buildcon.rippotaiarchitecture.com;
+
               object-src 'none';
+
               base-uri 'self';
-              frame-ancestors 'none';
+
+              frame-ancestors 'self';
             `
               .replace(/\s+/g, " ")
               .trim(),

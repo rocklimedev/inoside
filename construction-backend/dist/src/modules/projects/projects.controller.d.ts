@@ -28,27 +28,6 @@ export declare class ProjectsController {
     private readonly approvalLogService;
     private readonly pitchService;
     constructor(projectsService: ProjectsService, briefService: ProjectBriefService, pitchRefService: PitchReferenceService, rekiService: RekiReportService, rekiPhotoService: RekiPhotoService, scopeService: ScopeOfWorkService, costService: ProjectCostEstimateService, drawingService: ProjectDrawingService, approvalLogService: DrawingApprovalLogService, pitchService: ProjectPitchService);
-    create(dto: CreateProjectDto): Promise<import("./models/project.model").Project>;
-    findAll(): Promise<import("./models/project.model").Project[]>;
-    findOne(id: string): Promise<import("./models/project.model").Project>;
-    update(id: string, dto: UpdateProjectDto): Promise<import("./models/project.model").Project>;
-    remove(id: string): Promise<{
-        message: string;
-    }>;
-    updateProgress(id: string, progress: number): Promise<import("./models/project.model").Project>;
-    createBrief(id: string, dto: CreateProjectBriefDto): Promise<import("./models/project_brief.model").ProjectBrief>;
-    getBrief(id: string): Promise<any>;
-    updateBrief(id: string, dto: UpdateProjectBriefDto): Promise<any>;
-    approveBrief(briefId: string, req: Request): Promise<any>;
-    unapproveBrief(briefId: string): Promise<any>;
-    requestBriefChanges(briefId: string, dto: RequestBriefChangesDto, req: Request): Promise<any>;
-    sendBriefToClient(briefId: string): Promise<any>;
-    markBriefAsDraft(briefId: string): Promise<any>;
-    getAllBriefs(): Promise<import("./models/project_brief.model").ProjectBrief[]>;
-    getBriefById(briefId: string): Promise<any>;
-    createPitch(id: string, dto: CreateProjectPitchDto, req: Request): Promise<import("./models/project_pitch.model").ProjectPitch>;
-    getPitch(id: string): Promise<import("./models/project_pitch.model").ProjectPitch>;
-    updatePitch(id: string, dto: UpdateProjectPitchDto): Promise<import("./models/project_pitch.model").ProjectPitch>;
     getAllPitches(): Promise<import("./models/project_pitch.model").ProjectPitch[]>;
     getPitchById(pitchId: string): Promise<import("./models/project_pitch.model").ProjectPitch>;
     deletePitch(pitchId: string): Promise<{
@@ -62,6 +41,27 @@ export declare class ProjectsController {
     }): Promise<import("./models/project_pitch.model").ProjectPitch>;
     approvePitch(pitchId: string): Promise<import("./models/project_pitch.model").ProjectPitch>;
     rejectPitch(pitchId: string): Promise<import("./models/project_pitch.model").ProjectPitch>;
+    getAllBriefs(): Promise<import("./models/project_brief.model").ProjectBrief[]>;
+    getBriefById(briefId: string): Promise<any>;
+    approveBrief(briefId: string, req: Request): Promise<any>;
+    unapproveBrief(briefId: string): Promise<any>;
+    requestBriefChanges(briefId: string, dto: RequestBriefChangesDto, req: Request): Promise<any>;
+    sendBriefToClient(briefId: string): Promise<any>;
+    markBriefAsDraft(briefId: string): Promise<any>;
+    create(dto: CreateProjectDto): Promise<import("./models/project.model").Project>;
+    findAll(): Promise<import("./models/project.model").Project[]>;
+    findOne(id: string): Promise<import("./models/project.model").Project>;
+    update(id: string, dto: UpdateProjectDto): Promise<import("./models/project.model").Project>;
+    remove(id: string): Promise<{
+        message: string;
+    }>;
+    updateProgress(id: string, progress: number): Promise<import("./models/project.model").Project>;
+    createBrief(id: string, dto: CreateProjectBriefDto): Promise<import("./models/project_brief.model").ProjectBrief>;
+    getBrief(id: string): Promise<any>;
+    updateBrief(id: string, dto: UpdateProjectBriefDto): Promise<any>;
+    createPitch(id: string, dto: CreateProjectPitchDto, req: Request): Promise<import("./models/project_pitch.model").ProjectPitch>;
+    getPitch(id: string): Promise<import("./models/project_pitch.model").ProjectPitch>;
+    updatePitch(id: string, dto: UpdateProjectPitchDto): Promise<import("./models/project_pitch.model").ProjectPitch>;
     addPitchReference(id: string, dto: any): Promise<import("./models/pitch_references.model").PitchReference>;
     getPitchReferences(id: string): Promise<import("./models/pitch_references.model").PitchReference[]>;
     deletePitchReference(refId: string): Promise<number>;

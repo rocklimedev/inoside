@@ -3,7 +3,16 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/contexts/AuthContext";
-import { Eye, EyeOff, ArrowRight, Loader2, Lock } from "lucide-react";
+import {
+  Eye,
+  EyeOff,
+  ArrowRight,
+  Loader2,
+  Lock,
+  FolderOpen,
+  ClipboardCheck,
+  FileText,
+} from "lucide-react";
 import { toast } from "sonner";
 
 const roleRoutes = {
@@ -16,6 +25,19 @@ const roleRoutes = {
   super_admin: "/dashboard/admin",
   developer: "/dashboard/developer", // if needed
 };
+const workflowStages = [
+  "Client Brief",
+  "Pitch",
+  "Site Reki",
+  "Scope of Work",
+  "BOQ",
+  "Design Approval",
+  "Execution",
+  "Vendor Selection",
+  "Inventory",
+  "Quality Tracking",
+  "Handover",
+];
 
 export default function LoginPage() {
   const router = useRouter();
@@ -118,6 +140,7 @@ export default function LoginPage() {
     <div className="flex h-screen w-full overflow-hidden">
       {/* LEFT PANEL */}
       <div className="relative hidden lg:flex flex-col justify-between flex-1 p-12 bg-[#0f172a] overflow-hidden">
+        {/* Grid Background */}
         <div
           className="absolute inset-0"
           style={{
@@ -128,12 +151,209 @@ export default function LoginPage() {
             backgroundSize: "40px 40px",
           }}
         />
-
+        {/* Architectural SVG */}
+        <svg
+          className="absolute inset-0 w-full h-full opacity-100"
+          viewBox="0 0 600 900"
+          fill="none"
+        >
+          <rect
+            x="80"
+            y="180"
+            width="200"
+            height="420"
+            stroke="#ef7f1b"
+            strokeWidth="0.5"
+            opacity="0.25"
+            className="arch-line"
+          />
+          <rect
+            x="340"
+            y="280"
+            width="180"
+            height="320"
+            stroke="#ef7f1b"
+            strokeWidth="0.5"
+            opacity="0.18"
+            className="arch-line"
+            style={{ animationDelay: "0.3s" }}
+          />
+          <line
+            x1="80"
+            y1="260"
+            x2="280"
+            y2="260"
+            stroke="white"
+            strokeWidth="0.3"
+            opacity="0.08"
+          />
+          <line
+            x1="80"
+            y1="340"
+            x2="280"
+            y2="340"
+            stroke="white"
+            strokeWidth="0.3"
+            opacity="0.08"
+          />
+          <line
+            x1="80"
+            y1="420"
+            x2="280"
+            y2="420"
+            stroke="white"
+            strokeWidth="0.3"
+            opacity="0.08"
+          />
+          <line
+            x1="80"
+            y1="500"
+            x2="280"
+            y2="500"
+            stroke="white"
+            strokeWidth="0.3"
+            opacity="0.08"
+          />
+          <rect
+            x="95"
+            y="195"
+            width="65"
+            height="45"
+            stroke="white"
+            strokeWidth="0.3"
+            opacity="0.06"
+          />
+          <rect
+            x="175"
+            y="195"
+            width="90"
+            height="45"
+            stroke="white"
+            strokeWidth="0.3"
+            opacity="0.06"
+          />
+          <rect
+            x="95"
+            y="270"
+            width="40"
+            height="55"
+            stroke="white"
+            strokeWidth="0.3"
+            opacity="0.06"
+          />
+          <rect
+            x="150"
+            y="270"
+            width="55"
+            height="55"
+            stroke="white"
+            strokeWidth="0.3"
+            opacity="0.06"
+          />
+          <rect
+            x="220"
+            y="270"
+            width="45"
+            height="55"
+            stroke="white"
+            strokeWidth="0.3"
+            opacity="0.06"
+          />
+          <rect
+            x="355"
+            y="295"
+            width="70"
+            height="50"
+            stroke="white"
+            strokeWidth="0.3"
+            opacity="0.05"
+          />
+          <rect
+            x="440"
+            y="295"
+            width="60"
+            height="50"
+            stroke="white"
+            strokeWidth="0.3"
+            opacity="0.05"
+          />
+          <line
+            x1="0"
+            y1="720"
+            x2="600"
+            y2="520"
+            stroke="#ef7f1b"
+            strokeWidth="0.4"
+            opacity="0.12"
+          />
+          <line
+            x1="0"
+            y1="760"
+            x2="600"
+            y2="560"
+            stroke="#ef7f1b"
+            strokeWidth="0.25"
+            opacity="0.08"
+          />
+          <circle cx="170" cy="700" r="2" fill="#ef7f1b" opacity="0.3" />
+          <circle cx="300" cy="650" r="1.5" fill="#ef7f1b" opacity="0.2" />
+          <circle cx="430" cy="600" r="2" fill="#ef7f1b" opacity="0.25" />
+        </svg>
+        {/* Top Branding */}
         <div className="relative z-10">
-          <h1 className="text-4xl font-black text-white">
+          <h1 className="text-4xl font-black tracking-tight text-white">
             BUILD<span className="text-[#ef7f1b]">CON</span>
           </h1>
-          <p className="text-gray-400 mt-2">Construction ERP Platform</p>
+          <p className="text-gray-400 text-base mt-2 font-light">
+            Construction ERP Platform
+          </p>
+        </div>
+
+        {/* Workflow stages */}
+        <div className="relative z-10 space-y-2">
+          <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-gray-500 mb-4">
+            Project Workflow
+          </p>
+          {workflowStages.map((stage, i) => (
+            <div
+              key={i}
+              className="flex items-center gap-3 animate-fadeIn"
+              style={{
+                animationDelay: `${i * 100}ms`,
+                animationFillMode: "both",
+              }}
+            >
+              <div className="w-1.5 h-1.5 rounded-full bg-[#ef7f1b] shrink-0" />
+              <span className="text-white/40 text-sm font-light">{stage}</span>
+            </div>
+          ))}
+        </div>
+
+        {/* Feature highlights */}
+        <div className="relative z-10 flex gap-10">
+          <div className="text-center">
+            <FileText className="w-4 h-4 text-[#ef7f1b] mx-auto mb-2" />
+            <p className="text-white/35 text-[11px] leading-tight">
+              Track drawings
+              <br />& approvals
+            </p>
+          </div>
+          <div className="text-center">
+            <ClipboardCheck className="w-4 h-4 text-[#ef7f1b] mx-auto mb-2" />
+            <p className="text-white/35 text-[11px] leading-tight">
+              Manage site
+              <br />
+              progress
+            </p>
+          </div>
+          <div className="text-center">
+            <FolderOpen className="w-4 h-4 text-[#ef7f1b] mx-auto mb-2" />
+            <p className="text-white/35 text-[11px] leading-tight">
+              Centralize project
+              <br />
+              documents
+            </p>
+          </div>
         </div>
       </div>
 

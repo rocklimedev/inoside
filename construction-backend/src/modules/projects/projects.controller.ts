@@ -10,7 +10,7 @@ import {
   Req,
 } from '@nestjs/common';
 
-import type { Request } from 'express'; // ← Use 'import type'
+import type { Request } from 'express';
 
 import { ProjectsService } from './projects.service';
 import { ProjectBriefService } from './services/project-brief.service';
@@ -33,8 +33,6 @@ import { CreateProjectPitchDto } from './dto/create-project-pitch.dto';
 import { UpdateProjectPitchDto } from './dto/update-project-pitch.dto';
 
 import { JwtAuthGuard } from '@/common/guards/jwt-auth.guard';
-import { RolesGuard } from '@/common/guards/roles.guard';
-import { Roles } from '@/common/decorators/roles.decorator';
 
 @Controller('projects')
 @UseGuards(JwtAuthGuard)
@@ -53,7 +51,114 @@ export class ProjectsController {
   ) {}
 
   // =================================================
+  // 📊 GLOBAL PITCH MANAGEMENT
+  // IMPORTANT:
+  // KEEP STATIC ROUTES ABOVE ":id"
+  // =================================================
+
+  @Get('pitches/all')
+  getAllPitches() {
+    return this.pitchService.getAllPitches();
+  }
+
+  @Get('pitches/:pitchId')
+  getPitchById(@Param('pitchId') pitchId: string) {
+    return this.pitchService.getPitchById(pitchId);
+  }
+
+  @Delete('pitches/:pitchId')
+  deletePitch(@Param('pitchId') pitchId: string) {
+    return this.pitchService.deletePitch(pitchId);
+  }
+
+  @Post('pitches/:pitchId/comments')
+  addPitchComment(
+    @Param('pitchId') pitchId: string,
+    @Body('content') content: string,
+    @Req() req: Request,
+  ) {
+    const user = req.user as any;
+
+    return this.pitchService.addComment(pitchId, {
+      content,
+      user_id: user.id,
+    });
+  }
+
+  @Patch('pitches/:pitchId/files')
+  replacePitchFile(
+    @Param('pitchId') pitchId: string,
+    @Body()
+    dto: {
+      pitch_pdf_url?: string;
+      moodboard_pdf_url?: string;
+    },
+  ) {
+    return this.pitchService.replacePitchFile(pitchId, dto);
+  }
+
+  @Patch('pitches/:pitchId/approve')
+  approvePitch(@Param('pitchId') pitchId: string) {
+    return this.pitchService.approvePitch(pitchId);
+  }
+
+  @Patch('pitches/:pitchId/reject')
+  rejectPitch(@Param('pitchId') pitchId: string) {
+    return this.pitchService.rejectPitch(pitchId);
+  }
+
+  // =================================================
+  // 📄 BRIEFS STATIC ROUTES
+  // =================================================
+
+  @Get('briefs/all')
+  getAllBriefs() {
+    return this.briefService.getAllBriefs();
+  }
+
+  @Get('briefs/:briefId')
+  getBriefById(@Param('briefId') briefId: string) {
+    return this.briefService.getBriefById(briefId);
+  }
+
+  @Patch('briefs/:briefId/approve')
+  approveBrief(@Param('briefId') briefId: string, @Req() req: Request) {
+    const user = req.user as any;
+    return this.briefService.approveBrief(briefId, user.id);
+  }
+
+  @Patch('briefs/:briefId/unapprove')
+  unapproveBrief(@Param('briefId') briefId: string) {
+    return this.briefService.unapproveBrief(briefId);
+  }
+
+  @Patch('briefs/:briefId/request-changes')
+  requestBriefChanges(
+    @Param('briefId') briefId: string,
+    @Body() dto: RequestBriefChangesDto,
+    @Req() req: Request,
+  ) {
+    const user = req.user as any;
+
+    return this.briefService.requestBriefChanges(briefId, {
+      note: dto.note,
+      requested_by: user.id,
+    });
+  }
+
+  @Patch('briefs/:briefId/send-to-client')
+  sendBriefToClient(@Param('briefId') briefId: string) {
+    return this.briefService.sendBriefToClient(briefId);
+  }
+
+  @Patch('briefs/:briefId/draft')
+  markBriefAsDraft(@Param('briefId') briefId: string) {
+    return this.briefService.markBriefAsDraft(briefId);
+  }
+
+  // =================================================
   // 🧱 CORE PROJECT CRUD
+  // KEEP ":id" ROUTES BELOW STATIC ROUTES
   // =================================================
 
   @Post()
@@ -92,7 +197,10 @@ export class ProjectsController {
 
   @Post(':id/brief')
   createBrief(@Param('id') id: string, @Body() dto: CreateProjectBriefDto) {
-    return this.briefService.create({ ...dto, project_id: id });
+    return this.briefService.create({
+      ...dto,
+      project_id: id,
+    });
   }
 
   @Get(':id/brief')
@@ -106,58 +214,9 @@ export class ProjectsController {
   }
 
   // =================================================
-  // ✅ BRIEF WORKFLOW
-  // =================================================
-
-  @Patch('briefs/:briefId/approve')
-  approveBrief(@Param('briefId') briefId: string, @Req() req: Request) {
-    const user = req.user as any;
-    return this.briefService.approveBrief(briefId, user.id);
-  }
-
-  @Patch('briefs/:briefId/unapprove')
-  unapproveBrief(@Param('briefId') briefId: string) {
-    return this.briefService.unapproveBrief(briefId);
-  }
-
-  @Patch('briefs/:briefId/request-changes')
-  requestBriefChanges(
-    @Param('briefId') briefId: string,
-    @Body() dto: RequestBriefChangesDto,
-    @Req() req: Request,
-  ) {
-    const user = req.user as any;
-    return this.briefService.requestBriefChanges(briefId, {
-      note: dto.note,
-      requested_by: user.id,
-    });
-  }
-
-  @Patch('briefs/:briefId/send-to-client')
-  sendBriefToClient(@Param('briefId') briefId: string) {
-    return this.briefService.sendBriefToClient(briefId);
-  }
-
-  @Patch('briefs/:briefId/draft')
-  markBriefAsDraft(@Param('briefId') briefId: string) {
-    return this.briefService.markBriefAsDraft(briefId);
-  }
-
-  @Get('briefs/all')
-  getAllBriefs() {
-    return this.briefService.getAllBriefs();
-  }
-
-  @Get('briefs/:briefId')
-  getBriefById(@Param('briefId') briefId: string) {
-    return this.briefService.getBriefById(briefId);
-  }
-
-  // =================================================
   // 🎨 PROJECT PITCH
   // =================================================
 
-  // CREATE PITCH
   @Post(':id/pitch')
   createPitch(
     @Param('id') id: string,
@@ -172,98 +231,26 @@ export class ProjectsController {
     });
   }
 
-  // GET PITCH BY PROJECT
   @Get(':id/pitch')
   getPitch(@Param('id') id: string) {
     return this.pitchService.getPitch(id);
   }
 
-  // UPDATE PITCH
   @Patch(':id/pitch')
   updatePitch(@Param('id') id: string, @Body() dto: UpdateProjectPitchDto) {
     return this.pitchService.updatePitch(id, dto);
   }
 
   // =================================================
-  // 📊 GLOBAL PITCH MANAGEMENT
-  // =================================================
-
-  // GET ALL PITCHES
-  @Get('pitches/all')
-  getAllPitches() {
-    return this.pitchService.getAllPitches();
-  }
-
-  // GET SINGLE PITCH
-  @Get('pitches/:pitchId')
-  getPitchById(@Param('pitchId') pitchId: string) {
-    return this.pitchService.getPitchById(pitchId);
-  }
-
-  // DELETE PITCH
-  @Delete('pitches/:pitchId')
-  deletePitch(@Param('pitchId') pitchId: string) {
-    return this.pitchService.deletePitch(pitchId);
-  }
-
-  // =================================================
-  // 💬 PITCH COMMENTS
-  // =================================================
-
-  // ADD COMMENT
-  @Post('pitches/:pitchId/comments')
-  addPitchComment(
-    @Param('pitchId') pitchId: string,
-    @Body('content') content: string,
-    @Req() req: Request,
-  ) {
-    const user = req.user as any;
-
-    return this.pitchService.addComment(pitchId, {
-      content,
-      user_id: user.id,
-    });
-  }
-
-  // =================================================
-  // 📎 REPLACE PITCH FILES
-  // =================================================
-
-  // REPLACE FILES
-  @Patch('pitches/:pitchId/files')
-  replacePitchFile(
-    @Param('pitchId') pitchId: string,
-    @Body()
-    dto: {
-      pitch_pdf_url?: string;
-      moodboard_pdf_url?: string;
-    },
-  ) {
-    return this.pitchService.replacePitchFile(pitchId, dto);
-  }
-
-  // =================================================
-  // ✅ PITCH APPROVAL
-  // =================================================
-
-  // APPROVE
-  @Patch('pitches/:pitchId/approve')
-  approvePitch(@Param('pitchId') pitchId: string) {
-    return this.pitchService.approvePitch(pitchId);
-  }
-
-  // REJECT
-  @Patch('pitches/:pitchId/reject')
-  rejectPitch(@Param('pitchId') pitchId: string) {
-    return this.pitchService.rejectPitch(pitchId);
-  }
-  // =================================================
   // 🧩 PITCH REFERENCES
   // =================================================
 
   @Post(':id/pitch-references')
   addPitchReference(@Param('id') id: string, @Body() dto: any) {
-    return this.pitchRefService.add({ ...dto, project_id: id });
+    return this.pitchRefService.add({
+      ...dto,
+      project_id: id,
+    });
   }
 
   @Get(':id/pitch-references')
@@ -282,7 +269,10 @@ export class ProjectsController {
 
   @Post(':id/reki')
   createReki(@Param('id') id: string, @Body() dto: any) {
-    return this.rekiService.create({ ...dto, project_id: id });
+    return this.rekiService.create({
+      ...dto,
+      project_id: id,
+    });
   }
 
   @Get(':id/reki')
@@ -301,7 +291,10 @@ export class ProjectsController {
 
   @Post(':id/reki/photos')
   addRekiPhoto(@Param('id') id: string, @Body() dto: any) {
-    return this.rekiPhotoService.add({ ...dto, project_id: id });
+    return this.rekiPhotoService.add({
+      ...dto,
+      project_id: id,
+    });
   }
 
   @Get('reki/:rekiId/photos')
@@ -320,7 +313,10 @@ export class ProjectsController {
 
   @Post(':id/scope')
   createScope(@Param('id') id: string, @Body() dto: any) {
-    return this.scopeService.create({ ...dto, project_id: id });
+    return this.scopeService.create({
+      ...dto,
+      project_id: id,
+    });
   }
 
   @Get(':id/scope')
@@ -339,7 +335,10 @@ export class ProjectsController {
 
   @Post(':id/cost-estimates')
   addCostEstimate(@Param('id') id: string, @Body() dto: any) {
-    return this.costService.add({ ...dto, project_id: id });
+    return this.costService.add({
+      ...dto,
+      project_id: id,
+    });
   }
 
   @Get(':id/cost-estimates')
@@ -361,7 +360,10 @@ export class ProjectsController {
 
   @Post(':id/drawings')
   uploadDrawing(@Param('id') id: string, @Body() dto: any) {
-    return this.drawingService.upload({ ...dto, project_id: id });
+    return this.drawingService.upload({
+      ...dto,
+      project_id: id,
+    });
   }
 
   @Get(':id/drawings')
@@ -383,7 +385,10 @@ export class ProjectsController {
 
   @Post('drawings/:drawingId/logs')
   addApprovalLog(@Param('drawingId') drawingId: string, @Body() dto: any) {
-    return this.approvalLogService.create({ ...dto, drawing_id: drawingId });
+    return this.approvalLogService.create({
+      ...dto,
+      drawing_id: drawingId,
+    });
   }
 
   @Get('drawings/:drawingId/logs')

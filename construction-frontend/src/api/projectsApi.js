@@ -152,7 +152,7 @@ export const projectsApi = baseApi.injectEndpoints({
     // 📊 GLOBAL PITCH MANAGEMENT (New)
     // =================================================
     getAllPitches: builder.query({
-      query: () => "/pitches",
+      query: () => "/projects/pitches/all",
       providesTags: ["Pitches"],
     }),
 
@@ -163,7 +163,18 @@ export const projectsApi = baseApi.injectEndpoints({
       }),
       invalidatesTags: ["Pitches"],
     }),
+    uploadPitchFile: builder.mutation({
+      query: (file) => {
+        const formData = new FormData();
+        formData.append("file", file);
 
+        return {
+          url: "/upload",
+          method: "POST",
+          body: formData,
+        };
+      },
+    }),
     createPitchGlobal: builder.mutation({
       query: (body) => ({
         url: "/pitches",
@@ -392,7 +403,7 @@ export const {
   useAddPitchReferenceMutation,
   useGetPitchReferencesQuery,
   useDeletePitchReferenceMutation,
-
+  useUploadPitchFileMutation,
   // Reki
   useCreateRekiMutation,
   useGetRekiQuery,
