@@ -37,7 +37,7 @@ export default function BriefPageClient() {
   } = useGetBriefQuery(briefId, {
     skip: !briefId,
   });
-
+  console.log(brief);
   if (briefLoading) {
     return (
       <div className="flex items-center justify-center h-full min-h-[60vh]">

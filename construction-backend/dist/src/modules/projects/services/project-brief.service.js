@@ -43,9 +43,9 @@ let ProjectBriefService = class ProjectBriefService {
             approved_at: null,
         });
     }
-    async getBrief(project_id) {
+    async getBrief(briefId) {
         const brief = await this.briefModel.findOne({
-            where: { project_id },
+            where: { id: briefId },
             include: [
                 {
                     model: project_model_1.Project,

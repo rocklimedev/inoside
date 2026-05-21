@@ -422,39 +422,67 @@ export default function BriefForm({ onBack, onGenerated }) {
      PAYLOAD
   ================================================= */
 
-  const buildPayload = (data) => ({
-    rooms_spaces_required: data.rooms_spaces_required || "",
+  /* =================================================
+   PAYLOAD BUILDER (Clean)
+================================================= */
+  /* =================================================
+   PAYLOAD BUILDER
+================================================= */
+  const buildBriefPayload = (data) => {
+    if (
+      !selectedProjectId ||
+      selectedProjectId.trim() === "" ||
+      selectedProjectId === "undefined"
+    ) {
+      throw new Error("Valid Project ID is required");
+    }
 
-    parking_required:
-      data.parking_required === "Yes" || data.parking_required === true,
+    // Optional: UUID format basic check
+    const uuidRegex =
+      /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/;
+    if (!uuidRegex.test(selectedProjectId)) {
+      throw new Error("Invalid Project ID format");
+    }
 
-    first_construction_project:
-      data.first_construction_project === "Yes" ||
-      data.first_construction_project === true,
+    return {
+      rooms_spaces_required: data.rooms_spaces_required
+        ? typeof data.rooms_spaces_required === "string"
+          ? { description: data.rooms_spaces_required }
+          : data.rooms_spaces_required
+        : {},
 
-    end_to_end_services:
-      data.end_to_end_services === "Yes" || data.end_to_end_services === true,
+      parking_required:
+        data.parking_required === "Yes" || data.parking_required === true,
+      first_construction_project:
+        data.first_construction_project === "Yes" ||
+        data.first_construction_project === true,
+      end_to_end_services:
+        data.end_to_end_services === "Yes" || data.end_to_end_services === true,
 
-    decision_readiness: data.decision_readiness || "",
+      decision_readiness: data.decision_readiness || null,
 
-    expected_start_date: data.expected_start_date || null,
+      output_client_profile: data.output_client_profile
+        ? typeof data.output_client_profile === "string"
+          ? { profile: data.output_client_profile }
+          : data.output_client_profile
+        : {},
 
-    expected_completion: data.expected_completion || null,
-
-    output_client_profile: data.output_client_profile || "",
-
-    output_project_profile: data.output_project_profile || "",
-  });
+      output_project_profile: data.output_project_profile
+        ? typeof data.output_project_profile === "string"
+          ? { profile: data.output_project_profile }
+          : data.output_project_profile
+        : {},
+    };
+  };
 
   /* =================================================
-     AUTO SAVE
-  ================================================= */
-
+   AUTO SAVE
+================================================= */
   const handleAutoSave = async (data) => {
-    if (!selectedProjectId) return;
+    if (!selectedProjectId || selectedProjectId.trim() === "") return;
 
     try {
-      const payload = buildPayload(data);
+      const payload = buildBriefPayload(data);
 
       if (isNewBrief) {
         await createBrief({
@@ -473,37 +501,44 @@ export default function BriefForm({ onBack, onGenerated }) {
   };
 
   /* =================================================
-     SAVE
-  ================================================= */
-
+   MANUAL SAVE
+================================================= */
   const handleManualSave = async () => {
-    if (!selectedProjectId) {
-      return toast.error("Please select a project");
+    if (!selectedProjectId || selectedProjectId.trim() === "") {
+      toast.error("Please select or create a project first", {
+        action: {
+          label: "Create Project",
+          onClick: () => setShowProjectModal(true),
+        },
+      });
+      return;
     }
 
     try {
-      const payload = buildPayload(form);
+      const payload = buildBriefPayload(form);
 
       if (isNewBrief) {
         await createBrief({
           projectId: selectedProjectId,
           ...payload,
         }).unwrap();
-
         toast.success("Brief created successfully");
       } else {
         await updateBrief({
           projectId: selectedProjectId,
           ...payload,
         }).unwrap();
-
         toast.success("Brief updated successfully");
       }
     } catch (err) {
-      toast.error(err?.data?.message || "Save failed");
+      console.error(err);
+      toast.error(
+        Array.isArray(err?.data?.message)
+          ? err.data.message.join(", ")
+          : err?.data?.message || "Save failed",
+      );
     }
   };
-
   /* =================================================
      GENERATE
   ================================================= */

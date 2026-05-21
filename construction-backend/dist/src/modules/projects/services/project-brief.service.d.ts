@@ -7,7 +7,7 @@ export declare class ProjectBriefService {
     private userModel;
     constructor(briefModel: typeof ProjectBrief, projectModel: typeof Project, userModel: typeof User);
     create(dto: any): Promise<ProjectBrief>;
-    getBrief(project_id: string): Promise<any>;
+    getBrief(briefId: string): Promise<any>;
     updateBrief(project_id: string, dto: any): Promise<any>;
     approveBrief(briefId: string, user_id: string): Promise<any>;
     unapproveBrief(briefId: string): Promise<any>;

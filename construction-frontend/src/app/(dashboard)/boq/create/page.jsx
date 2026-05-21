@@ -216,7 +216,9 @@ export default function NewEstimate() {
                   }}
                 >
                   <Card
-                    onClick={() => router.push(`/boq/create/${category.id}`)}
+                    onClick={() =>
+                      router.push(`/boq/new?category=${category.id}`)
+                    }
                     className={`
                       group
                       relative

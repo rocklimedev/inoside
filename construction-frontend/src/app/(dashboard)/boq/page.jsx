@@ -349,7 +349,9 @@ export default function BoqsPage() {
                   <Button
                     variant="outline"
                     className="flex-1"
-                    onClick={() => router.push(`/boq/${selectedBoq.id}`)}
+                    onClick={() =>
+                      router.push(`/boq/view?boqId=${selectedBoq.id}`)
+                    }
                   >
                     <Eye className="w-4 h-4 mr-2" /> View Full BOQ
                   </Button>

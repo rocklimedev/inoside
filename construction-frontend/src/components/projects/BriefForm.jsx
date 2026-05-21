@@ -180,37 +180,81 @@ export default function BriefForm({ brief, onBack, onGenerated }) {
   };
 
   /* ---------------- API ACTIONS ---------------- */
-  const handleAutoSave = async (data) => {
+  /* ---------------- PAYLOAD CLEANER ---------------- */
+  const prepareBriefPayload = (formData, projectId) => {
+    const payload = {
+      project_id: projectId, // Must be snake_case
+      rooms_spaces_required: formData.rooms_spaces_required || {},
+      parking_required: formData.parking_required,
+      first_construction_project: formData.first_construction_project,
+      decision_readiness: formData.decision_readiness,
+      end_to_end_services: formData.end_to_end_services,
+      output_client_profile: formData.output_client_profile || {},
+      output_project_profile: formData.output_project_profile || {},
+      status: formData.status || "draft",
+    };
+
+    // Only add fields that are actually in your DTO / model
+    if (formData.client_name) payload.client_name = formData.client_name;
+    if (formData.client_contact)
+      payload.client_contact = formData.client_contact;
+    if (formData.client_requirements)
+      payload.client_requirements = formData.client_requirements;
+
+    // Add any other allowed fields from your form (e.g. project_type, timeline, etc.)
+
+    return payload;
+  };
+
+  /* ---------------- AUTO SAVE ---------------- */
+  const handleAutoSave = async (currentForm) => {
     if (!selectedProjectId) return;
+
     try {
+      const payload = prepareBriefPayload(currentForm, selectedProjectId);
+
       if (isNewBrief) {
-        await createBrief({ projectId: selectedProjectId, ...data }).unwrap();
+        await createBrief(payload).unwrap();
       } else {
-        await updateBrief({ projectId: selectedProjectId, ...data }).unwrap();
+        await updateBrief({
+          briefId: brief?.id, // Important: use briefId for update, not projectId
+          ...payload,
+        }).unwrap();
       }
     } catch (err) {
       console.error("Auto-save failed:", err);
+      // Optional: Don't show toast on every auto-save failure (too noisy)
+      // toast.error("Auto-save failed");
     }
   };
 
+  /* ---------------- MANUAL SAVE ---------------- */
   const handleManualSave = async () => {
     if (!selectedProjectId) {
       toast.error("Please select a project");
       return;
     }
+
     try {
+      const payload = prepareBriefPayload(form, selectedProjectId);
+
       if (isNewBrief) {
-        await createBrief({ projectId: selectedProjectId, ...form }).unwrap();
+        const result = await createBrief(payload).unwrap();
         toast.success("Brief created successfully");
+        // Redirect or call onGenerated
+        onGenerated?.(result);
       } else {
-        await updateBrief({ projectId: selectedProjectId, ...form }).unwrap();
-        toast.success("Saved successfully");
+        await updateBrief({
+          briefId: brief?.id,
+          ...payload,
+        }).unwrap();
+        toast.success("Brief updated successfully");
       }
     } catch (err) {
+      console.error(err);
       toast.error(err?.data?.message || "Save failed");
     }
   };
-
   const handleGenerate = async () => {
     /* similar to above */
   };
