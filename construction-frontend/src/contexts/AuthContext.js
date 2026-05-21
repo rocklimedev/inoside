@@ -25,6 +25,7 @@ const normalizeUser = (user) => {
   if (!user) return null;
 
   const rawUser = user?.dataValues || user;
+
   let role = rawUser.role;
 
   if (role && typeof role === "object") {
@@ -40,8 +41,6 @@ const normalizeUser = (user) => {
     role: typeof role === "string" ? role : null,
     is_active: Boolean(rawUser.is_active),
     is_email_verified: Boolean(rawUser.is_email_verified),
-    isActive: Boolean(rawUser.is_active),
-    isEmailVerified: Boolean(rawUser.is_email_verified),
     last_login: rawUser.last_login,
     created_at: rawUser.created_at,
   };
@@ -53,37 +52,31 @@ const normalizeUser = (user) => {
 export const AuthProvider = ({ children }) => {
   const pathname = usePathname();
 
-  // ====================================================
-  // STATE
-  // ====================================================
   const [token, setToken] = useState(null);
   const [user, setUser] = useState(null);
+
   const [authInitialized, setAuthInitialized] = useState(false);
   const [authResolved, setAuthResolved] = useState(false);
 
-  // ====================================================
-  // MUTATIONS
-  // ====================================================
   const [loginMutation] = useLoginMutation();
   const [registerMutation] = useRegisterMutation();
 
-  // ====================================================
-  // BOOTSTRAP TOKEN FROM LOCALSTORAGE
-  // ====================================================
+  // ======================================================
+  // BOOTSTRAP TOKEN
+  // ======================================================
   useEffect(() => {
-    try {
-      const storedToken = localStorage.getItem("access_token");
-      if (storedToken) {
-        setToken(storedToken);
-      }
-    } finally {
-      setAuthInitialized(true);
+    const storedToken = localStorage.getItem("access_token");
+
+    if (storedToken) {
+      setToken(storedToken);
     }
+
+    setAuthInitialized(true);
   }, []);
 
-  // ====================================================
-  // PROFILE QUERY - WITH MANUAL REFETCH CONTROL
-  // ====================================================
+  // ======================================================
+  // PROFILE QUERY
+  // ======================================================
   const {
     data: profileData,
     error: profileError,
@@ -95,156 +88,113 @@ export const AuthProvider = ({ children }) => {
     refetchOnReconnect: true,
     refetchOnMountOrArgChange: false,
   });
-  // ====================================================
-  // SYNC PROFILE TO STATE
-  // ====================================================
+
+  // ======================================================
+  // AUTH SYNC (IMPORTANT FIX)
+  // ======================================================
   useEffect(() => {
     if (!authInitialized) return;
 
-    // No token
+    // no token → logged out (but resolved)
     if (!token) {
       setUser(null);
       setAuthResolved(true);
       return;
     }
 
-    // Still fetching
-    if (profileFetching) {
-      console.log("[AUTH] Profile fetching...");
-      return;
-    }
+    // still loading profile → DO NOTHING (critical fix)
+    if (profileFetching) return;
 
-    // Success
+    // success
     if (profileData?.user) {
-      console.log("[AUTH] Profile loaded successfully:", profileData.user);
       setUser(normalizeUser(profileData.user));
       setAuthResolved(true);
       return;
     }
 
-    // Error - Invalid token
+    // invalid token
     if (profileError) {
-      console.error("[AUTH] Profile error:", profileError);
       localStorage.removeItem("access_token");
       document.cookie =
         "access_token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT";
+
       setToken(null);
       setUser(null);
       setAuthResolved(true);
-      return;
     }
   }, [authInitialized, token, profileData, profileError, profileFetching]);
 
-  // ====================================================
+  // ======================================================
   // LOGIN
-  // ====================================================
+  // ======================================================
   const login = async (credentials) => {
     const res = await loginMutation(credentials).unwrap();
 
     const accessToken = res?.access_token;
-    if (!accessToken) {
-      throw new Error("No access token received");
-    }
+    if (!accessToken) throw new Error("No access token");
 
     setAuthResolved(false);
+
     localStorage.setItem("access_token", accessToken);
-    document.cookie = `access_token=${accessToken}; path=/; max-age=86400; SameSite=Lax`;
+    document.cookie = `access_token=${accessToken}; path=/; max-age=86400`;
+
     setToken(accessToken);
 
-    if (res?.user) {
-      const normalized = normalizeUser(res.user);
-      setUser(normalized);
-      setAuthResolved(true);
-      return { ...res, user: normalized };
-    }
-
-    // Fallback: fetch profile
+    // allow profile query to resolve auth properly
     const profileRes = await refetchProfile();
+
     if (profileRes?.data?.user) {
-      const normalized = normalizeUser(profileRes.data.user);
-      setUser(normalized);
-      setAuthResolved(true);
-      return { ...res, user: normalized };
+      setUser(normalizeUser(profileRes.data.user));
     }
 
-    throw new Error("Failed to fetch authenticated user");
+    setAuthResolved(true);
+
+    return res;
   };
 
-  // ====================================================
-  // REGISTER
-  // ====================================================
-  const register = async (data) => {
-    return await registerMutation(data).unwrap();
-  };
-
-  // ====================================================
+  // ======================================================
   // LOGOUT
-  // ====================================================
+  // ======================================================
   const logout = useCallback(() => {
-    console.log("[AUTH] Logging out...");
     localStorage.removeItem("access_token");
     document.cookie =
       "access_token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT";
+
     setToken(null);
     setUser(null);
     setAuthResolved(true);
   }, []);
 
-  // ====================================================
-  // REFRESH USER
-  // ====================================================
-  const refreshUser = useCallback(async () => {
-    if (!token) return null;
+  // ======================================================
+  // DERIVED STATE (🔥 FIX HERE)
+  // ======================================================
 
-    try {
-      const res = await refetchProfile();
-      if (res?.data?.user) {
-        const normalized = normalizeUser(res.data.user);
-        setUser(normalized);
-        return normalized;
-      }
-      return null;
-    } catch {
-      return null;
-    }
-  }, [token, refetchProfile]);
+  // IMPORTANT: not just user-based
+  const isAuthenticated = useMemo(() => {
+    return Boolean(token && user);
+  }, [token, user]);
 
-  // ====================================================
-  // DERIVED STATE
-  // ====================================================
-  const isAuthenticated = Boolean(user);
   const isLoading = !authInitialized || !authResolved;
 
-  const isActive = useMemo(
-    () => Boolean(user?.is_active ?? user?.isActive),
-    [user],
-  );
-
-  const isEmailVerified = useMemo(
-    () => Boolean(user?.is_email_verified ?? user?.isEmailVerified),
-    [user],
-  );
-
-  // ====================================================
+  // ======================================================
   // CONTEXT VALUE
-  // ====================================================
+  // ======================================================
   const value = {
     token,
     user,
-    userMeta: user,
+
     login,
-    register,
+    register: registerMutation,
     logout,
-    refreshUser,
+
     authInitialized,
     authResolved,
+
     isAuthenticated,
     isLoading,
     profileFetching,
-    isActive,
-    isEmailVerified,
-    hasRole: (roleName) =>
-      user?.role?.toLowerCase() === roleName?.toLowerCase(),
+
+    hasRole: (role) => user?.role?.toLowerCase?.() === role?.toLowerCase?.(),
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
@@ -254,9 +204,7 @@ export const AuthProvider = ({ children }) => {
 // HOOK
 // ======================================================
 export const useAuth = () => {
-  const context = useContext(AuthContext);
-  if (!context) {
-    throw new Error("useAuth must be used within AuthProvider");
-  }
-  return context;
+  const ctx = useContext(AuthContext);
+  if (!ctx) throw new Error("useAuth must be used within AuthProvider");
+  return ctx;
 };

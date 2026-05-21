@@ -6,9 +6,9 @@ import { useAuth } from "@/contexts/AuthContext";
 
 export default function HomePage() {
   const router = useRouter();
-  const { user, authInitialized, isAuthenticated } = useAuth();
 
-  // same mapping style as SidebarContent
+  const { user, authInitialized, authResolved, isAuthenticated } = useAuth();
+
   const roleRoutes = {
     architect: "/dashboard/architect",
     client: "/dashboard/client",
@@ -20,7 +20,8 @@ export default function HomePage() {
   };
 
   useEffect(() => {
-    if (!authInitialized) return;
+    // 🔒 wait until auth is fully stable
+    if (!authInitialized || !authResolved) return;
 
     // not logged in → login
     if (!isAuthenticated) {
@@ -28,14 +29,13 @@ export default function HomePage() {
       return;
     }
 
-    // logged in → role-based dashboard
+    // logged in → role-based redirect
     const roleKey = user?.role?.toLowerCase?.();
     const targetRoute = roleRoutes[roleKey] || "/dashboard/architect";
 
     router.replace(targetRoute);
-  }, [authInitialized, isAuthenticated, user, router]);
+  }, [authInitialized, authResolved, isAuthenticated, user, router]);
 
-  // minimal UX while deciding route
   return (
     <div className="h-screen flex items-center justify-center text-sm text-gray-400">
       Initializing workspace...
