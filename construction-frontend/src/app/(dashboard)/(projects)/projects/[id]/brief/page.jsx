@@ -2,8 +2,8 @@ export const dynamic = "force-dynamic";
 
 import BriefPageClient from "./BriefPageClient";
 
-export default async function Page({ params }) {
-  const { id } = await params;
+export default function Page({ params }) {
+  const id = params?.id;
 
   return <BriefPageClient projectId={id} />;
 }
