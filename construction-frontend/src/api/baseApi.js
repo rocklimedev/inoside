@@ -19,10 +19,30 @@ const baseQuery = fetchBaseQuery({
   },
 });
 
+// 🔥 WRAPPER TO HANDLE 401/403 ERRORS
+const baseQueryWithAuth = async (args, api, extraOptions) => {
+  let result = await baseQuery(args, api, extraOptions);
+
+  // Handle 401/403 Unauthorized
+  if (result.error?.status === 401 || result.error?.status === 403) {
+    // Clear auth tokens
+    localStorage.removeItem("access_token");
+    document.cookie =
+      "access_token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT";
+
+    // Redirect to login via window location (bypass router issues)
+    if (typeof window !== "undefined") {
+      window.location.href = "/login";
+    }
+  }
+
+  return result;
+};
+
 export const baseApi = createApi({
   reducerPath: "api",
 
-  baseQuery,
+  baseQuery: baseQueryWithAuth,
 
   tagTypes: [
     "Users",
