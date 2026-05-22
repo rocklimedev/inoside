@@ -21,6 +21,7 @@ const client_model_1 = require("../../clients/models/client.model");
 const site_model_1 = require("../../sites/models/site.model");
 const user_model_1 = require("../../users/models/user.model");
 const pitch_comment_model_1 = require("../models/pitch-comment.model");
+const address_model_1 = require("../../address/models/address.model");
 let ProjectPitchService = class ProjectPitchService {
     pitchModel;
     projectModel;
@@ -212,7 +213,22 @@ let ProjectPitchService = class ProjectPitchService {
                     },
                     {
                         model: site_model_1.Site,
-                        attributes: ['id', 'address', 'city'],
+                        attributes: ['id', 'ownership_status', 'access_available'],
+                        include: [
+                            {
+                                model: address_model_1.Address,
+                                attributes: [
+                                    'id',
+                                    'line1',
+                                    'line2',
+                                    'landmark',
+                                    'city',
+                                    'state',
+                                    'country',
+                                    'pincode',
+                                ],
+                            },
+                        ],
                     },
                 ],
             },

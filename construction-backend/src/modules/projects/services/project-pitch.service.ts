@@ -16,6 +16,7 @@ import { Client } from '@/modules/clients/models/client.model';
 import { Site } from '@/modules/sites/models/site.model';
 import { User } from '@/modules/users/models/user.model';
 import { PitchComment } from '../models/pitch-comment.model';
+import { Address } from '@/modules/address/models/address.model';
 @Injectable()
 export class ProjectPitchService {
   constructor(
@@ -315,7 +316,23 @@ export class ProjectPitchService {
           },
           {
             model: Site,
-            attributes: ['id', 'address', 'city'],
+            attributes: ['id', 'ownership_status', 'access_available'],
+
+            include: [
+              {
+                model: Address,
+                attributes: [
+                  'id',
+                  'line1',
+                  'line2',
+                  'landmark',
+                  'city',
+                  'state',
+                  'country',
+                  'pincode',
+                ],
+              },
+            ],
           },
         ],
       },
