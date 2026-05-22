@@ -2,7 +2,6 @@
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
 import {
@@ -12,11 +11,19 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 
-import { Pencil, Trash2, MoreVertical } from "lucide-react";
-
+import { Pencil, Trash2, MoreVertical, UserCog, Power } from "lucide-react";
 import { toast } from "sonner";
+import { useToggleUserActiveMutation } from "@/api/usersApi";
 
-export default function UserTable({ users, onUserClick, onDelete, onEdit }) {
+export default function UserTable({
+  users,
+  onUserClick,
+  onDelete,
+  onEdit,
+  onRoleChange, // 👈 NEW (opens RoleModal)
+}) {
+  const [toggleUserActive] = useToggleUserActiveMutation();
+
   // ================= DELETE =================
   const handleDelete = async (id, e) => {
     e.stopPropagation();
@@ -25,11 +32,29 @@ export default function UserTable({ users, onUserClick, onDelete, onEdit }) {
 
     try {
       await onDelete(id);
-
       toast.success("User deleted successfully");
     } catch (err) {
       toast.error("Failed to delete user");
     }
+  };
+
+  // ================= TOGGLE ACTIVE =================
+  const handleToggleActive = async (user, e) => {
+    e.stopPropagation();
+
+    try {
+      await toggleUserActive(user.id).unwrap();
+
+      toast.success(user.is_active ? "User deactivated" : "User activated");
+    } catch (err) {
+      toast.error("Failed to update status");
+    }
+  };
+
+  // ================= ROLE CHANGE =================
+  const handleRoleChange = (user, e) => {
+    e.stopPropagation();
+    onRoleChange?.(user); // opens RoleModal in parent
   };
 
   return (
@@ -42,23 +67,18 @@ export default function UserTable({ users, onUserClick, onDelete, onEdit }) {
               <th className="px-5 py-4 text-left text-xs font-bold uppercase tracking-wider text-muted-foreground">
                 User
               </th>
-
               <th className="px-5 py-4 text-left text-xs font-bold uppercase tracking-wider text-muted-foreground">
                 Email
               </th>
-
               <th className="px-5 py-4 text-left text-xs font-bold uppercase tracking-wider text-muted-foreground">
                 Phone
               </th>
-
               <th className="px-5 py-4 text-left text-xs font-bold uppercase tracking-wider text-muted-foreground">
                 Role
               </th>
-
               <th className="px-5 py-4 text-left text-xs font-bold uppercase tracking-wider text-muted-foreground">
                 Status
               </th>
-
               <th className="px-5 py-4 text-right text-xs font-bold uppercase tracking-wider text-muted-foreground">
                 Actions
               </th>
@@ -80,7 +100,6 @@ export default function UserTable({ users, onUserClick, onDelete, onEdit }) {
                   <td className="px-5 py-4">
                     <div className="flex items-center gap-3">
                       <Avatar className="h-10 w-10 border">
-                        {/* IMAGE */}
                         {avatar && (
                           <AvatarImage
                             src={avatar}
@@ -88,8 +107,6 @@ export default function UserTable({ users, onUserClick, onDelete, onEdit }) {
                             className="object-cover"
                           />
                         )}
-
-                        {/* FALLBACK */}
                         <AvatarFallback className="bg-[#ef7f1b] text-white font-bold">
                           {user?.name?.charAt(0)?.toUpperCase() || "U"}
                         </AvatarFallback>
@@ -141,7 +158,6 @@ export default function UserTable({ users, onUserClick, onDelete, onEdit }) {
                         className="h-9 w-9"
                         onClick={(e) => {
                           e.stopPropagation();
-
                           onEdit(user);
                         }}
                       >
@@ -161,6 +177,23 @@ export default function UserTable({ users, onUserClick, onDelete, onEdit }) {
                         </DropdownMenuTrigger>
 
                         <DropdownMenuContent align="end">
+                          {/* TOGGLE ACTIVE */}
+                          <DropdownMenuItem
+                            onClick={(e) => handleToggleActive(user, e)}
+                          >
+                            <Power className="mr-2 h-4 w-4" />
+                            {user.is_active ? "Deactivate" : "Activate"}
+                          </DropdownMenuItem>
+
+                          {/* CHANGE ROLE */}
+                          <DropdownMenuItem
+                            onClick={(e) => handleRoleChange(user, e)}
+                          >
+                            <UserCog className="mr-2 h-4 w-4" />
+                            Change Role
+                          </DropdownMenuItem>
+
+                          {/* DELETE */}
                           <DropdownMenuItem
                             className="text-red-600"
                             onClick={(e) => handleDelete(user.id, e)}

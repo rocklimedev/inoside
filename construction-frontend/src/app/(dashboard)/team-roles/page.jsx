@@ -7,13 +7,21 @@ import { toast } from "sonner";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Search, Plus, Loader2 } from "lucide-react";
-import { LayoutGrid, Table2, UserCheck, Shield } from "lucide-react";
+import {
+  Search,
+  Plus,
+  Loader2,
+  LayoutGrid,
+  Table2,
+  UserCheck,
+  Shield,
+} from "lucide-react";
 
 import {
   useGetUsersQuery,
   useCreateUserMutation,
   useDeleteUserMutation,
+  useToggleUserActiveMutation,
 } from "@/api/usersApi";
 
 import {
@@ -26,10 +34,15 @@ import UserGrid from "@/components/users/UserGrid";
 import UserTable from "@/components/users/UserTable";
 import RoleGrid from "@/components/users/RoleGrid";
 import RoleTable from "@/components/users/RoleTable";
+
 import AddUserDialog from "@/components/users/AddUserDialog";
 import AddRoleDialog from "@/components/users/AddRoleDialog";
+
 import UserSheet from "@/components/users/UserSheet";
 import RoleSheet from "@/components/users/RoleSheet";
+
+// 👉 ADD THIS (you must create/import it)
+import RoleModal from "@/components/users/RoleModal";
 
 const AVAILABLE_PERMISSIONS = [
   "projects.view",
@@ -60,26 +73,32 @@ export default function UsersPage() {
   const [search, setSearch] = useState("");
   const [viewMode, setViewMode] = useState("table");
 
-  // Users
+  // ================= USERS STATE =================
   const [selectedUser, setSelectedUser] = useState(null);
   const [userToEdit, setUserToEdit] = useState(null);
   const [showAddUser, setShowAddUser] = useState(false);
 
-  // Roles
+  // ================= ROLES STATE =================
   const [selectedRole, setSelectedRole] = useState(null);
   const [roleToEdit, setRoleToEdit] = useState(null);
   const [showAddRole, setShowAddRole] = useState(false);
 
-  // API
+  // ================= ROLE MODAL =================
+  const [roleModalOpen, setRoleModalOpen] = useState(false);
+  const [userForRoleChange, setUserForRoleChange] = useState(null);
+
+  // ================= API =================
   const { data: users = [], isLoading: usersLoading } = useGetUsersQuery();
   const { data: roles = [], isLoading: rolesLoading } = useGetRolesQuery();
 
   const [createUser, { isLoading: creatingUser }] = useCreateUserMutation();
   const [deleteUser] = useDeleteUserMutation();
+  const [toggleUserActive] = useToggleUserActiveMutation();
+
   const [createRole, { isLoading: creatingRole }] = useCreateRoleMutation();
   const [deleteRole] = useDeleteRoleMutation();
 
-  // Sync tab with URL
+  // ================= TAB SYNC =================
   const handleTabChange = (value) => {
     setActiveTab(value);
 
@@ -89,9 +108,11 @@ export default function UsersPage() {
     router.replace(`?${params.toString()}`, { scroll: false });
   };
 
+  // ================= FILTERS =================
   const filteredUsers = useMemo(() => {
     if (!search) return users;
     const term = search.toLowerCase();
+
     return users.filter(
       (u) =>
         u.name?.toLowerCase().includes(term) ||
@@ -102,10 +123,11 @@ export default function UsersPage() {
   const filteredRoles = useMemo(() => {
     if (!search) return roles;
     const term = search.toLowerCase();
+
     return roles.filter((r) => r.name?.toLowerCase().includes(term));
   }, [roles, search]);
 
-  // Users handlers
+  // ================= USERS HANDLERS =================
   const handleAddUser = () => {
     setUserToEdit(null);
     setShowAddUser(true);
@@ -116,7 +138,22 @@ export default function UsersPage() {
     setShowAddUser(true);
   };
 
-  // Roles handlers
+  const handleToggleUserActive = async (user) => {
+    try {
+      await toggleUserActive(user.id).unwrap();
+
+      toast.success(user.is_active ? "User deactivated" : "User activated");
+    } catch (err) {
+      toast.error("Failed to update user status");
+    }
+  };
+
+  const handleRoleChange = (user) => {
+    setUserForRoleChange(user);
+    setRoleModalOpen(true);
+  };
+
+  // ================= ROLES HANDLERS =================
   const handleAddRole = () => {
     setRoleToEdit(null);
     setShowAddRole(true);
@@ -127,6 +164,7 @@ export default function UsersPage() {
     setShowAddRole(true);
   };
 
+  // ================= LOADING =================
   if (usersLoading || rolesLoading) {
     return (
       <div className="flex h-screen items-center justify-center">
@@ -137,7 +175,7 @@ export default function UsersPage() {
 
   return (
     <div className="flex h-full flex-col bg-background">
-      {/* Header */}
+      {/* ================= HEADER ================= */}
       <div className="border-b bg-card px-4 py-5 md:px-6">
         <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
           <div>
@@ -150,6 +188,7 @@ export default function UsersPage() {
           </div>
 
           <div className="flex flex-col md:flex-row items-stretch md:items-center gap-3">
+            {/* SEARCH */}
             <div className="relative w-full md:w-80">
               <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
               <Input
@@ -160,11 +199,11 @@ export default function UsersPage() {
               />
             </div>
 
-            {/* View Toggle */}
+            {/* VIEW TOGGLE */}
             <div className="flex items-center rounded-xl border bg-card overflow-hidden">
               <button
                 onClick={() => setViewMode("grid")}
-                className={`px-3 py-2 transition ${
+                className={`px-3 py-2 ${
                   viewMode === "grid"
                     ? "bg-primary text-primary-foreground"
                     : "hover:bg-muted text-muted-foreground"
@@ -172,9 +211,10 @@ export default function UsersPage() {
               >
                 <LayoutGrid className="h-4 w-4" />
               </button>
+
               <button
                 onClick={() => setViewMode("table")}
-                className={`px-3 py-2 transition ${
+                className={`px-3 py-2 ${
                   viewMode === "table"
                     ? "bg-primary text-primary-foreground"
                     : "hover:bg-muted text-muted-foreground"
@@ -184,6 +224,7 @@ export default function UsersPage() {
               </button>
             </div>
 
+            {/* ADD BUTTON */}
             <Button
               onClick={activeTab === "users" ? handleAddUser : handleAddRole}
               className="bg-[#ef7f1b] hover:bg-[#d66e15]"
@@ -195,22 +236,27 @@ export default function UsersPage() {
         </div>
       </div>
 
+      {/* ================= TABS ================= */}
       <Tabs
         value={activeTab}
         onValueChange={handleTabChange}
         className="flex flex-1 flex-col"
       >
         <div className="px-4 md:px-6 pt-5">
-          <TabsList className="w-full md:w-fit">
+          <TabsList>
             <TabsTrigger value="users" className="gap-2">
-              <UserCheck className="h-4 w-4" /> Users
+              <UserCheck className="h-4 w-4" />
+              Users
             </TabsTrigger>
+
             <TabsTrigger value="roles" className="gap-2">
-              <Shield className="h-4 w-4" /> Roles & Permissions
+              <Shield className="h-4 w-4" />
+              Roles
             </TabsTrigger>
           </TabsList>
         </div>
 
+        {/* ================= USERS ================= */}
         <TabsContent value="users" className="flex-1 px-4 py-5 md:px-6">
           {filteredUsers.length === 0 ? (
             <div className="flex h-80 items-center justify-center text-muted-foreground">
@@ -222,6 +268,8 @@ export default function UsersPage() {
               onUserClick={setSelectedUser}
               onDelete={deleteUser}
               onEdit={handleEditUser}
+              onToggleActive={handleToggleUserActive}
+              onRoleChange={handleRoleChange}
             />
           ) : (
             <UserTable
@@ -229,10 +277,13 @@ export default function UsersPage() {
               onUserClick={setSelectedUser}
               onDelete={deleteUser}
               onEdit={handleEditUser}
+              onToggleActive={handleToggleUserActive}
+              onRoleChange={handleRoleChange}
             />
           )}
         </TabsContent>
 
+        {/* ================= ROLES ================= */}
         <TabsContent value="roles" className="flex-1 px-4 py-5 md:px-6">
           {filteredRoles.length === 0 ? (
             <div className="flex h-80 items-center justify-center text-muted-foreground">
@@ -256,7 +307,7 @@ export default function UsersPage() {
         </TabsContent>
       </Tabs>
 
-      {/* Dialogs */}
+      {/* ================= DIALOGS ================= */}
       <AddUserDialog
         open={showAddUser}
         onOpenChange={setShowAddUser}
@@ -275,7 +326,7 @@ export default function UsersPage() {
         roleToEdit={roleToEdit}
       />
 
-      {/* Sheets */}
+      {/* ================= SHEETS ================= */}
       <UserSheet
         user={selectedUser}
         open={!!selectedUser}
@@ -288,6 +339,13 @@ export default function UsersPage() {
         open={!!selectedRole}
         onOpenChange={() => setSelectedRole(null)}
         onDelete={deleteRole}
+      />
+
+      {/* ================= ROLE MODAL ================= */}
+      <RoleModal
+        open={roleModalOpen}
+        user={userForRoleChange}
+        onOpenChange={setRoleModalOpen}
       />
     </div>
   );

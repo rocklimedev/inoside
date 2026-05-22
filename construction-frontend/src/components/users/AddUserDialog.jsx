@@ -28,24 +28,30 @@ export default function AddUserDialog({
   onCreate,
   isCreating,
   roles,
-  userToEdit = null, // ← New prop for editing
+  userToEdit = null,
 }) {
   const [newUser, setNewUser] = useState({
     name: "",
     email: "",
     phone: "",
-    role: "Staff",
+    password: "",
+    role_id: "",
+    avatar_url: "",
+    avatar_thumbnail: "",
     is_active: true,
   });
 
-  // Populate form when editing a user
+  // Populate form when editing
   useEffect(() => {
     if (userToEdit) {
       setNewUser({
         name: userToEdit.name || "",
         email: userToEdit.email || "",
         phone: userToEdit.phone || "",
-        role: userToEdit.role?.name || userToEdit.role || "Staff",
+        password: "", // never prefill password
+        role_id: userToEdit.role_id || userToEdit.role?.id || "",
+        avatar_url: userToEdit.avatar_url || "",
+        avatar_thumbnail: userToEdit.avatar_thumbnail || "",
         is_active: userToEdit.is_active ?? true,
       });
     } else {
@@ -53,23 +59,30 @@ export default function AddUserDialog({
         name: "",
         email: "",
         phone: "",
-        role: "Staff",
+        password: "",
+        role_id: "",
+        avatar_url: "",
+        avatar_thumbnail: "",
         is_active: true,
       });
     }
   }, [userToEdit]);
 
   const handleSubmit = async () => {
-    if (!newUser.name || !newUser.email) {
-      alert("Name and Email are required");
+    if (!newUser.name || !newUser.email || !newUser.role_id) {
+      toast.error("Name, Email and Role are required");
+      return;
+    }
+
+    if (!userToEdit && !newUser.password) {
+      toast.error("Password is required");
       return;
     }
 
     try {
       if (userToEdit) {
-        // TODO: Add update mutation later
         toast.info("Update user functionality coming soon");
-        console.log("Would update user:", userToEdit.id, newUser);
+        console.log("Update payload:", newUser);
       } else {
         await onCreate(newUser);
         toast.success("User created successfully");
@@ -91,7 +104,8 @@ export default function AddUserDialog({
           <DialogTitle>{title}</DialogTitle>
         </DialogHeader>
 
-        <div className="space-y-5 py-4">
+        <div className="space-y-4 py-4">
+          {/* Name */}
           <div>
             <Label>Name *</Label>
             <Input
@@ -101,6 +115,7 @@ export default function AddUserDialog({
             />
           </div>
 
+          {/* Email */}
           <div>
             <Label>Email *</Label>
             <Input
@@ -113,6 +128,7 @@ export default function AddUserDialog({
             />
           </div>
 
+          {/* Phone */}
           <div>
             <Label>Phone</Label>
             <Input
@@ -120,21 +136,38 @@ export default function AddUserDialog({
               onChange={(e) =>
                 setNewUser({ ...newUser, phone: e.target.value })
               }
+              placeholder="+91XXXXXXXXXX"
             />
           </div>
 
+          {/* Password (required for create) */}
+          {!userToEdit && (
+            <div>
+              <Label>Password *</Label>
+              <Input
+                type="password"
+                value={newUser.password}
+                onChange={(e) =>
+                  setNewUser({ ...newUser, password: e.target.value })
+                }
+                placeholder="••••••••"
+              />
+            </div>
+          )}
+
+          {/* Role (role_id FIXED) */}
           <div>
-            <Label>Role</Label>
+            <Label>Role *</Label>
             <Select
-              value={newUser.role}
-              onValueChange={(v) => setNewUser({ ...newUser, role: v })}
+              value={newUser.role_id}
+              onValueChange={(v) => setNewUser({ ...newUser, role_id: v })}
             >
               <SelectTrigger>
                 <SelectValue placeholder="Select role" />
               </SelectTrigger>
               <SelectContent>
                 {roles.map((r) => (
-                  <SelectItem key={r.id} value={r.name}>
+                  <SelectItem key={r.id} value={r.id}>
                     {r.display_name || r.name}
                   </SelectItem>
                 ))}
@@ -142,6 +175,34 @@ export default function AddUserDialog({
             </Select>
           </div>
 
+          {/* Avatar URL */}
+          <div>
+            <Label>Avatar URL</Label>
+            <Input
+              value={newUser.avatar_url}
+              onChange={(e) =>
+                setNewUser({ ...newUser, avatar_url: e.target.value })
+              }
+              placeholder="https://..."
+            />
+          </div>
+
+          {/* Avatar Thumbnail */}
+          <div>
+            <Label>Avatar Thumbnail</Label>
+            <Input
+              value={newUser.avatar_thumbnail}
+              onChange={(e) =>
+                setNewUser({
+                  ...newUser,
+                  avatar_thumbnail: e.target.value,
+                })
+              }
+              placeholder="https://..."
+            />
+          </div>
+
+          {/* Active */}
           <div className="flex items-center justify-between">
             <Label>Active Status</Label>
             <Switch
@@ -155,6 +216,7 @@ export default function AddUserDialog({
           <Button variant="outline" onClick={() => onOpenChange(false)}>
             Cancel
           </Button>
+
           <Button
             onClick={handleSubmit}
             disabled={isCreating}

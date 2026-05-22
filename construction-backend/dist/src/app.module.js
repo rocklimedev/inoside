@@ -18,6 +18,7 @@ const throttler_1 = require("@nestjs/throttler");
 const app_controller_1 = require("./app.controller");
 const app_service_1 = require("./app.service");
 const database_config_1 = __importDefault(require("./config/database.config"));
+const mongo_config_1 = require("./config/mongo.config");
 const auth_module_1 = require("./modules/auth/auth.module");
 const users_module_1 = require("./modules/users/users.module");
 const rbac_module_1 = require("./modules/rbac/rbac.module");
@@ -28,6 +29,7 @@ const vendors_module_1 = require("./modules/vendors/vendors.module");
 const client_module_1 = require("./modules/clients/client.module");
 const sites_module_1 = require("./modules/sites/sites.module");
 const cdn_module_1 = require("./modules/cdn/cdn.module");
+const notifications_module_1 = require("./modules/notifications/notifications.module");
 let AppModule = class AppModule {
 };
 exports.AppModule = AppModule;
@@ -49,6 +51,7 @@ exports.AppModule = AppModule = __decorate([
                 inject: [config_1.ConfigService],
                 useFactory: database_config_1.default,
             }),
+            mongo_config_1.MongodbConfig,
             auth_module_1.AuthModule,
             users_module_1.UsersModule,
             rbac_module_1.RbacModule,
@@ -59,6 +62,7 @@ exports.AppModule = AppModule = __decorate([
             client_module_1.ClientsModule,
             sites_module_1.SitesModule,
             cdn_module_1.CdnModule,
+            notifications_module_1.NotificationsModule,
         ],
         controllers: [app_controller_1.AppController],
         providers: [

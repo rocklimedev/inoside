@@ -20,6 +20,7 @@ const project_model_1 = require("../models/project.model");
 const client_model_1 = require("../../clients/models/client.model");
 const site_model_1 = require("../../sites/models/site.model");
 const user_model_1 = require("../../users/models/user.model");
+const address_model_1 = require("../../address/models/address.model");
 let RekiReportService = class RekiReportService {
     rekiModel;
     projectModel;
@@ -39,7 +40,22 @@ let RekiReportService = class RekiReportService {
                     },
                     {
                         model: site_model_1.Site,
-                        attributes: ['id', 'address', 'city'],
+                        attributes: ['id', 'ownership_status', 'access_available'],
+                        include: [
+                            {
+                                model: address_model_1.Address,
+                                attributes: [
+                                    'id',
+                                    'line1',
+                                    'line2',
+                                    'landmark',
+                                    'city',
+                                    'state',
+                                    'country',
+                                    'pincode',
+                                ],
+                            },
+                        ],
                     },
                     {
                         model: user_model_1.User,

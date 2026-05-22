@@ -11,7 +11,7 @@ import { Project } from '../models/project.model';
 import { Client } from '@/modules/clients/models/client.model';
 import { Site } from '@/modules/sites/models/site.model';
 import { User } from '@/modules/users/models/user.model';
-
+import { Address } from '@/modules/address/models/address.model';
 @Injectable()
 export class RekiReportService {
   constructor(
@@ -38,7 +38,23 @@ export class RekiReportService {
           },
           {
             model: Site,
-            attributes: ['id', 'address', 'city'],
+            attributes: ['id', 'ownership_status', 'access_available'],
+
+            include: [
+              {
+                model: Address,
+                attributes: [
+                  'id',
+                  'line1',
+                  'line2',
+                  'landmark',
+                  'city',
+                  'state',
+                  'country',
+                  'pincode',
+                ],
+              },
+            ],
           },
           {
             model: User,
