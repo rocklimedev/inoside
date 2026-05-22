@@ -46,7 +46,7 @@ import {
   useSendBriefMutation,
   useGetProjectByIdQuery,
   useGetProjectsQuery,
-  useGetBriefByIdQuery,
+  useGetBriefQuery,
 } from "@/api/projectsApi";
 
 import { useGetClientsQuery, useCreateClientMutation } from "@/api/clientsApi";
@@ -279,7 +279,7 @@ export default function BriefForm({ onBack, onGenerated }) {
   const { data: clients = [] } = useGetClientsQuery();
 
   // ✅ FETCH BRIEF BY ID
-  const { data: briefData, isLoading: briefLoading } = useGetBriefByIdQuery(
+  const { data: briefData, isLoading: briefLoading } = useGetBriefQuery(
     briefId,
     {
       skip: !briefId,

@@ -5,6 +5,7 @@ import {
   IsOptional,
   IsBoolean,
   IsUUID,
+  IsUrl,
 } from 'class-validator';
 
 export class CreateUserDto {
@@ -30,4 +31,14 @@ export class CreateUserDto {
   @IsOptional()
   @IsBoolean()
   is_active?: boolean;
+
+  // ================= NEW FIELDS =================
+
+  @IsOptional()
+  @IsUrl()
+  avatar_url?: string;
+
+  @IsOptional()
+  @IsUrl()
+  avatar_thumbnail?: string;
 }

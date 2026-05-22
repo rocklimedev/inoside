@@ -32,6 +32,7 @@ import { ProjectCostEstimate } from './models/project_cost_estimates.model';
 import { ProjectDrawing } from './models/project-drawings.model';
 import { DrawingApprovalLog } from './models/drawing_approval_logs.model';
 import { PitchComment } from './models/pitch-comment.model';
+import { Address } from '../address/models/address.model';
 @Module({
   imports: [
     SequelizeModule.forFeature([
@@ -40,7 +41,7 @@ import { PitchComment } from './models/pitch-comment.model';
       Client,
       Site,
       User,
-
+      Address,
       // FEATURES
       ProjectBrief,
       ProjectPitch,

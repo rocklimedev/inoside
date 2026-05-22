@@ -27,9 +27,6 @@ export default function HomePage() {
       return;
     }
 
-    // 👇 ADD IT HERE
-    console.log("USER ROLE RAW:", user?.role, typeof user?.role);
-
     const roleKey =
       typeof user?.role === "string"
         ? user.role.toLowerCase()

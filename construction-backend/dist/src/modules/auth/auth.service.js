@@ -63,8 +63,10 @@ let AuthService = class AuthService {
         this.jwtService = jwtService;
     }
     async register(createUserDto) {
-        const { email, password, role_id, ...rest } = createUserDto;
-        const existingUser = await this.userModel.findOne({ where: { email } });
+        const { email, password, role_id, avatar_url, avatar_thumbnail, ...rest } = createUserDto;
+        const existingUser = await this.userModel.findOne({
+            where: { email },
+        });
         if (existingUser) {
             throw new common_1.ConflictException('User with this email already exists');
         }
@@ -78,11 +80,18 @@ let AuthService = class AuthService {
             email,
             role_id,
             password_hash,
+            avatar_url: avatar_url ?? null,
+            avatar_thumbnail: avatar_thumbnail ?? null,
             is_active: rest.is_active ?? true,
             is_email_verified: false,
         });
         const createdUser = await this.userModel.findByPk(user.id, {
-            include: [{ model: role_model_1.Role, attributes: ['id', 'name', 'display_name'] }],
+            include: [
+                {
+                    model: role_model_1.Role,
+                    attributes: ['id', 'name', 'display_name'],
+                },
+            ],
         });
         if (!createdUser) {
             throw new common_1.BadRequestException('Failed to create user');
@@ -110,7 +119,9 @@ let AuthService = class AuthService {
         if (!user.is_active) {
             throw new common_1.UnauthorizedException('Account is inactive. Contact administrator.');
         }
-        await user.update({ last_login: new Date() });
+        await user.update({
+            last_login: new Date(),
+        });
         const permissions = await permission_model_1.Permission.findAll({
             include: [
                 {
@@ -124,6 +135,8 @@ let AuthService = class AuthService {
             sub: user.id,
             email: user.email,
             name: user.name,
+            avatar_url: user.avatar_url,
+            avatar_thumbnail: user.avatar_thumbnail,
             role: user.role?.name ?? null,
             permissions: permissions.map((p) => p.name),
         };
@@ -161,6 +174,8 @@ let AuthService = class AuthService {
             role: user.role ?? null,
             is_active: user.is_active,
             is_email_verified: user.is_email_verified,
+            avatar_url: user.avatar_url,
+            avatar_thumbnail: user.avatar_thumbnail,
             last_login: user.last_login,
         };
     }

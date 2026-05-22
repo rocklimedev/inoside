@@ -17,6 +17,9 @@ const common_1 = require("@nestjs/common");
 const sequelize_1 = require("@nestjs/sequelize");
 const reki_reports_model_1 = require("../models/reki_reports.model");
 const project_model_1 = require("../models/project.model");
+const client_model_1 = require("../../clients/models/client.model");
+const site_model_1 = require("../../sites/models/site.model");
+const user_model_1 = require("../../users/models/user.model");
 let RekiReportService = class RekiReportService {
     rekiModel;
     projectModel;
@@ -24,25 +27,123 @@ let RekiReportService = class RekiReportService {
         this.rekiModel = rekiModel;
         this.projectModel = projectModel;
     }
-    async create(dto) {
-        await this.projectModel.findByPk(dto.project_id, { rejectOnEmpty: true });
-        const exists = await this.rekiModel.findOne({
-            where: { project_id: dto.project_id },
-        });
-        if (exists)
-            throw new common_1.BadRequestException('Reki Report already exists');
-        return this.rekiModel.create(dto);
+    getIncludes() {
+        return [
+            {
+                model: project_model_1.Project,
+                attributes: ['id', 'name', 'status', 'progress_percentage'],
+                include: [
+                    {
+                        model: client_model_1.Client,
+                        attributes: ['id', 'name', 'email', 'contact_number'],
+                    },
+                    {
+                        model: site_model_1.Site,
+                        attributes: ['id', 'address', 'city'],
+                    },
+                    {
+                        model: user_model_1.User,
+                        as: 'creator',
+                        attributes: ['id', 'name', 'email'],
+                    },
+                ],
+            },
+        ];
     }
-    async findOne(project_id) {
-        const reki = await this.rekiModel.findOne({ where: { project_id } });
-        if (!reki)
+    async create(dto) {
+        const project = await this.projectModel.findByPk(dto.project_id);
+        if (!project) {
+            throw new common_1.NotFoundException('Project not found');
+        }
+        const existing = await this.rekiModel.findOne({
+            where: {
+                project_id: dto.project_id,
+            },
+        });
+        if (existing) {
+            throw new common_1.BadRequestException('Reki Report already exists for this project');
+        }
+        const reki = await this.rekiModel.create(dto);
+        await project.update({
+            status: 'reki_pending',
+            current_stage: 'Reki Started',
+        });
+        return this.findById(reki.id);
+    }
+    async findByProject(projectId) {
+        const reki = await this.rekiModel.findOne({
+            where: {
+                project_id: projectId,
+            },
+            include: this.getIncludes(),
+        });
+        if (!reki) {
             throw new common_1.NotFoundException('Reki Report not found');
+        }
         return reki;
     }
-    async update(project_id, dto) {
-        await this.findOne(project_id);
-        await this.rekiModel.update(dto, { where: { project_id } });
-        return this.findOne(project_id);
+    async findById(id) {
+        const reki = await this.rekiModel.findByPk(id, {
+            include: this.getIncludes(),
+        });
+        if (!reki) {
+            throw new common_1.NotFoundException('Reki Report not found');
+        }
+        return reki;
+    }
+    async findAll() {
+        return this.rekiModel.findAll({
+            include: this.getIncludes(),
+            order: [['created_at', 'DESC']],
+        });
+    }
+    async update(projectId, dto) {
+        const reki = await this.rekiModel.findOne({
+            where: {
+                project_id: projectId,
+            },
+        });
+        if (!reki) {
+            throw new common_1.NotFoundException('Reki Report not found');
+        }
+        await reki.update(dto);
+        return this.findByProject(projectId);
+    }
+    async delete(id) {
+        const reki = await this.rekiModel.findByPk(id);
+        if (!reki) {
+            throw new common_1.NotFoundException('Reki Report not found');
+        }
+        await reki.destroy();
+        return {
+            success: true,
+            message: 'Reki Report deleted successfully',
+        };
+    }
+    async markAsDone(projectId) {
+        const reki = await this.findByProject(projectId);
+        const project = await this.projectModel.findByPk(projectId);
+        if (!project) {
+            throw new common_1.NotFoundException('Project not found');
+        }
+        await project.update({
+            status: 'reki_done',
+            current_stage: 'Reki Completed',
+            progress_percentage: 25,
+        });
+        return this.findByProject(projectId);
+    }
+    async markAsPending(projectId) {
+        const reki = await this.findByProject(projectId);
+        const project = await this.projectModel.findByPk(projectId);
+        if (!project) {
+            throw new common_1.NotFoundException('Project not found');
+        }
+        await project.update({
+            status: 'reki_pending',
+            current_stage: 'Reki Pending',
+        });
+        return reki;
     }
 };
 exports.RekiReportService = RekiReportService;

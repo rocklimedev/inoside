@@ -52,12 +52,15 @@ const user_model_1 = require("./models/user.model");
 const role_model_1 = require("../rbac/models/role.model");
 const bcrypt = __importStar(require("bcryptjs"));
 const user_messages_1 = require("../../common/messages/user.messages");
+const cdn_service_1 = require("../cdn/services/cdn.service");
 let UsersService = class UsersService {
     userModel;
     roleModel;
-    constructor(userModel, roleModel) {
+    cdnService;
+    constructor(userModel, roleModel, cdnService) {
         this.userModel = userModel;
         this.roleModel = roleModel;
+        this.cdnService = cdnService;
     }
     async create(createUserDto) {
         const { email, password, role_id, ...rest } = createUserDto;
@@ -112,30 +115,19 @@ let UsersService = class UsersService {
         }
         return user;
     }
-    async findByEmail(email) {
-        return this.userModel.findOne({
-            where: { email },
-            include: [{ model: role_model_1.Role }],
-        });
-    }
-    async update(id, updateUserDto) {
+    async update(id, updateUserDto, file) {
         const user = await this.findOne(id);
-        if (updateUserDto.email && updateUserDto.email !== user.email) {
-            const existing = await this.userModel.findOne({
-                where: { email: updateUserDto.email },
-            });
-            if (existing && existing.id !== id) {
-                throw new common_1.ConflictException(user_messages_1.USER_MESSAGES.EMAIL_IN_USE);
-            }
-            updateUserDto['is_email_verified'] = false;
+        const updatePayload = { ...updateUserDto };
+        if (file) {
+            const uploaded = await this.cdnService.uploadFile(file);
+            updatePayload.avatar_url = uploaded.url;
+            updatePayload.avatar_thumbnail = uploaded.url;
         }
-        if (updateUserDto.role_id) {
-            const role = await this.roleModel.findByPk(updateUserDto.role_id);
-            if (!role) {
-                throw new common_1.BadRequestException(user_messages_1.USER_MESSAGES.INVALID_ROLE);
-            }
-        }
-        await user.update(updateUserDto);
+        Object.keys(updatePayload).forEach((key) => {
+            if (updatePayload[key] === undefined)
+                delete updatePayload[key];
+        });
+        await user.update(updatePayload);
         return {
             message: user_messages_1.USER_MESSAGES.UPDATED,
             data: await this.findOne(id),
@@ -164,6 +156,6 @@ exports.UsersService = UsersService = __decorate([
     (0, common_1.Injectable)(),
     __param(0, (0, sequelize_1.InjectModel)(user_model_1.User)),
     __param(1, (0, sequelize_1.InjectModel)(role_model_1.Role)),
-    __metadata("design:paramtypes", [Object, Object])
+    __metadata("design:paramtypes", [Object, Object, cdn_service_1.CdnService])
 ], UsersService);
 //# sourceMappingURL=users.service.js.map

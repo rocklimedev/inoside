@@ -15,7 +15,7 @@ import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 
 import { USER_MESSAGES } from '@/common/messages/user.messages';
-
+import { CdnService } from '../cdn/services/cdn.service';
 @Injectable()
 export class UsersService {
   constructor(
@@ -24,6 +24,8 @@ export class UsersService {
 
     @InjectModel(Role)
     private roleModel: typeof Role,
+
+    private readonly cdnService: CdnService,
   ) {}
 
   // ================= CREATE =================
@@ -51,8 +53,6 @@ export class UsersService {
       email,
       role_id,
       password_hash,
-
-      // ================= IMPORTANT =================
       is_email_verified: false,
     });
 
@@ -97,49 +97,33 @@ export class UsersService {
     return user;
   }
 
-  // ================= FIND BY EMAIL =================
-  async findByEmail(email: string) {
-    return this.userModel.findOne({
-      where: { email },
-      include: [{ model: Role }],
-    });
-  }
-
-  // ================= UPDATE =================
-  async update(id: string, updateUserDto: UpdateUserDto) {
+  async update(
+    id: string,
+    updateUserDto: UpdateUserDto,
+    file?: Express.Multer.File,
+  ) {
     const user = await this.findOne(id);
 
-    // ================= EMAIL CHANGE SAFETY =================
-    if (updateUserDto.email && updateUserDto.email !== user.email) {
-      const existing = await this.userModel.findOne({
-        where: { email: updateUserDto.email },
-      });
+    const updatePayload: any = { ...updateUserDto };
 
-      if (existing && existing.id !== id) {
-        throw new ConflictException(USER_MESSAGES.EMAIL_IN_USE);
-      }
-
-      // ================= IMPORTANT RULE =================
-      // If email changes → reset verification
-      updateUserDto['is_email_verified'] = false;
+    if (file) {
+      const uploaded = await this.cdnService.uploadFile(file);
+      updatePayload.avatar_url = uploaded.url;
+      updatePayload.avatar_thumbnail = uploaded.url; // TODO: generate real thumbnail
     }
 
-    if (updateUserDto.role_id) {
-      const role = await this.roleModel.findByPk(updateUserDto.role_id);
+    // Remove undefined values
+    Object.keys(updatePayload).forEach((key) => {
+      if (updatePayload[key] === undefined) delete updatePayload[key];
+    });
 
-      if (!role) {
-        throw new BadRequestException(USER_MESSAGES.INVALID_ROLE);
-      }
-    }
-
-    await user.update(updateUserDto);
+    await user.update(updatePayload);
 
     return {
       message: USER_MESSAGES.UPDATED,
       data: await this.findOne(id),
     };
   }
-
   // ================= DELETE =================
   async remove(id: string) {
     const user = await this.findOne(id);

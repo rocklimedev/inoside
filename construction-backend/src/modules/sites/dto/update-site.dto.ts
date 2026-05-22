@@ -1,17 +1,70 @@
-import { IsOptional, IsString, IsEnum, IsBoolean } from 'class-validator';
+import {
+  IsOptional,
+  IsString,
+  IsEnum,
+  IsBoolean,
+  IsNumber,
+  ValidateNested,
+  IsUrl,
+} from 'class-validator';
 
-export class UpdateSiteDto {
+import { Type } from 'class-transformer';
+
+import { OwnershipStatus } from '@/common/enums';
+
+class UpdateAddressDto {
   @IsOptional()
   @IsString()
-  address?: string;
+  line1?: string;
+
+  @IsOptional()
+  @IsString()
+  line2?: string;
+
+  @IsOptional()
+  @IsString()
+  landmark?: string;
 
   @IsOptional()
   @IsString()
   city?: string;
 
   @IsOptional()
-  @IsEnum(['Owned', 'Rented', 'Under Process'])
-  ownership_status?: 'Owned' | 'Rented' | 'Under Process';
+  @IsString()
+  state?: string;
+
+  @IsOptional()
+  @IsString()
+  country?: string;
+
+  @IsOptional()
+  @IsString()
+  pincode?: string;
+
+  @IsOptional()
+  @Type(() => Number)
+  @IsNumber()
+  latitude?: number;
+
+  @IsOptional()
+  @Type(() => Number)
+  @IsNumber()
+  longitude?: number;
+
+  @IsOptional()
+  @IsUrl()
+  google_map_link?: string;
+}
+
+export class UpdateSiteDto {
+  @IsOptional()
+  @ValidateNested()
+  @Type(() => UpdateAddressDto)
+  address?: UpdateAddressDto;
+
+  @IsOptional()
+  @IsEnum(OwnershipStatus)
+  ownership_status?: OwnershipStatus;
 
   @IsOptional()
   @IsBoolean()

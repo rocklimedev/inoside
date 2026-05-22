@@ -1,14 +1,16 @@
 import { Site } from './models/site.model';
+import { Address } from '../address/models/address.model';
 import { CreateSiteDto } from './dto/create-site.dto';
 import { UpdateSiteDto } from './dto/update-site.dto';
 export declare class SitesService {
     private siteModel;
-    constructor(siteModel: typeof Site);
-    create(createSiteDto: CreateSiteDto): Promise<Site>;
+    private addressModel;
+    constructor(siteModel: typeof Site, addressModel: typeof Address);
+    create(createSiteDto: CreateSiteDto): Promise<Site | null>;
     findAll(): Promise<Site[]>;
-    findOne(id: number): Promise<Site>;
-    update(id: number, updateSiteDto: UpdateSiteDto): Promise<Site>;
-    remove(id: number): Promise<{
+    findOne(id: string): Promise<Site>;
+    update(id: string, updateSiteDto: UpdateSiteDto): Promise<Site>;
+    remove(id: string): Promise<{
         message: string;
     }>;
 }

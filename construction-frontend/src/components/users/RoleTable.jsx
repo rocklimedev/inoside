@@ -11,7 +11,12 @@ import {
 import { Shield, Pencil, Trash2, MoreVertical } from "lucide-react";
 import { toast } from "sonner";
 
-export default function RoleTable({ roles, onRoleClick, onDelete }) {
+export default function RoleTable({
+  roles,
+  onRoleClick,
+  onDelete,
+  onEdit, // ← New prop for editing
+}) {
   const handleDelete = async (id, e) => {
     e.stopPropagation();
     if (!confirm("Delete this role?")) return;
@@ -68,11 +73,15 @@ export default function RoleTable({ roles, onRoleClick, onDelete }) {
                 </td>
                 <td className="px-5 py-4" onClick={(e) => e.stopPropagation()}>
                   <div className="flex justify-end gap-2">
+                    {/* Updated Edit Button */}
                     <Button
                       size="icon"
                       variant="outline"
                       className="h-9 w-9"
-                      onClick={() => toast.info("Edit role coming soon")}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onEdit(role); // ← Now will open edit dialog
+                      }}
                     >
                       <Pencil className="h-4 w-4" />
                     </Button>

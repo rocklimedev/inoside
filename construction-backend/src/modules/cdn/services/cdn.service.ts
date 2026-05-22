@@ -1,5 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import SftpClient from 'ssh2-sftp-client';
+import { v4 as uuidv4 } from 'uuid';
+import * as path from 'path';
 
 @Injectable()
 export class CdnService {
@@ -12,7 +14,7 @@ export class CdnService {
       console.log('Host:', process.env.CDN_HOST);
       console.log('Port:', process.env.CDN_PORT);
       console.log('Upload Path:', process.env.CDN_UPLOAD_PATH);
-      console.log('Filename:', file.originalname);
+      console.log('Original Filename:', file.originalname);
 
       await sftp.connect({
         host: process.env.CDN_HOST,
@@ -23,10 +25,14 @@ export class CdnService {
 
       console.log('SFTP Connected');
 
-      const filename =
-        Date.now() +
-        '-' +
-        file.originalname.replace(/\s+/g, '-').replace(/[^a-zA-Z0-9.-]/g, '');
+      // Keep original extension
+      const ext = path.extname(file.originalname);
+
+      // UUID only
+      const filename = `${uuidv4()}${ext}`;
+
+      // OR UUID + timestamp
+      // const filename = `${Date.now()}-${uuidv4()}${ext}`;
 
       const remotePath = `${process.env.CDN_UPLOAD_PATH}/${filename}`;
 

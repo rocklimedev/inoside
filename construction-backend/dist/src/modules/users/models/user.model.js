@@ -62,6 +62,20 @@ __decorate([
 ], User.prototype, "password_hash", void 0);
 __decorate([
     (0, sequelize_typescript_1.Column)({
+        type: sequelize_typescript_1.DataType.STRING(500),
+        allowNull: true,
+    }),
+    __metadata("design:type", Object)
+], User.prototype, "avatar_url", void 0);
+__decorate([
+    (0, sequelize_typescript_1.Column)({
+        type: sequelize_typescript_1.DataType.STRING(500),
+        allowNull: true,
+    }),
+    __metadata("design:type", Object)
+], User.prototype, "avatar_thumbnail", void 0);
+__decorate([
+    (0, sequelize_typescript_1.Column)({
         type: sequelize_typescript_1.DataType.BOOLEAN,
         defaultValue: true,
     }),

@@ -17,22 +17,91 @@ const common_1 = require("@nestjs/common");
 const sequelize_1 = require("@nestjs/sequelize");
 const reki_photos_model_1 = require("../models/reki_photos.model");
 const project_model_1 = require("../models/project.model");
+const reki_reports_model_1 = require("../models/reki_reports.model");
 let RekiPhotoService = class RekiPhotoService {
     rekiPhotoModel;
     projectModel;
-    constructor(rekiPhotoModel, projectModel) {
+    rekiModel;
+    constructor(rekiPhotoModel, projectModel, rekiModel) {
         this.rekiPhotoModel = rekiPhotoModel;
         this.projectModel = projectModel;
+        this.rekiModel = rekiModel;
+    }
+    getIncludes() {
+        return [
+            {
+                model: project_model_1.Project,
+                attributes: ['id', 'name', 'status', 'progress_percentage'],
+            },
+            {
+                model: reki_reports_model_1.RekiReport,
+                attributes: ['id', 'project_id'],
+            },
+        ];
     }
     async add(dto) {
-        await this.projectModel.findByPk(dto.project_id, { rejectOnEmpty: true });
+        const project = await this.projectModel.findByPk(dto.project_id);
+        if (!project) {
+            throw new common_1.NotFoundException('Project not found');
+        }
+        if (dto.reki_report_id) {
+            const reki = await this.rekiModel.findByPk(dto.reki_report_id);
+            if (!reki) {
+                throw new common_1.NotFoundException('Reki Report not found');
+            }
+        }
+        if (!dto.image_url) {
+            throw new common_1.BadRequestException('image_url is required');
+        }
         return this.rekiPhotoModel.create(dto);
     }
-    async findByReki(reki_report_id) {
-        return this.rekiPhotoModel.findAll({ where: { reki_report_id } });
+    async findById(id) {
+        const photo = await this.rekiPhotoModel.findByPk(id, {
+            include: this.getIncludes(),
+        });
+        if (!photo) {
+            throw new common_1.NotFoundException('Reki photo not found');
+        }
+        return photo;
+    }
+    async findByReki(rekiReportId) {
+        return this.rekiPhotoModel.findAll({
+            where: {
+                reki_report_id: rekiReportId,
+            },
+            include: this.getIncludes(),
+            order: [['created_at', 'DESC']],
+        });
+    }
+    async update(id, dto) {
+        const photo = await this.rekiPhotoModel.findByPk(id);
+        if (!photo) {
+            throw new common_1.NotFoundException('Reki photo not found');
+        }
+        await photo.update(dto);
+        return this.findById(id);
     }
     async delete(id) {
-        return this.rekiPhotoModel.destroy({ where: { id } });
+        const photo = await this.rekiPhotoModel.findByPk(id);
+        if (!photo) {
+            throw new common_1.NotFoundException('Reki photo not found');
+        }
+        await photo.destroy();
+        return {
+            success: true,
+            message: 'Reki photo deleted successfully',
+        };
+    }
+    async bulkDelete(ids) {
+        await this.rekiPhotoModel.destroy({
+            where: {
+                id: ids,
+            },
+        });
+        return {
+            success: true,
+            message: 'Photos deleted successfully',
+        };
     }
 };
 exports.RekiPhotoService = RekiPhotoService;
@@ -40,6 +109,7 @@ exports.RekiPhotoService = RekiPhotoService = __decorate([
     (0, common_1.Injectable)(),
     __param(0, (0, sequelize_1.InjectModel)(reki_photos_model_1.RekiPhoto)),
     __param(1, (0, sequelize_1.InjectModel)(project_model_1.Project)),
-    __metadata("design:paramtypes", [Object, Object])
+    __param(2, (0, sequelize_1.InjectModel)(reki_reports_model_1.RekiReport)),
+    __metadata("design:paramtypes", [Object, Object, Object])
 ], RekiPhotoService);
 //# sourceMappingURL=reki-photo.service.js.map

@@ -15,22 +15,42 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.SitesService = void 0;
 const common_1 = require("@nestjs/common");
 const sequelize_1 = require("@nestjs/sequelize");
+const uuid_1 = require("uuid");
 const site_model_1 = require("./models/site.model");
+const address_model_1 = require("../address/models/address.model");
 let SitesService = class SitesService {
     siteModel;
-    constructor(siteModel) {
+    addressModel;
+    constructor(siteModel, addressModel) {
         this.siteModel = siteModel;
+        this.addressModel = addressModel;
     }
     async create(createSiteDto) {
-        return this.siteModel.create(createSiteDto);
+        const address = await this.addressModel.create({
+            id: (0, uuid_1.v4)(),
+            ...createSiteDto.address,
+        });
+        const site = await this.siteModel.create({
+            id: (0, uuid_1.v4)(),
+            address_id: address.id,
+            ownership_status: createSiteDto.ownership_status,
+            access_available: createSiteDto.access_available,
+            existing_structure: createSiteDto.existing_structure,
+        });
+        return this.siteModel.findByPk(site.id, {
+            include: [address_model_1.Address],
+        });
     }
     async findAll() {
         return this.siteModel.findAll({
+            include: [address_model_1.Address],
             order: [['created_at', 'DESC']],
         });
     }
     async findOne(id) {
-        const site = await this.siteModel.findByPk(id);
+        const site = await this.siteModel.findByPk(id, {
+            include: [address_model_1.Address],
+        });
         if (!site) {
             throw new common_1.NotFoundException(`Site with ID ${id} not found`);
         }
@@ -38,19 +58,40 @@ let SitesService = class SitesService {
     }
     async update(id, updateSiteDto) {
         const site = await this.findOne(id);
-        await site.update(updateSiteDto);
-        return site;
+        if (updateSiteDto.address) {
+            const address = await this.addressModel.findByPk(site.address_id);
+            if (address) {
+                await address.update(updateSiteDto.address);
+            }
+        }
+        await site.update({
+            ownership_status: updateSiteDto.ownership_status,
+            access_available: updateSiteDto.access_available,
+            existing_structure: updateSiteDto.existing_structure,
+        });
+        return this.findOne(id);
     }
     async remove(id) {
         const site = await this.findOne(id);
+        const addressId = site.address_id;
         await site.destroy();
-        return { message: 'Site deleted successfully' };
+        if (addressId) {
+            await this.addressModel.destroy({
+                where: {
+                    id: addressId,
+                },
+            });
+        }
+        return {
+            message: 'Site deleted successfully',
+        };
     }
 };
 exports.SitesService = SitesService;
 exports.SitesService = SitesService = __decorate([
     (0, common_1.Injectable)(),
     __param(0, (0, sequelize_1.InjectModel)(site_model_1.Site)),
-    __metadata("design:paramtypes", [Object])
+    __param(1, (0, sequelize_1.InjectModel)(address_model_1.Address)),
+    __metadata("design:paramtypes", [Object, Object])
 ], SitesService);
 //# sourceMappingURL=sites.service.js.map

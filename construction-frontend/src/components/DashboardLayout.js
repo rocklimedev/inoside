@@ -33,22 +33,6 @@ import GlobalSearchModal from "@/components/modals/GlobalSearchModal";
 import { quickActions } from "@/lib/defaults";
 import { useAuth } from "@/contexts/AuthContext";
 
-// ======================================================
-// DEBUG LOGGER
-// ======================================================
-
-const LAYOUT_DEBUG = process.env.NODE_ENV === "development";
-
-const layoutLog = (...args) => {
-  if (LAYOUT_DEBUG) {
-    console.log(
-      "%c[DASHBOARD LAYOUT]",
-      "color:#8b5cf6;font-weight:bold;",
-      ...args,
-    );
-  }
-};
-
 export default function DashboardLayout({ children }) {
   const [collapsed, setCollapsed] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -76,18 +60,11 @@ export default function DashboardLayout({ children }) {
   }, []);
 
   const handleLogout = () => {
-    layoutLog("Logout initiated");
     logout();
     router.replace("/login");
   };
 
   const toggleSidebar = () => setCollapsed((prev) => !prev);
-
-  layoutLog("DashboardLayout rendered", {
-    role: user?.role,
-    collapsed,
-    mobileMenuOpen,
-  });
 
   return (
     <TooltipProvider delayDuration={0}>
@@ -232,16 +209,37 @@ export default function DashboardLayout({ children }) {
                 <DropdownMenuTrigger asChild>
                   <button
                     className="
-                      w-9 h-9 rounded-full
-                      bg-[#ef7f1b]
-                      text-white
-                      flex items-center justify-center
-                      text-xs font-bold
-                      hover:bg-[#d66e15]
-                      transition
-                    "
+        w-9 h-9 rounded-full
+        bg-[#ef7f1b]
+        text-white
+        flex items-center justify-center
+        overflow-hidden
+        hover:bg-[#d66e15]
+        transition
+      "
                   >
-                    {user?.name?.charAt(0)?.toUpperCase() || "U"}
+                    {user?.avatar_thumbnail ? (
+                      <img
+                        src={user.avatar_thumbnail}
+                        alt="avatar"
+                        className="w-full h-full object-cover"
+                        onError={(e) => {
+                          // fallback to initials if image fails
+                          const target = e.currentTarget;
+                          target.style.display = "none";
+                        }}
+                      />
+                    ) : null}
+
+                    {/* Fallback UI (always present) */}
+                    <span
+                      className={`
+          text-xs font-bold
+          ${user?.avatar_thumbnail ? "hidden" : "block"}
+        `}
+                    >
+                      {user?.name?.charAt(0)?.toUpperCase() || "U"}
+                    </span>
                   </button>
                 </DropdownMenuTrigger>
 

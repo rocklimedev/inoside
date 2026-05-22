@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useMemo } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { toast } from "sonner";
 
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -8,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Search, Plus, Loader2 } from "lucide-react";
 import { LayoutGrid, Table2, UserCheck, Shield } from "lucide-react";
+
 import {
   useGetUsersQuery,
   useCreateUserMutation,
@@ -19,6 +21,7 @@ import {
   useCreateRoleMutation,
   useDeleteRoleMutation,
 } from "@/api/rbacApi";
+
 import UserGrid from "@/components/users/UserGrid";
 import UserTable from "@/components/users/UserTable";
 import RoleGrid from "@/components/users/RoleGrid";
@@ -45,16 +48,26 @@ const AVAILABLE_PERMISSIONS = [
 ];
 
 export default function UsersPage() {
-  const [activeTab, setActiveTab] = useState("users");
+  const router = useRouter();
+  const searchParams = useSearchParams();
+
+  const tabFromUrl = searchParams.get("tab");
+
+  const [activeTab, setActiveTab] = useState(
+    tabFromUrl === "roles" ? "roles" : "users",
+  );
+
   const [search, setSearch] = useState("");
   const [viewMode, setViewMode] = useState("table");
 
   // Users
   const [selectedUser, setSelectedUser] = useState(null);
+  const [userToEdit, setUserToEdit] = useState(null);
   const [showAddUser, setShowAddUser] = useState(false);
 
   // Roles
   const [selectedRole, setSelectedRole] = useState(null);
+  const [roleToEdit, setRoleToEdit] = useState(null);
   const [showAddRole, setShowAddRole] = useState(false);
 
   // API
@@ -65,6 +78,16 @@ export default function UsersPage() {
   const [deleteUser] = useDeleteUserMutation();
   const [createRole, { isLoading: creatingRole }] = useCreateRoleMutation();
   const [deleteRole] = useDeleteRoleMutation();
+
+  // Sync tab with URL
+  const handleTabChange = (value) => {
+    setActiveTab(value);
+
+    const params = new URLSearchParams(searchParams.toString());
+    params.set("tab", value);
+
+    router.replace(`?${params.toString()}`, { scroll: false });
+  };
 
   const filteredUsers = useMemo(() => {
     if (!search) return users;
@@ -81,6 +104,28 @@ export default function UsersPage() {
     const term = search.toLowerCase();
     return roles.filter((r) => r.name?.toLowerCase().includes(term));
   }, [roles, search]);
+
+  // Users handlers
+  const handleAddUser = () => {
+    setUserToEdit(null);
+    setShowAddUser(true);
+  };
+
+  const handleEditUser = (user) => {
+    setUserToEdit(user);
+    setShowAddUser(true);
+  };
+
+  // Roles handlers
+  const handleAddRole = () => {
+    setRoleToEdit(null);
+    setShowAddRole(true);
+  };
+
+  const handleEditRole = (role) => {
+    setRoleToEdit(role);
+    setShowAddRole(true);
+  };
 
   if (usersLoading || rolesLoading) {
     return (
@@ -140,11 +185,7 @@ export default function UsersPage() {
             </div>
 
             <Button
-              onClick={() =>
-                activeTab === "users"
-                  ? setShowAddUser(true)
-                  : setShowAddRole(true)
-              }
+              onClick={activeTab === "users" ? handleAddUser : handleAddRole}
               className="bg-[#ef7f1b] hover:bg-[#d66e15]"
             >
               <Plus className="mr-2 h-4 w-4" />
@@ -156,7 +197,7 @@ export default function UsersPage() {
 
       <Tabs
         value={activeTab}
-        onValueChange={(v) => setActiveTab(v)}
+        onValueChange={handleTabChange}
         className="flex flex-1 flex-col"
       >
         <div className="px-4 md:px-6 pt-5">
@@ -180,12 +221,14 @@ export default function UsersPage() {
               users={filteredUsers}
               onUserClick={setSelectedUser}
               onDelete={deleteUser}
+              onEdit={handleEditUser}
             />
           ) : (
             <UserTable
               users={filteredUsers}
               onUserClick={setSelectedUser}
               onDelete={deleteUser}
+              onEdit={handleEditUser}
             />
           )}
         </TabsContent>
@@ -200,12 +243,14 @@ export default function UsersPage() {
               roles={filteredRoles}
               onRoleClick={setSelectedRole}
               onDelete={deleteRole}
+              onEdit={handleEditRole}
             />
           ) : (
             <RoleTable
               roles={filteredRoles}
               onRoleClick={setSelectedRole}
               onDelete={deleteRole}
+              onEdit={handleEditRole}
             />
           )}
         </TabsContent>
@@ -218,6 +263,7 @@ export default function UsersPage() {
         onCreate={createUser}
         isCreating={creatingUser}
         roles={roles}
+        userToEdit={userToEdit}
       />
 
       <AddRoleDialog
@@ -226,6 +272,7 @@ export default function UsersPage() {
         onCreate={createRole}
         isCreating={creatingRole}
         availablePermissions={AVAILABLE_PERMISSIONS}
+        roleToEdit={roleToEdit}
       />
 
       {/* Sheets */}

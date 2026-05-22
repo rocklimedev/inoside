@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   Dialog,
   DialogContent,
@@ -20,6 +20,7 @@ import {
 } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { Loader2 } from "lucide-react";
+import { toast } from "sonner";
 
 export default function AddUserDialog({
   open,
@@ -27,6 +28,7 @@ export default function AddUserDialog({
   onCreate,
   isCreating,
   roles,
+  userToEdit = null, // ← New prop for editing
 }) {
   const [newUser, setNewUser] = useState({
     name: "",
@@ -36,27 +38,57 @@ export default function AddUserDialog({
     is_active: true,
   });
 
+  // Populate form when editing a user
+  useEffect(() => {
+    if (userToEdit) {
+      setNewUser({
+        name: userToEdit.name || "",
+        email: userToEdit.email || "",
+        phone: userToEdit.phone || "",
+        role: userToEdit.role?.name || userToEdit.role || "Staff",
+        is_active: userToEdit.is_active ?? true,
+      });
+    } else {
+      setNewUser({
+        name: "",
+        email: "",
+        phone: "",
+        role: "Staff",
+        is_active: true,
+      });
+    }
+  }, [userToEdit]);
+
   const handleSubmit = async () => {
     if (!newUser.name || !newUser.email) {
       alert("Name and Email are required");
       return;
     }
-    await onCreate(newUser);
-    onOpenChange(false);
-    setNewUser({
-      name: "",
-      email: "",
-      phone: "",
-      role: "Staff",
-      is_active: true,
-    });
+
+    try {
+      if (userToEdit) {
+        // TODO: Add update mutation later
+        toast.info("Update user functionality coming soon");
+        console.log("Would update user:", userToEdit.id, newUser);
+      } else {
+        await onCreate(newUser);
+        toast.success("User created successfully");
+      }
+
+      onOpenChange(false);
+    } catch (err) {
+      toast.error("Failed to save user");
+    }
   };
+
+  const title = userToEdit ? "Edit User" : "Add New User";
+  const buttonText = userToEdit ? "Update User" : "Create User";
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-md">
         <DialogHeader>
-          <DialogTitle>Add New User</DialogTitle>
+          <DialogTitle>{title}</DialogTitle>
         </DialogHeader>
 
         <div className="space-y-5 py-4">
@@ -129,7 +161,7 @@ export default function AddUserDialog({
             className="bg-[#ef7f1b]"
           >
             {isCreating && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-            Create User
+            {buttonText}
           </Button>
         </DialogFooter>
       </DialogContent>

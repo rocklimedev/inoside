@@ -27,5 +27,17 @@ export declare class ProjectPitchService {
     }): Promise<ProjectPitch>;
     approvePitch(id: string): Promise<ProjectPitch>;
     rejectPitch(id: string): Promise<ProjectPitch>;
+    getComments(pitchId: string): Promise<PitchComment[]>;
+    updateComment(commentId: string, dto: {
+        content?: string;
+    }): Promise<PitchComment | null>;
+    deleteComment(commentId: string): Promise<{
+        success: boolean;
+        message: string;
+    }>;
+    deleteByProject(projectId: string): Promise<{
+        success: boolean;
+        message: string;
+    }>;
     private getIncludes;
 }

@@ -34,6 +34,7 @@ const project_cost_estimates_model_1 = require("./models/project_cost_estimates.
 const project_drawings_model_1 = require("./models/project-drawings.model");
 const drawing_approval_logs_model_1 = require("./models/drawing_approval_logs.model");
 const pitch_comment_model_1 = require("./models/pitch-comment.model");
+const address_model_1 = require("../address/models/address.model");
 let ProjectsModule = class ProjectsModule {
 };
 exports.ProjectsModule = ProjectsModule;
@@ -45,6 +46,7 @@ exports.ProjectsModule = ProjectsModule = __decorate([
                 client_model_1.Client,
                 site_model_1.Site,
                 user_model_1.User,
+                address_model_1.Address,
                 project_brief_model_1.ProjectBrief,
                 project_pitch_model_1.ProjectPitch,
                 pitch_references_model_1.PitchReference,

@@ -25,15 +25,17 @@ export const usersApi = baseApi.injectEndpoints({
     }),
 
     // ================= UPDATE USER =================
+    // ================= UPDATE USER =================
     updateUser: builder.mutation({
-      query: ({ id, ...body }) => ({
+      query: ({ id, body }) => ({
+        // ← Explicitly destructure body
         url: `/users/${id}`,
         method: "PATCH",
-        body,
+        body, // Pass FormData directly
+        // Important: Let browser set correct Content-Type
       }),
       invalidatesTags: ["Users"],
     }),
-
     // ================= DELETE USER =================
     deleteUser: builder.mutation({
       query: (id) => ({
@@ -51,6 +53,19 @@ export const usersApi = baseApi.injectEndpoints({
       }),
       invalidatesTags: ["Users"],
     }),
+
+    // ================= UPDATE AVATAR (OPTIONAL CLEAN API) =================
+    updateUserAvatar: builder.mutation({
+      query: ({ id, avatar_url, avatar_thumbnail }) => ({
+        url: `/users/${id}`,
+        method: "PATCH",
+        body: {
+          avatar_url,
+          avatar_thumbnail,
+        },
+      }),
+      invalidatesTags: ["Users"],
+    }),
   }),
 
   overrideExisting: false,
@@ -63,4 +78,5 @@ export const {
   useUpdateUserMutation,
   useDeleteUserMutation,
   useToggleUserActiveMutation,
+  useUpdateUserAvatarMutation,
 } = usersApi;

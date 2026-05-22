@@ -25,8 +25,11 @@ export interface AuthUserResponse {
   is_active: boolean;
   is_email_verified: boolean;
 
-  // Optional fields
+  // Avatar fields
+  avatar_url?: string | null;
+  avatar_thumbnail?: string | null;
 
+  // Optional fields
   last_login?: Date | null;
 }
 
@@ -35,7 +38,6 @@ export interface LoginResponse {
   user: AuthUserResponse;
 }
 
-// auth/auth.service.ts
 @Injectable()
 export class AuthService {
   constructor(
@@ -50,15 +52,19 @@ export class AuthService {
 
   // ================= REGISTER =================
   async register(createUserDto: CreateUserDto): Promise<AuthUserResponse> {
-    const { email, password, role_id, ...rest } = createUserDto;
+    const { email, password, role_id, avatar_url, avatar_thumbnail, ...rest } =
+      createUserDto;
 
-    const existingUser = await this.userModel.findOne({ where: { email } });
+    const existingUser = await this.userModel.findOne({
+      where: { email },
+    });
 
     if (existingUser) {
       throw new ConflictException('User with this email already exists');
     }
 
     const role = await this.roleModel.findByPk(role_id);
+
     if (!role) {
       throw new BadRequestException('Invalid role_id provided');
     }
@@ -70,12 +76,22 @@ export class AuthService {
       email,
       role_id,
       password_hash,
+
+      // Avatar fields
+      avatar_url: avatar_url ?? null,
+      avatar_thumbnail: avatar_thumbnail ?? null,
+
       is_active: rest.is_active ?? true,
       is_email_verified: false,
     });
 
     const createdUser = await this.userModel.findByPk(user.id, {
-      include: [{ model: Role, attributes: ['id', 'name', 'display_name'] }],
+      include: [
+        {
+          model: Role,
+          attributes: ['id', 'name', 'display_name'],
+        },
+      ],
     });
 
     if (!createdUser) {
@@ -91,6 +107,7 @@ export class AuthService {
 
     const user = await this.userModel.findOne({
       where: { email },
+
       include: [
         {
           model: Role,
@@ -104,11 +121,12 @@ export class AuthService {
     }
 
     const isPasswordValid = await bcrypt.compare(password, user.password_hash);
+
     if (!isPasswordValid) {
       throw new UnauthorizedException('Invalid credentials');
     }
 
-    // CRITICAL: Check only is_active, NOT is_email_verified
+    // Check only active status
     if (!user.is_active) {
       throw new UnauthorizedException(
         'Account is inactive. Contact administrator.',
@@ -116,9 +134,11 @@ export class AuthService {
     }
 
     // Update last login
-    await user.update({ last_login: new Date() });
+    await user.update({
+      last_login: new Date(),
+    });
 
-    // Get permissions for JWT payload
+    // Fetch permissions
     const permissions = await Permission.findAll({
       include: [
         {
@@ -129,10 +149,16 @@ export class AuthService {
       ],
     });
 
+    // JWT Payload
     const payload = {
       sub: user.id,
       email: user.email,
       name: user.name,
+
+      // Avatar fields
+      avatar_url: user.avatar_url,
+      avatar_thumbnail: user.avatar_thumbnail,
+
       role: user.role?.name ?? null,
       permissions: permissions.map((p) => p.name),
     };
@@ -145,11 +171,8 @@ export class AuthService {
     };
   }
 
-  // ================= VALIDATE USER (Called by JWT Guard) =================
-  // CRITICAL: This runs on EVERY protected request
-  // Must be fast, reliable, and fetch fresh data
+  // ================= VALIDATE USER =================
   async validateUser(userId: string): Promise<AuthUserResponse> {
-    // Fetch FRESH user data from database
     const user = await this.userModel.findByPk(userId, {
       include: [
         {
@@ -164,7 +187,7 @@ export class AuthService {
       throw new UnauthorizedException('User not found');
     }
 
-    // User deactivated
+    // User inactive
     if (!user.is_active) {
       throw new UnauthorizedException('Account is inactive');
     }
@@ -174,21 +197,25 @@ export class AuthService {
       throw new UnauthorizedException('No role assigned to this account');
     }
 
-    // REMOVED: Email verification check (user can still use app)
-    // REMOVED: Permission check here (do it in RolesGuard instead)
-
     return this.formatUserResponse(user);
   }
 
-  // ================= HELPER: Format User Response =================
+  // ================= FORMAT USER RESPONSE =================
   private formatUserResponse(user: User): AuthUserResponse {
     return {
       id: user.id,
       name: user.name,
       email: user.email,
+
       role: user.role ?? null,
+
       is_active: user.is_active,
       is_email_verified: user.is_email_verified,
+
+      // Avatar fields
+      avatar_url: user.avatar_url,
+      avatar_thumbnail: user.avatar_thumbnail,
+
       last_login: user.last_login,
     };
   }

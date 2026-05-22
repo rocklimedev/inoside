@@ -47,7 +47,6 @@ export class ClientsController {
   // ================= UPDATE =================
 
   @Patch(':id')
-  @UseGuards(RolesGuard)
   update(@Param('id') id: string, @Body() dto: UpdateClientDto) {
     return this.clientsService.update(id, dto);
   }
@@ -55,8 +54,6 @@ export class ClientsController {
   // ================= DELETE =================
 
   @Delete(':id')
-  @UseGuards(RolesGuard)
-  @Roles('admin')
   remove(@Param('id') id: string) {
     return this.clientsService.remove(id);
   }

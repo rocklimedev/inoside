@@ -12,6 +12,8 @@ export declare class UsersController {
             name: string;
             email: string;
             phone: import("sequelize").CreationOptional<string | null>;
+            avatar_url: import("sequelize").CreationOptional<string | null>;
+            avatar_thumbnail: import("sequelize").CreationOptional<string | null>;
             is_active: import("sequelize").CreationOptional<boolean>;
             is_email_verified: import("sequelize").CreationOptional<boolean>;
             last_login: import("sequelize").CreationOptional<Date | null>;
@@ -21,12 +23,12 @@ export declare class UsersController {
             version?: number | any;
         };
     }>;
-    findAll(): Promise<import("./models/user.model").User[]>;
-    findOne(id: string): Promise<import("./models/user.model").User>;
-    update(id: string, dto: UpdateUserDto): Promise<{
+    update(id: string, dto: UpdateUserDto, file: Express.Multer.File): Promise<{
         message: string;
         data: import("./models/user.model").User;
     }>;
+    findAll(): Promise<import("./models/user.model").User[]>;
+    findOne(id: string): Promise<import("./models/user.model").User>;
     remove(id: string): Promise<{
         message: string;
     }>;

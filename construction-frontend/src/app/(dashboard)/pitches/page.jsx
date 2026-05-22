@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
+import { useRouter } from "next/navigation";
 
 import {
   useGetAllPitchesQuery,
@@ -14,7 +15,6 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 
 import { Dialog, DialogContent } from "@/components/ui/dialog";
-
 import { ScrollArea } from "@/components/ui/scroll-area";
 
 import { toast } from "sonner";
@@ -29,48 +29,54 @@ import {
 } from "lucide-react";
 
 import UploadArea from "@/components/pitch/UploadArea";
-import PitchDetail from "@/components/pitch/PitchDetail";
 
 export default function PitchPage() {
+  const router = useRouter();
   const { user } = useAuth();
 
   const { data: pitches = [], isLoading, refetch } = useGetAllPitchesQuery();
-
   const [deletePitch] = useDeletePitchMutation();
-
-  const [activePitch, setActivePitch] = useState(null);
-
-  const [mode, setMode] = useState("list");
 
   const [showNewDialog, setShowNewDialog] = useState(false);
 
   // ======================================================
   // DELETE
   // ======================================================
-
   const handleDelete = async (id) => {
+    if (!confirm("Are you sure you want to delete this pitch?")) return;
+
     try {
       await deletePitch(id).unwrap();
-
-      toast.success("Pitch deleted");
-
-      if (activePitch?.id === id) {
-        setActivePitch(null);
-        setMode("list");
-      }
-
+      toast.success("Pitch deleted successfully");
       refetch();
     } catch (err) {
       console.error(err);
-
       toast.error("Failed to delete pitch");
     }
   };
 
   // ======================================================
+  // NAVIGATE TO DETAIL PAGE
+  // ======================================================
+  const handleViewPitch = (pitch) => {
+    const fileName = pitch.pitch_pdf_url?.split("/").pop() || "Pitch File";
+
+    const enrichedPitch = {
+      ...pitch,
+      filename: fileName,
+      file_url: pitch.pitch_pdf_url,
+      project_name: pitch.project?.name,
+      uploaded_by: pitch.createdByUser?.name,
+      version: pitch.version || "v1.0",
+    };
+
+    // Navigate to full page view
+    router.push(`/pitches/view?pitchId=${pitch.id}`);
+  };
+
+  // ======================================================
   // LOADING
   // ======================================================
-
   if (isLoading) {
     return (
       <div className="flex items-center justify-center h-full min-h-[60vh]">
@@ -79,36 +85,11 @@ export default function PitchPage() {
     );
   }
 
-  // ======================================================
-  // DETAIL VIEW
-  // ======================================================
-
-  if (mode === "detail" && activePitch) {
-    return (
-      <PitchDetail
-        pitch={activePitch}
-        user={user}
-        onBack={() => {
-          setMode("list");
-          refetch();
-        }}
-      />
-    );
-  }
-
-  // ======================================================
-  // MAIN
-  // ======================================================
-
   return (
     <div className="flex flex-col h-full bg-[#fafafa]">
-      {/* ====================================================== */}
       {/* HEADER */}
-      {/* ====================================================== */}
-
       <div className="sticky top-0 z-10 bg-white border-b border-gray-200 px-4 md:px-6 py-4">
         <div className="flex items-center justify-between gap-4">
-          {/* LEFT */}
           <div className="flex items-center gap-3">
             <div className="w-11 h-11 rounded-2xl bg-orange-100 flex items-center justify-center">
               <Presentation className="w-5 h-5 text-[#ef7f1b]" />
@@ -118,15 +99,12 @@ export default function PitchPage() {
               <h1 className="text-2xl font-black text-black">
                 Project Pitches
               </h1>
-
               <p className="text-sm text-gray-500 mt-1">
-                {pitches.length} pitch
-                {pitches.length !== 1 ? "es" : ""}
+                {pitches.length} pitch{pitches.length !== 1 ? "es" : ""}
               </p>
             </div>
           </div>
 
-          {/* RIGHT */}
           {user?.role !== "Client" && (
             <Button
               onClick={() => setShowNewDialog(true)}
@@ -139,10 +117,7 @@ export default function PitchPage() {
         </div>
       </div>
 
-      {/* ====================================================== */}
       {/* CONTENT */}
-      {/* ====================================================== */}
-
       <ScrollArea className="flex-1">
         <div className="p-4 md:p-6">
           {pitches.length === 0 ? (
@@ -154,10 +129,9 @@ export default function PitchPage() {
               <h2 className="text-xl font-bold text-black">
                 No Pitches Uploaded
               </h2>
-
               <p className="text-sm text-gray-500 mt-2 max-w-md">
                 Upload your first project pitch presentation to begin
-                collaborating with your team.
+                collaborating.
               </p>
 
               {user?.role !== "Client" && (
@@ -179,18 +153,7 @@ export default function PitchPage() {
                 return (
                   <Card
                     key={p.id}
-                    onClick={() => {
-                      setActivePitch({
-                        ...p,
-                        filename: fileName,
-                        file_url: p.pitch_pdf_url,
-                        project_name: p.project?.name,
-                        uploaded_by: p.createdByUser?.name,
-                        version: p.version || "v1.0",
-                      });
-
-                      setMode("detail");
-                    }}
+                    onClick={() => handleViewPitch(p)}
                     className="
                       group
                       relative
@@ -209,7 +172,6 @@ export default function PitchPage() {
                     "
                   >
                     {/* TOP */}
-
                     <div className="flex items-start justify-between">
                       <div className="w-12 h-12 rounded-2xl bg-orange-50 flex items-center justify-center">
                         <Presentation className="w-6 h-6 text-[#ef7f1b]" />
@@ -226,13 +188,7 @@ export default function PitchPage() {
                               e.stopPropagation();
                               handleDelete(p.id);
                             }}
-                            className="
-                              opacity-0
-                              group-hover:opacity-100
-                              transition-opacity
-                              text-red-500
-                              hover:text-red-700
-                            "
+                            className="opacity-0 group-hover:opacity-100 transition-opacity text-red-500 hover:text-red-700"
                           >
                             <Trash2 className="w-4 h-4" />
                           </button>
@@ -241,7 +197,6 @@ export default function PitchPage() {
                     </div>
 
                     {/* BODY */}
-
                     <div className="mt-5">
                       <h3 className="text-lg font-bold text-black line-clamp-1">
                         {p.project?.name || "Untitled Project"}
@@ -249,13 +204,11 @@ export default function PitchPage() {
 
                       <div className="mt-2 flex items-center gap-2 text-sm text-gray-500">
                         <FileText className="w-4 h-4 shrink-0" />
-
                         <span className="line-clamp-1">{fileName}</span>
                       </div>
                     </div>
 
                     {/* STATUS */}
-
                     <div className="mt-4 flex items-center gap-2 flex-wrap">
                       <Badge
                         className={`
@@ -282,11 +235,9 @@ export default function PitchPage() {
                     </div>
 
                     {/* DETAILS */}
-
                     <div className="mt-5 space-y-2">
                       <div className="flex items-center gap-2 text-xs text-gray-500">
                         <User2 className="w-3.5 h-3.5" />
-
                         <span className="truncate">
                           {p.createdByUser?.name || "Unknown User"}
                         </span>
@@ -294,15 +245,13 @@ export default function PitchPage() {
 
                       <div className="flex items-center gap-2 text-xs text-gray-500">
                         <CalendarDays className="w-3.5 h-3.5" />
-
                         <span>
-                          {new Date(p.created_at).toLocaleDateString()}
+                          {new Date(p.created_at).toLocaleDateString("en-IN")}
                         </span>
                       </div>
                     </div>
 
                     {/* FOOTER */}
-
                     <div className="mt-5 pt-4 border-t border-gray-100 flex items-center justify-between">
                       <div className="text-xs text-gray-400">
                         {p.comments?.length || 0} comments
@@ -315,19 +264,7 @@ export default function PitchPage() {
                       )}
                     </div>
 
-                    {/* HOVER GLOW */}
-
-                    <div
-                      className="
-                        absolute
-                        inset-0
-                        rounded-3xl
-                        ring-1
-                        ring-transparent
-                        group-hover:ring-[#ef7f1b]/20
-                        pointer-events-none
-                      "
-                    />
+                    <div className="absolute inset-0 rounded-3xl ring-1 ring-transparent group-hover:ring-[#ef7f1b]/20 pointer-events-none" />
                   </Card>
                 );
               })}
@@ -336,30 +273,14 @@ export default function PitchPage() {
         </div>
       </ScrollArea>
 
-      {/* ====================================================== */}
       {/* UPLOAD DIALOG */}
-      {/* ====================================================== */}
-
       <Dialog open={showNewDialog} onOpenChange={setShowNewDialog}>
-        <DialogContent
-          className="
-            w-[98vw]
-            max-w-7xl
-            h-[95vh]
-            p-0
-            overflow-hidden
-            rounded-3xl
-            border-0
-          "
-        >
+        <DialogContent className="w-[98vw] max-w-7xl h-[95vh] p-0 overflow-hidden rounded-3xl border-0">
           <div className="flex flex-col h-full bg-white">
-            {/* BODY */}
-
             <div className="flex-1 overflow-hidden">
               <UploadArea
                 onUploaded={() => {
                   setShowNewDialog(false);
-
                   refetch();
                 }}
               />

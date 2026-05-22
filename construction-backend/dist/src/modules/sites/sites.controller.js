@@ -18,8 +18,6 @@ const sites_service_1 = require("./sites.service");
 const create_site_dto_1 = require("./dto/create-site.dto");
 const update_site_dto_1 = require("./dto/update-site.dto");
 const jwt_auth_guard_1 = require("../../common/guards/jwt-auth.guard");
-const roles_guard_1 = require("../../common/guards/roles.guard");
-const roles_decorator_1 = require("../../common/decorators/roles.decorator");
 let SitesController = class SitesController {
     sitesService;
     constructor(sitesService) {
@@ -44,8 +42,6 @@ let SitesController = class SitesController {
 exports.SitesController = SitesController;
 __decorate([
     (0, common_1.Post)(),
-    (0, common_1.UseGuards)(roles_guard_1.RolesGuard),
-    (0, roles_decorator_1.Roles)('admin', 'project_manager'),
     __param(0, (0, common_1.Body)()),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [create_site_dto_1.CreateSiteDto]),
@@ -59,28 +55,24 @@ __decorate([
 ], SitesController.prototype, "findAll", null);
 __decorate([
     (0, common_1.Get)(':id'),
-    __param(0, (0, common_1.Param)('id', common_1.ParseIntPipe)),
+    __param(0, (0, common_1.Param)('id')),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [Number]),
+    __metadata("design:paramtypes", [String]),
     __metadata("design:returntype", void 0)
 ], SitesController.prototype, "findOne", null);
 __decorate([
     (0, common_1.Patch)(':id'),
-    (0, common_1.UseGuards)(roles_guard_1.RolesGuard),
-    (0, roles_decorator_1.Roles)('admin', 'project_manager'),
-    __param(0, (0, common_1.Param)('id', common_1.ParseIntPipe)),
+    __param(0, (0, common_1.Param)('id')),
     __param(1, (0, common_1.Body)()),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [Number, update_site_dto_1.UpdateSiteDto]),
+    __metadata("design:paramtypes", [String, update_site_dto_1.UpdateSiteDto]),
     __metadata("design:returntype", void 0)
 ], SitesController.prototype, "update", null);
 __decorate([
     (0, common_1.Delete)(':id'),
-    (0, common_1.UseGuards)(roles_guard_1.RolesGuard),
-    (0, roles_decorator_1.Roles)('admin'),
-    __param(0, (0, common_1.Param)('id', common_1.ParseIntPipe)),
+    __param(0, (0, common_1.Param)('id')),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [Number]),
+    __metadata("design:paramtypes", [String]),
     __metadata("design:returntype", void 0)
 ], SitesController.prototype, "remove", null);
 exports.SitesController = SitesController = __decorate([

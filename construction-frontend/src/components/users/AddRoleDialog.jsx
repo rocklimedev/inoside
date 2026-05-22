@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   Dialog,
   DialogContent,
@@ -14,6 +14,7 @@ import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Loader2 } from "lucide-react";
+import { toast } from "sonner";
 
 export default function AddRoleDialog({
   open,
@@ -21,6 +22,7 @@ export default function AddRoleDialog({
   onCreate,
   isCreating,
   availablePermissions,
+  roleToEdit = null, // ← New prop
 }) {
   const [newRole, setNewRole] = useState({
     name: "",
@@ -28,21 +30,53 @@ export default function AddRoleDialog({
     permissions: [],
   });
 
+  // Populate form when editing
+  useEffect(() => {
+    if (roleToEdit) {
+      setNewRole({
+        name: roleToEdit.name || "",
+        description: roleToEdit.description || "",
+        permissions: roleToEdit.permissions || [],
+      });
+    } else {
+      setNewRole({
+        name: "",
+        description: "",
+        permissions: [],
+      });
+    }
+  }, [roleToEdit]);
+
   const handleSubmit = async () => {
     if (!newRole.name) {
       alert("Role name is required");
       return;
     }
-    await onCreate(newRole);
-    onOpenChange(false);
-    setNewRole({ name: "", description: "", permissions: [] });
+
+    try {
+      if (roleToEdit) {
+        // TODO: Add update mutation later
+        toast.info("Role update functionality coming soon");
+        console.log("Would update role:", roleToEdit.id, newRole);
+      } else {
+        await onCreate(newRole);
+        toast.success("Role created successfully");
+      }
+
+      onOpenChange(false);
+    } catch (err) {
+      toast.error("Failed to save role");
+    }
   };
+
+  const title = roleToEdit ? "Edit Role" : "Create New Role";
+  const buttonText = roleToEdit ? "Update Role" : "Create Role";
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-2xl">
         <DialogHeader>
-          <DialogTitle>Create New Role</DialogTitle>
+          <DialogTitle>{title}</DialogTitle>
         </DialogHeader>
 
         <div className="space-y-5 py-4">
@@ -105,7 +139,7 @@ export default function AddRoleDialog({
             className="bg-[#ef7f1b]"
           >
             {isCreating && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-            Create Role
+            {buttonText}
           </Button>
         </DialogFooter>
       </DialogContent>

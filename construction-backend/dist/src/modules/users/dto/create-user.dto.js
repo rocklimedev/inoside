@@ -18,6 +18,8 @@ class CreateUserDto {
     phone;
     role_id;
     is_active;
+    avatar_url;
+    avatar_thumbnail;
 }
 exports.CreateUserDto = CreateUserDto;
 __decorate([
@@ -49,4 +51,14 @@ __decorate([
     (0, class_validator_1.IsBoolean)(),
     __metadata("design:type", Boolean)
 ], CreateUserDto.prototype, "is_active", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsUrl)(),
+    __metadata("design:type", String)
+], CreateUserDto.prototype, "avatar_url", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsUrl)(),
+    __metadata("design:type", String)
+], CreateUserDto.prototype, "avatar_thumbnail", void 0);
 //# sourceMappingURL=create-user.dto.js.map

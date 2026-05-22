@@ -145,6 +145,61 @@ let ProjectPitchService = class ProjectPitchService {
         });
         return this.getPitchById(id);
     }
+    async getComments(pitchId) {
+        const pitch = await this.pitchModel.findByPk(pitchId);
+        if (!pitch) {
+            throw new common_1.NotFoundException('Pitch not found');
+        }
+        return this.commentModel.findAll({
+            where: { pitch_id: pitchId },
+            include: [
+                {
+                    model: user_model_1.User,
+                    attributes: ['id', 'name', 'email'],
+                },
+            ],
+            order: [['created_at', 'DESC']],
+        });
+    }
+    async updateComment(commentId, dto) {
+        const comment = await this.commentModel.findByPk(commentId);
+        if (!comment) {
+            throw new common_1.NotFoundException('Comment not found');
+        }
+        await comment.update(dto);
+        return this.commentModel.findByPk(commentId, {
+            include: [
+                {
+                    model: user_model_1.User,
+                    attributes: ['id', 'name', 'email'],
+                },
+            ],
+        });
+    }
+    async deleteComment(commentId) {
+        const comment = await this.commentModel.findByPk(commentId);
+        if (!comment) {
+            throw new common_1.NotFoundException('Comment not found');
+        }
+        await comment.destroy();
+        return {
+            success: true,
+            message: 'Comment deleted successfully',
+        };
+    }
+    async deleteByProject(projectId) {
+        const pitch = await this.pitchModel.findOne({
+            where: { project_id: projectId },
+        });
+        if (!pitch) {
+            throw new common_1.NotFoundException('Pitch not found');
+        }
+        await pitch.destroy();
+        return {
+            success: true,
+            message: 'Pitch deleted successfully',
+        };
+    }
     getIncludes() {
         return [
             {

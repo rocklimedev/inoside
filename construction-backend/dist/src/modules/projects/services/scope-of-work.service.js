@@ -17,6 +17,9 @@ const common_1 = require("@nestjs/common");
 const sequelize_1 = require("@nestjs/sequelize");
 const scope_of_work_model_1 = require("../models/scope_of_work.model");
 const project_model_1 = require("../models/project.model");
+const client_model_1 = require("../../clients/models/client.model");
+const site_model_1 = require("../../sites/models/site.model");
+const user_model_1 = require("../../users/models/user.model");
 let ScopeOfWorkService = class ScopeOfWorkService {
     scopeModel;
     projectModel;
@@ -24,26 +27,131 @@ let ScopeOfWorkService = class ScopeOfWorkService {
         this.scopeModel = scopeModel;
         this.projectModel = projectModel;
     }
+    getIncludes() {
+        return [
+            {
+                model: project_model_1.Project,
+                attributes: [
+                    'id',
+                    'name',
+                    'status',
+                    'progress_percentage',
+                    'current_stage',
+                ],
+                include: [
+                    {
+                        model: client_model_1.Client,
+                        attributes: ['id', 'name', 'email', 'contact_number'],
+                    },
+                    {
+                        model: site_model_1.Site,
+                        attributes: ['id', 'address', 'city'],
+                    },
+                    {
+                        model: user_model_1.User,
+                        as: 'creator',
+                        attributes: ['id', 'name', 'email'],
+                    },
+                ],
+            },
+        ];
+    }
     async create(dto) {
-        await this.projectModel.findByPk(dto.project_id, { rejectOnEmpty: true });
+        const project = await this.projectModel.findByPk(dto.project_id);
+        if (!project) {
+            throw new common_1.NotFoundException('Project not found');
+        }
         const exists = await this.scopeModel.findOne({
-            where: { project_id: dto.project_id },
+            where: {
+                project_id: dto.project_id,
+            },
         });
         if (exists) {
             throw new common_1.BadRequestException('Scope of Work already exists for this project');
         }
-        return this.scopeModel.create(dto);
+        const scope = await this.scopeModel.create(dto);
+        await project.update({
+            status: 'scope_done',
+            current_stage: 'Scope of Work Created',
+            progress_percentage: 40,
+        });
+        return this.findById(scope.id);
     }
-    async findOne(project_id) {
-        const scope = await this.scopeModel.findOne({ where: { project_id } });
-        if (!scope)
+    async findByProject(projectId) {
+        const scope = await this.scopeModel.findOne({
+            where: {
+                project_id: projectId,
+            },
+            include: this.getIncludes(),
+        });
+        if (!scope) {
             throw new common_1.NotFoundException('Scope of Work not found');
+        }
         return scope;
     }
-    async update(project_id, dto) {
-        await this.findOne(project_id);
-        await this.scopeModel.update(dto, { where: { project_id } });
-        return this.findOne(project_id);
+    async findById(id) {
+        const scope = await this.scopeModel.findByPk(id, {
+            include: this.getIncludes(),
+        });
+        if (!scope) {
+            throw new common_1.NotFoundException('Scope of Work not found');
+        }
+        return scope;
+    }
+    async findAll() {
+        return this.scopeModel.findAll({
+            include: this.getIncludes(),
+            order: [['created_at', 'DESC']],
+        });
+    }
+    async update(projectId, dto) {
+        const scope = await this.scopeModel.findOne({
+            where: {
+                project_id: projectId,
+            },
+        });
+        if (!scope) {
+            throw new common_1.NotFoundException('Scope of Work not found');
+        }
+        await scope.update(dto);
+        return this.findByProject(projectId);
+    }
+    async delete(id) {
+        const scope = await this.scopeModel.findByPk(id);
+        if (!scope) {
+            throw new common_1.NotFoundException('Scope of Work not found');
+        }
+        await scope.destroy();
+        return {
+            success: true,
+            message: 'Scope of Work deleted successfully',
+        };
+    }
+    async markApproved(projectId) {
+        const scope = await this.findByProject(projectId);
+        const project = await this.projectModel.findByPk(projectId);
+        if (!project) {
+            throw new common_1.NotFoundException('Project not found');
+        }
+        await project.update({
+            current_stage: 'Scope Approved',
+            progress_percentage: 45,
+        });
+        return scope;
+    }
+    async markRejected(projectId, reason) {
+        const scope = await this.findByProject(projectId);
+        const project = await this.projectModel.findByPk(projectId);
+        if (!project) {
+            throw new common_1.NotFoundException('Project not found');
+        }
+        await project.update({
+            current_stage: 'Scope Revisions Required',
+        });
+        return {
+            scope,
+            rejection_reason: reason || null,
+        };
     }
 };
 exports.ScopeOfWorkService = ScopeOfWorkService;

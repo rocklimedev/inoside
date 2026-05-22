@@ -12,7 +12,12 @@ import {
 import { Shield, Pencil, Trash2, MoreVertical } from "lucide-react";
 import { toast } from "sonner";
 
-export default function RoleGrid({ roles, onRoleClick, onDelete }) {
+export default function RoleGrid({
+  roles,
+  onRoleClick,
+  onDelete,
+  onEdit, // ← New prop
+}) {
   const handleDelete = async (id, e) => {
     e.stopPropagation();
     if (!confirm("Delete this role?")) return;
@@ -46,13 +51,14 @@ export default function RoleGrid({ roles, onRoleClick, onDelete }) {
             </div>
 
             <div className="flex items-center gap-2">
+              {/* Updated Edit Button */}
               <Button
                 size="icon"
                 variant="outline"
                 className="h-8 w-8"
                 onClick={(e) => {
                   e.stopPropagation();
-                  toast.info("Edit role coming soon");
+                  onEdit(role); // ← Now opens edit dialog
                 }}
               >
                 <Pencil className="h-4 w-4" />

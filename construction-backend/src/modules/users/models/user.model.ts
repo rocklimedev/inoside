@@ -66,16 +66,34 @@ export class User extends Model<
   })
   declare password_hash: string;
 
+  // ================= NEW FIELDS =================
+
+  @Column({
+    type: DataType.STRING(500),
+    allowNull: true,
+  })
+  declare avatar_url: CreationOptional<string | null>;
+
+  @Column({
+    type: DataType.STRING(500),
+    allowNull: true,
+  })
+  declare avatar_thumbnail: CreationOptional<string | null>;
+
+  // ================= EXISTING FLAGS =================
+
   @Column({
     type: DataType.BOOLEAN,
     defaultValue: true,
   })
   declare is_active: CreationOptional<boolean>;
+
   @Column({
     type: DataType.BOOLEAN,
     defaultValue: false,
   })
   declare is_email_verified: CreationOptional<boolean>;
+
   @Column({
     type: DataType.DATE,
     allowNull: true,

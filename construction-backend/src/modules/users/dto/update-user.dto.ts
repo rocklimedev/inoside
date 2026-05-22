@@ -4,6 +4,7 @@ import {
   IsOptional,
   IsBoolean,
   IsUUID,
+  IsUrl,
 } from 'class-validator';
 
 export class UpdateUserDto {
@@ -26,4 +27,14 @@ export class UpdateUserDto {
   @IsOptional()
   @IsBoolean()
   is_active?: boolean;
+
+  // ================= NEW FIELDS =================
+
+  @IsOptional()
+  @IsUrl()
+  avatar_url?: string;
+
+  @IsOptional()
+  @IsUrl()
+  avatar_thumbnail?: string;
 }

@@ -8,6 +8,8 @@ export declare class User extends Model<InferAttributes<User>, InferCreationAttr
     email: string;
     phone: CreationOptional<string | null>;
     password_hash: string;
+    avatar_url: CreationOptional<string | null>;
+    avatar_thumbnail: CreationOptional<string | null>;
     is_active: CreationOptional<boolean>;
     is_email_verified: CreationOptional<boolean>;
     last_login: CreationOptional<Date | null>;

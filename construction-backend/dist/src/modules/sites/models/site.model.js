@@ -12,6 +12,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.Site = void 0;
 const sequelize_typescript_1 = require("sequelize-typescript");
 const project_model_1 = require("../../projects/models/project.model");
+const address_model_1 = require("../../address/models/address.model");
 let Site = class Site extends sequelize_typescript_1.Model {
 };
 exports.Site = Site;
@@ -24,19 +25,17 @@ __decorate([
     __metadata("design:type", Object)
 ], Site.prototype, "id", void 0);
 __decorate([
+    (0, sequelize_typescript_1.ForeignKey)(() => address_model_1.Address),
     (0, sequelize_typescript_1.Column)({
-        type: sequelize_typescript_1.DataType.TEXT,
+        type: sequelize_typescript_1.DataType.UUID,
         allowNull: false,
     }),
     __metadata("design:type", String)
-], Site.prototype, "address", void 0);
+], Site.prototype, "address_id", void 0);
 __decorate([
-    (0, sequelize_typescript_1.Column)({
-        type: sequelize_typescript_1.DataType.STRING(100),
-        allowNull: false,
-    }),
-    __metadata("design:type", String)
-], Site.prototype, "city", void 0);
+    (0, sequelize_typescript_1.BelongsTo)(() => address_model_1.Address),
+    __metadata("design:type", Object)
+], Site.prototype, "address", void 0);
 __decorate([
     (0, sequelize_typescript_1.Column)({
         type: sequelize_typescript_1.DataType.ENUM('Owned', 'Rented', 'Under Process'),
@@ -58,6 +57,14 @@ __decorate([
     }),
     __metadata("design:type", Object)
 ], Site.prototype, "existing_structure", void 0);
+__decorate([
+    (0, sequelize_typescript_1.Column)(sequelize_typescript_1.DataType.DATE),
+    __metadata("design:type", Object)
+], Site.prototype, "created_at", void 0);
+__decorate([
+    (0, sequelize_typescript_1.Column)(sequelize_typescript_1.DataType.DATE),
+    __metadata("design:type", Object)
+], Site.prototype, "updated_at", void 0);
 __decorate([
     (0, sequelize_typescript_1.HasOne)(() => project_model_1.Project),
     __metadata("design:type", Object)

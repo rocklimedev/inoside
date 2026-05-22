@@ -43,7 +43,10 @@ const normalizeUser = (user) => {
     isActive: Boolean(rawUser.is_active),
     isEmailVerified: Boolean(rawUser.is_email_verified),
     last_login: rawUser.last_login,
-    created_at: rawUser.created_at,
+    created_at: rawUser.created_at, // Avatar
+    avatar_url: rawUser.avatar_url || null,
+
+    avatar_thumbnail: rawUser.avatar_thumbnail || null,
   };
 };
 
@@ -110,13 +113,11 @@ export const AuthProvider = ({ children }) => {
 
     // Still fetching
     if (profileFetching) {
-      console.log("[AUTH] Profile fetching...");
       return;
     }
 
     // Success
     if (profileData?.user) {
-      console.log("[AUTH] Profile loaded successfully:", profileData.user);
       setUser(normalizeUser(profileData.user));
       setAuthResolved(true);
       return;
@@ -124,7 +125,6 @@ export const AuthProvider = ({ children }) => {
 
     // Error - Invalid token
     if (profileError) {
-      console.error("[AUTH] Profile error:", profileError);
       localStorage.removeItem("access_token");
       document.cookie =
         "access_token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT";
@@ -181,7 +181,6 @@ export const AuthProvider = ({ children }) => {
   // LOGOUT
   // ====================================================
   const logout = useCallback(() => {
-    console.log("[AUTH] Logging out...");
     localStorage.removeItem("access_token");
     document.cookie =
       "access_token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT";
