@@ -61,6 +61,7 @@ export const baseApi = createApi({
     "Inventory",
     "Dispatch",
     "InventoryMaster",
+    "Reki",
   ],
 
   endpoints: () => ({}),

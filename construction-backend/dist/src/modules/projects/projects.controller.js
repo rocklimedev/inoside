@@ -160,17 +160,36 @@ let ProjectsController = class ProjectsController {
     deletePitchReference(refId) {
         return this.pitchRefService.delete(refId);
     }
+    getAllRekiReports() {
+        return this.rekiService.findAll();
+    }
+    getRekiById(id) {
+        return this.rekiService.findById(id);
+    }
+    deleteReki(id) {
+        return this.rekiService.delete(id);
+    }
+    markRekiAsDone(projectId) {
+        return this.rekiService.markAsDone(projectId);
+    }
+    markRekiAsPending(projectId) {
+        return this.rekiService.markAsPending(projectId);
+    }
     createReki(projectId, dto) {
         return this.rekiService.create({ ...dto, project_id: projectId });
     }
     getReki(projectId) {
         return this.rekiService.findByProject(projectId);
     }
-    updateReki(id, dto) {
-        return this.rekiService.update(id, dto);
+    updateReki(projectId, dto) {
+        return this.rekiService.update(projectId, dto);
     }
-    addRekiPhoto(projectId, dto) {
-        return this.rekiPhotoService.add({ ...dto, project_id: projectId });
+    async addRekiPhoto(projectId, dto) {
+        return this.rekiPhotoService.add({
+            ...dto,
+            project_id: projectId,
+            reki_report_id: dto.reki_report_id,
+        });
     }
     deleteRekiPhoto(photoId) {
         return this.rekiPhotoService.delete(photoId);
@@ -456,6 +475,40 @@ __decorate([
     __metadata("design:returntype", void 0)
 ], ProjectsController.prototype, "deletePitchReference", null);
 __decorate([
+    (0, common_1.Get)('reki/all'),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", []),
+    __metadata("design:returntype", void 0)
+], ProjectsController.prototype, "getAllRekiReports", null);
+__decorate([
+    (0, common_1.Get)('reki/:id'),
+    __param(0, (0, common_1.Param)('id')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String]),
+    __metadata("design:returntype", void 0)
+], ProjectsController.prototype, "getRekiById", null);
+__decorate([
+    (0, common_1.Delete)('reki/:id'),
+    __param(0, (0, common_1.Param)('id')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String]),
+    __metadata("design:returntype", void 0)
+], ProjectsController.prototype, "deleteReki", null);
+__decorate([
+    (0, common_1.Patch)(':id/reki/done'),
+    __param(0, (0, common_1.Param)('id')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String]),
+    __metadata("design:returntype", void 0)
+], ProjectsController.prototype, "markRekiAsDone", null);
+__decorate([
+    (0, common_1.Patch)(':id/reki/pending'),
+    __param(0, (0, common_1.Param)('id')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String]),
+    __metadata("design:returntype", void 0)
+], ProjectsController.prototype, "markRekiAsPending", null);
+__decorate([
     (0, common_1.Post)(':id/reki'),
     __param(0, (0, common_1.Param)('id')),
     __param(1, (0, common_1.Body)()),
@@ -484,7 +537,7 @@ __decorate([
     __param(1, (0, common_1.Body)()),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [String, Object]),
-    __metadata("design:returntype", void 0)
+    __metadata("design:returntype", Promise)
 ], ProjectsController.prototype, "addRekiPhoto", null);
 __decorate([
     (0, common_1.Delete)('reki/photos/:photoId'),

@@ -1,230 +1,378 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { useAuth } from "@/contexts/AuthContext";
-
-import { Card } from "@/components/ui/card";
-
 import {
-  Briefcase,
-  FileCheck2,
-  PenLine,
-  HardHat,
-  AlertTriangle,
-  CheckCircle2,
+  Activity,
+  Cpu,
+  Database,
+  Globe,
+  HardDrive,
+  Network,
+  Server,
+  ShieldCheck,
+  Workflow,
 } from "lucide-react";
 
 import {
-  PriorityActions,
-  ApprovalsPanel,
-  DocumentCenter,
-} from "@/components/dashboard/WorkPanels";
+  Area,
+  AreaChart,
+  CartesianGrid,
+  ResponsiveContainer,
+  Tooltip,
+  XAxis,
+} from "recharts";
+
+import { Card } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Progress } from "@/components/ui/progress";
 
 import {
-  ActiveProjects,
-  SiteProgress,
-  ClientComms,
-  AlertsPanel,
-} from "@/components/dashboard/MonitoringPanels";
+  useGetSystemOverviewQuery,
+  useGetHealthQuery,
+  useGetVersionQuery,
+  useGetCdnStatusQuery,
+  useGetReadyStatusQuery,
+  useGetLiveStatusQuery,
+} from "@/api/systemApi";
 
-const STAGE_LIST = [
-  "Brief",
-  "Pitch",
-  "Site Reki",
-  "Scope",
-  "Time & Cost",
-  "BOQ",
-  "Design",
-  "Execution",
-  "Vendor",
-  "Inventory",
-  "Quality",
-  "Handover",
+// Mock Chart Data
+const memoryData = [
+  { time: "1m", usage: 35 },
+  { time: "2m", usage: 42 },
+  { time: "3m", usage: 38 },
+  { time: "4m", usage: 51 },
+  { time: "5m", usage: 46 },
+  { time: "6m", usage: 58 },
+  { time: "7m", usage: 54 },
 ];
 
-export default function ArchitectDashboardPage() {
-  const { api } = useAuth();
+const requestData = [
+  { time: "1m", value: 120 },
+  { time: "2m", value: 180 },
+  { time: "3m", value: 150 },
+  { time: "4m", value: 240 },
+  { time: "5m", value: 210 },
+  { time: "6m", value: 320 },
+  { time: "7m", value: 280 },
+];
 
-  const [kpis, setKpis] = useState(null);
-  const [pipeline, setPipeline] = useState([]);
-  const [projects, setProjects] = useState([]);
-  const [actions, setActions] = useState([]);
-  const [approvals, setApprovals] = useState({ design: [], execution: [] });
-  const [documents, setDocuments] = useState([]);
-  const [siteProgress, setSiteProgress] = useState([]);
-  const [clientComms, setClientComms] = useState([]);
-  const [alerts, setAlerts] = useState([]);
-  const [loading, setLoading] = useState(true);
+export default function DeveloperDashboardPage() {
+  const { data: overview, isLoading: loadingOverview } =
+    useGetSystemOverviewQuery();
+  const { data: health, isLoading: loadingHealth } = useGetHealthQuery();
+  const { data: version, isLoading: loadingVersion } = useGetVersionQuery();
+  const { data: cdn, isLoading: loadingCdn } = useGetCdnStatusQuery();
+  const { data: ready } = useGetReadyStatusQuery();
+  const { data: live } = useGetLiveStatusQuery();
 
-  useEffect(() => {
-    fetchDashboard();
-  }, []);
-
-  const fetchDashboard = async () => {
-    if (!api) {
-      setLoading(false);
-      return;
-    }
-
-    try {
-      const [k, p, proj, act, apr, doc, sp, cc, al] = await Promise.all([
-        api.get("/dashboard/kpis"),
-        api.get("/dashboard/pipeline"),
-        api.get("/dashboard/projects"),
-        api.get("/dashboard/priority-actions"),
-        api.get("/dashboard/approvals"),
-        api.get("/dashboard/documents"),
-        api.get("/dashboard/site-progress"),
-        api.get("/dashboard/client-comms"),
-        api.get("/dashboard/alerts"),
-      ]);
-
-      setKpis(k.data);
-      setPipeline(p.data || []);
-      setProjects(proj.data || []);
-      setActions(act.data || []);
-      setApprovals(apr.data || { design: [], execution: [] });
-      setDocuments(doc.data || []);
-      setSiteProgress(sp.data || []);
-      setClientComms(cc.data || []);
-      setAlerts(al.data || []);
-    } catch (err) {
-      console.error("Dashboard fetch error:", err);
-    } finally {
-      setLoading(false);
-    }
-  };
+  const loading =
+    loadingOverview || loadingHealth || loadingVersion || loadingCdn;
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-[70vh]">
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
         <div className="text-center">
-          <div className="w-8 h-8 border-2 border-[#ef7f1b] border-t-transparent rounded-full animate-spin mx-auto" />
+          <div className="w-10 h-10 rounded-full border-4 border-orange-600 border-t-transparent animate-spin mx-auto" />
           <p className="mt-4 text-sm text-gray-500">Loading dashboard...</p>
         </div>
       </div>
     );
   }
 
-  const kpiCards = [
+  const services = overview?.services || {};
+  const memory = health?.memory || {};
+
+  const heapUsed = memory?.heap_used || 0;
+  const heapTotal = memory?.heap_total || 1;
+  const memoryPercent = Math.min((heapUsed / heapTotal) * 100, 100);
+
+  const kpis = [
     {
-      label: "Active Projects",
-      value: kpis?.total_active || 0,
-      icon: Briefcase,
-      color: "#ef7f1b",
+      label: "Environment",
+      value: overview?.application?.environment || "-",
+      icon: Server,
+      status: "Healthy",
     },
     {
-      label: "Pending Approvals",
-      value: kpis?.pending_approvals || 0,
-      icon: FileCheck2,
-      color: "#ef7f1b",
+      label: "Server",
+      value: overview?.server?.status || "-",
+      icon: Activity,
+      status: "Operational",
     },
     {
-      label: "Under Revision",
-      value: kpis?.under_revision || 0,
-      icon: PenLine,
-      color: "#ef7f1b",
+      label: "Database",
+      value: health?.database?.status || "-",
+      icon: Database,
+      status: "Connected",
     },
     {
-      label: "Execution Awaiting",
-      value: kpis?.exec_awaiting || 0,
-      icon: HardHat,
-      color: "#ef7f1b",
+      label: "CDN",
+      value: cdn?.cdn?.enabled ? "Enabled" : "Disabled",
+      icon: Globe,
+      status: cdn?.cdn?.enabled ? "Active" : "Inactive",
     },
     {
-      label: "Delay Flags",
-      value: kpis?.delay_flags || 0,
-      icon: AlertTriangle,
-      color: (kpis?.delay_flags || 0) > 0 ? "#e31d3b" : "#94a3b8",
+      label: "Container",
+      value: ready?.ready ? "Ready" : "Not Ready",
+      icon: ShieldCheck,
+      status: ready?.ready ? "Healthy" : "Issue",
     },
     {
-      label: "Handover Ready",
-      value: kpis?.handover_ready || 0,
-      icon: CheckCircle2,
-      color: "#22c55e",
+      label: "Runtime",
+      value: live?.live ? "Live" : "Down",
+      icon: Workflow,
+      status: live?.live ? "Online" : "Offline",
     },
   ];
 
   return (
-    <div className="p-4 md:p-6 lg:p-8 space-y-6">
-      {/* KPI Cards */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 md:gap-4">
-        {kpiCards.map((kpi, i) => {
-          const Icon = kpi.icon;
+    <div className="min-h-screen bg-gray-50 p-6 space-y-8">
+      {/* Header */}
+      <div className="flex justify-between items-center">
+        <div className="flex items-center gap-4">
+          <div className="w-10 h-10 bg-orange-600 rounded-xl flex items-center justify-center">
+            <Server className="w-5 h-5 text-white" />
+          </div>
+          <div>
+            <h1 className="text-3xl font-semibold text-gray-900">
+              Developer Dashboard
+            </h1>
+            <p className="text-gray-500">Infrastructure Monitoring</p>
+          </div>
+        </div>
 
+        <Badge className="bg-green-600 text-white px-4 py-1.5">
+          All Systems Operational
+        </Badge>
+      </div>
+
+      {/* KPI Grid */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-6">
+        {kpis.map((item, i) => {
+          const Icon = item.icon;
           return (
-            <Card
-              key={i}
-              className="border-l-[3px] p-4 md:p-5 hover:shadow-md transition-all cursor-pointer"
-              style={{ borderLeftColor: kpi.color }}
-            >
+            <Card key={i} className="p-6">
               <div className="flex items-start justify-between">
                 <div>
-                  <p className="text-[10px] font-bold uppercase tracking-wider text-gray-400">
-                    {kpi.label}
+                  <p className="text-sm text-gray-500 font-medium">
+                    {item.label}
                   </p>
-                  <p className="text-2xl md:text-3xl font-black mt-1.5">
-                    {kpi.value}
+                  <p className="text-2xl font-semibold mt-2 text-gray-900">
+                    {item.value}
                   </p>
                 </div>
-
-                <Icon className="w-4 h-4" style={{ color: kpi.color }} />
+                <div className="w-10 h-10 bg-gray-100 rounded-lg flex items-center justify-center">
+                  <Icon className="w-5 h-5 text-gray-600" />
+                </div>
+              </div>
+              <div className="mt-4 text-sm text-green-600 font-medium">
+                {item.status}
               </div>
             </Card>
           );
         })}
       </div>
 
-      {/* Pipeline */}
-      <Card className="p-5 md:p-6">
-        <h2 className="text-sm font-bold mb-5 uppercase tracking-wider">
-          Project Pipeline
-        </h2>
+      {/* Charts */}
+      <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
+        {/* Memory Usage */}
+        <Card className="p-6">
+          <div className="flex items-center justify-between mb-6">
+            <div>
+              <h2 className="text-lg font-semibold">Memory Usage</h2>
+              <p className="text-sm text-gray-500">Runtime heap consumption</p>
+            </div>
+            <Cpu className="w-6 h-6 text-orange-600" />
+          </div>
 
-        <div className="flex items-start overflow-x-auto pb-3">
-          {pipeline.map((stage, i) => (
-            <div key={i} className="flex items-center shrink-0">
-              <div className="flex flex-col items-center min-w-[72px]">
+          <div className="space-y-4 mb-6">
+            <MetricRow label="RSS" value={formatBytes(memory?.rss || 0)} />
+            <MetricRow
+              label="Heap Total"
+              value={formatBytes(memory?.heap_total || 0)}
+            />
+            <MetricRow
+              label="Heap Used"
+              value={formatBytes(memory?.heap_used || 0)}
+            />
+            <MetricRow
+              label="External"
+              value={formatBytes(memory?.external || 0)}
+            />
+          </div>
+
+          <div className="mb-6">
+            <div className="flex justify-between text-sm mb-2">
+              <span>Heap Utilization</span>
+              <span className="font-medium">{memoryPercent.toFixed(0)}%</span>
+            </div>
+            <Progress value={memoryPercent} className="h-2" />
+          </div>
+
+          <div className="h-64">
+            <ResponsiveContainer width="100%" height="100%">
+              <AreaChart data={memoryData}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+                <XAxis dataKey="time" />
+                <Tooltip />
+                <Area
+                  type="monotone"
+                  dataKey="usage"
+                  stroke="#f97316"
+                  fill="#fed7aa"
+                />
+              </AreaChart>
+            </ResponsiveContainer>
+          </div>
+        </Card>
+
+        {/* API Traffic */}
+        <Card className="p-6">
+          <div className="flex items-center justify-between mb-6">
+            <div>
+              <h2 className="text-lg font-semibold">API Traffic</h2>
+              <p className="text-sm text-gray-500">Requests per minute</p>
+            </div>
+            <Network className="w-6 h-6 text-blue-600" />
+          </div>
+
+          <div className="grid grid-cols-3 gap-4 mb-6">
+            <SmallMetric label="Req/sec" value="128" />
+            <SmallMetric label="Latency" value="84ms" />
+            <SmallMetric label="Errors" value="0.02%" />
+          </div>
+
+          <div className="h-80">
+            <ResponsiveContainer width="100%" height="100%">
+              <AreaChart data={requestData}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+                <XAxis dataKey="time" />
+                <Tooltip />
+                <Area
+                  type="monotone"
+                  dataKey="value"
+                  stroke="#3b82f6"
+                  fill="#bfdbfe"
+                />
+              </AreaChart>
+            </ResponsiveContainer>
+          </div>
+        </Card>
+      </div>
+
+      {/* Services */}
+      <Card className="p-6">
+        <div className="flex items-center gap-3 mb-6">
+          <Database className="w-6 h-6 text-gray-600" />
+          <div>
+            <h2 className="text-lg font-semibold">Services</h2>
+            <p className="text-sm text-gray-500">Real-time service status</p>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-4">
+          {Object.entries(services).map(([key, value]) => (
+            <div key={key} className="border rounded-xl p-5 bg-white">
+              <div className="flex justify-between items-start">
                 <div
-                  className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold border-2 ${
-                    stage.count > 0
-                      ? "border-[#ef7f1b] bg-[#ef7f1b] text-white"
-                      : "border-gray-200 text-gray-400"
-                  }`}
-                >
-                  {stage.count}
-                </div>
-
-                <span className="text-[10px] text-gray-500 mt-2 text-center">
-                  {stage.name}
-                </span>
+                  className={`w-3 h-3 rounded-full ${value ? "bg-green-500" : "bg-red-500"}`}
+                />
+                {value ? (
+                  <span className="text-green-600 text-xl">✓</span>
+                ) : (
+                  <span className="text-red-600 text-xl">✕</span>
+                )}
               </div>
-
-              {i < pipeline.length - 1 && (
-                <div className="w-6 h-px bg-gray-200" />
-              )}
+              <h3 className="font-medium mt-6 text-gray-900">{key}</h3>
+              <p className="text-sm text-gray-500 mt-1">
+                {value ? "Operational" : "Unavailable"}
+              </p>
             </div>
           ))}
         </div>
       </Card>
 
-      {/* Panels */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <PriorityActions actions={actions} />
-        <ApprovalsPanel approvals={approvals} />
-      </div>
+      {/* Info Grid */}
+      <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
+        <Card className="p-6">
+          <h2 className="font-semibold mb-5">System Info</h2>
+          <div className="space-y-5">
+            <InfoRow label="Application" value={overview?.application?.name} />
+            <InfoRow label="API Version" value={version?.version?.api} />
+            <InfoRow label="Node Version" value={version?.version?.node} />
+            <InfoRow label="Platform" value={health?.process?.platform} />
+            <InfoRow label="PID" value={health?.process?.pid} />
+          </div>
+        </Card>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <DocumentCenter documents={documents} />
-        <ActiveProjects projects={projects} />
-      </div>
+        <Card className="p-6">
+          <h2 className="font-semibold mb-5">Runtime Stats</h2>
+          <div className="space-y-6">
+            <BigMetric
+              label="Server Uptime"
+              value={`${Math.floor((overview?.server?.uptime_seconds || 0) / 60)}m`}
+            />
+            <BigMetric label="ORM" value={health?.database?.orm} />
+            <BigMetric label="Database" value={health?.database?.engine} />
+          </div>
+        </Card>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <SiteProgress data={siteProgress} />
-        <ClientComms data={clientComms} />
+        <Card className="p-6">
+          <h2 className="font-semibold mb-5">CDN Configuration</h2>
+          <div className="space-y-5">
+            <InfoRow label="Provider" value={cdn?.cdn?.provider} />
+            <InfoRow label="Domain" value={cdn?.cdn?.domain} />
+            <InfoRow label="Upload API" value={cdn?.cdn?.upload_api} />
+            <InfoRow
+              label="Storage"
+              value={`${cdn?.cdn?.storage?.type} (${cdn?.cdn?.storage?.path})`}
+            />
+          </div>
+        </Card>
       </div>
-
-      <AlertsPanel alerts={alerts} />
     </div>
   );
+}
+
+/* Helper Components */
+function MetricRow({ label, value }) {
+  return (
+    <div className="flex justify-between py-2 border-b border-gray-100 last:border-0">
+      <span className="text-gray-500">{label}</span>
+      <span className="font-medium">{value}</span>
+    </div>
+  );
+}
+
+function SmallMetric({ label, value }) {
+  return (
+    <div className="bg-gray-50 border border-gray-100 rounded-xl p-4">
+      <p className="text-xs text-gray-500 font-medium">{label}</p>
+      <p className="text-2xl font-semibold mt-1">{value}</p>
+    </div>
+  );
+}
+
+function BigMetric({ label, value }) {
+  return (
+    <div className="flex justify-between items-center">
+      <span className="text-gray-500">{label}</span>
+      <span className="font-semibold text-lg">{value || "-"}</span>
+    </div>
+  );
+}
+
+function InfoRow({ label, value }) {
+  return (
+    <div className="flex justify-between border-b border-gray-100 pb-3 last:border-0">
+      <span className="text-gray-500 text-sm">{label}</span>
+      <span className="font-medium text-gray-900">{value || "-"}</span>
+    </div>
+  );
+}
+
+function formatBytes(bytes) {
+  if (!bytes) return "0 B";
+  const sizes = ["B", "KB", "MB", "GB", "TB"];
+  const i = Math.floor(Math.log(bytes) / Math.log(1024));
+  return `${parseFloat((bytes / Math.pow(1024, i)).toFixed(2))} ${sizes[i]}`;
 }

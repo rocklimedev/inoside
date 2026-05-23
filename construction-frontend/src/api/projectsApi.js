@@ -284,6 +284,8 @@ export const projectsApi = baseApi.injectEndpoints({
       invalidatesTags: ["Projects"],
     }),
 
+    // projectsApi.ts
+
     // =================================================
     // 🏗️ REKI
     // =================================================
@@ -294,11 +296,12 @@ export const projectsApi = baseApi.injectEndpoints({
         method: "POST",
         body,
       }),
-      invalidatesTags: ["Projects"],
+      invalidatesTags: ["Projects", "Reki"],
     }),
 
     getReki: builder.query({
       query: (projectId) => `/projects/${projectId}/reki`,
+      providesTags: ["Reki"],
     }),
 
     updateReki: builder.mutation({
@@ -307,20 +310,24 @@ export const projectsApi = baseApi.injectEndpoints({
         method: "PATCH",
         body,
       }),
-      invalidatesTags: ["Projects"],
+      invalidatesTags: ["Projects", "Reki"],
     }),
 
     // =================================================
     // 📸 REKI PHOTOS
     // =================================================
 
-    addRekiPhoto: builder.mutation({
-      query: ({ projectId, ...body }) => ({
-        url: `/projects/${projectId}/reki/photos`,
-        method: "POST",
-        body,
-      }),
-      invalidatesTags: ["Projects"],
+    uploadRekiPhoto: builder.mutation({
+      query: ({ projectId, file }) => {
+        const formData = new FormData();
+        formData.append("file", file);
+        return {
+          url: `/projects/${projectId}/reki/photos`,
+          method: "POST",
+          body: formData,
+        };
+      },
+      invalidatesTags: ["Reki"],
     }),
 
     deleteRekiPhoto: builder.mutation({
@@ -328,9 +335,68 @@ export const projectsApi = baseApi.injectEndpoints({
         url: `/projects/reki/photos/${photoId}`,
         method: "DELETE",
       }),
-      invalidatesTags: ["Projects"],
+      invalidatesTags: ["Reki"],
+    }),
+    // =================================================
+    // 🏗️ REKI
+    // =================================================
+
+    createReki: builder.mutation({
+      query: ({ projectId, ...body }) => ({
+        url: `/projects/${projectId}/reki`,
+        method: "POST",
+        body,
+      }),
+      invalidatesTags: ["Projects", "Reki"],
     }),
 
+    getReki: builder.query({
+      query: (projectId) => `/projects/${projectId}/reki`,
+      providesTags: ["Reki"],
+    }),
+
+    getRekiById: builder.query({
+      query: (id) => `/projects/reki/${id}`,
+      providesTags: ["Reki"],
+    }),
+
+    getAllRekiReports: builder.query({
+      query: () => `/projects/reki/all`,
+      providesTags: ["Reki"],
+    }),
+
+    updateReki: builder.mutation({
+      query: ({ projectId, ...body }) => ({
+        url: `/projects/${projectId}/reki`,
+        method: "PATCH",
+        body,
+      }),
+      invalidatesTags: ["Projects", "Reki"],
+    }),
+
+    deleteReki: builder.mutation({
+      query: (id) => ({
+        url: `/projects/reki/${id}`,
+        method: "DELETE",
+      }),
+      invalidatesTags: ["Projects", "Reki"],
+    }),
+
+    markRekiAsDone: builder.mutation({
+      query: (projectId) => ({
+        url: `/projects/${projectId}/reki/done`,
+        method: "PATCH",
+      }),
+      invalidatesTags: ["Projects", "Reki"],
+    }),
+
+    markRekiAsPending: builder.mutation({
+      query: (projectId) => ({
+        url: `/projects/${projectId}/reki/pending`,
+        method: "PATCH",
+      }),
+      invalidatesTags: ["Projects", "Reki"],
+    }),
     // =================================================
     // 📐 SCOPE
     // =================================================
@@ -487,7 +553,16 @@ export const {
   useCreateRekiMutation,
   useGetRekiQuery,
   useUpdateRekiMutation,
+  // =================================================
+  // EXPORTS
+  // =================================================
 
+  useGetRekiByIdQuery,
+  useGetAllRekiReportsQuery,
+
+  useDeleteRekiMutation,
+  useMarkRekiAsDoneMutation,
+  useMarkRekiAsPendingMutation,
   useAddRekiPhotoMutation,
   useDeleteRekiPhotoMutation,
 

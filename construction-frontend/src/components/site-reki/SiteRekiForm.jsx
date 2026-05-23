@@ -9,9 +9,8 @@ import {
   Loader2,
   ChevronDown,
   ChevronRight,
-  Upload,
-  X,
   Camera,
+  X,
 } from "lucide-react";
 
 import { Card } from "@/components/ui/card";
@@ -28,10 +27,10 @@ import {
 } from "@/components/ui/select";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
-import { Badge } from "@/components/ui/badge";
 
 import {
   useGetRekiQuery,
+  useCreateRekiMutation,
   useUpdateRekiMutation,
   useUploadPitchFileMutation,
   useGetProjectsQuery,
@@ -52,10 +51,11 @@ export default function SiteRekiForm({
     skip: !selectedProjectId,
   });
 
+  const [createReki] = useCreateRekiMutation();
   const [updateReki] = useUpdateRekiMutation();
   const [uploadFile] = useUploadPitchFileMutation();
 
-  const [form, setForm] = useState({});
+  const [form, setForm] = useState({ photos: [] });
   const [openSections, setOpenSections] = useState({
     project: true,
   });
@@ -64,6 +64,7 @@ export default function SiteRekiForm({
   const [generating, setGenerating] = useState(false);
   const [uploadingPhoto, setUploadingPhoto] = useState(false);
 
+  // FIXED: Proper useRef for JavaScript
   const photoRef = useRef(null);
 
   /* ================= LOAD DATA ================= */
@@ -73,33 +74,50 @@ export default function SiteRekiForm({
         ...item,
         photos: item.photos || [],
       });
+    } else if (selectedProjectId) {
+      setForm({ photos: [] });
     }
-  }, [item]);
+  }, [item, selectedProjectId]);
 
   const updateField = (key, value) => {
     setForm((prev) => ({ ...prev, [key]: value }));
   };
 
-  /* ================= SAVE ================= */
+  /* ================= SAVE (Create or Update) ================= */
   const handleSave = async () => {
-    if (!selectedProjectId) return toast.error("Please select a project");
+    if (!selectedProjectId) {
+      return toast.error("Please select a project");
+    }
+
     setSaving(true);
     try {
-      await updateReki({ projectId: selectedProjectId, ...form }).unwrap();
-      toast.success("Changes saved successfully");
+      const payload = {
+        ...form,
+        project_id: selectedProjectId,
+      };
+
+      if (item?.id) {
+        await updateReki({ projectId: selectedProjectId, ...payload }).unwrap();
+        toast.success("Reki report updated successfully");
+      } else {
+        await createReki({ projectId: selectedProjectId, ...payload }).unwrap();
+        toast.success("Reki report created successfully");
+      }
     } catch (err) {
-      toast.error("Failed to save changes");
+      const message = err?.data?.message || "Failed to save changes";
+      toast.error(message);
     } finally {
       setSaving(false);
     }
   };
 
-  /* ================= GENERATE ================= */
+  /* ================= GENERATE REPORT ================= */
   const handleGenerate = async () => {
     if (!selectedProjectId) return toast.error("Please select a project");
+
     setGenerating(true);
     try {
-      await updateReki({ projectId: selectedProjectId, ...form }).unwrap();
+      await handleSave();
       toast.success("Report generated successfully");
       onGenerated?.(form);
     } catch (err) {
@@ -116,18 +134,18 @@ export default function SiteRekiForm({
   /* ================= PHOTO UPLOAD ================= */
   const handlePhotoUpload = async (e) => {
     const files = e.target.files;
-    if (!files || files.length === 0) return;
+    if (!files || files.length === 0 || !selectedProjectId) return;
 
     setUploadingPhoto(true);
-    const uploadedPhotos = [];
+    const uploadedUrls = [];
 
-    for (const file of files) {
+    for (const file of Array.from(files)) {
       try {
         const result = await uploadFile({
           file,
           projectId: selectedProjectId,
         }).unwrap();
-        uploadedPhotos.push(result.url);
+        uploadedUrls.push(result.url);
       } catch (err) {
         toast.error(`Failed to upload ${file.name}`);
       }
@@ -135,11 +153,11 @@ export default function SiteRekiForm({
 
     setForm((prev) => ({
       ...prev,
-      photos: [...(prev.photos || []), ...uploadedPhotos],
+      photos: [...(prev.photos || []), ...uploadedUrls],
     }));
 
     setUploadingPhoto(false);
-    toast.success("Photos uploaded successfully");
+    toast.success(`${uploadedUrls.length} photo(s) uploaded successfully`);
   };
 
   const removePhoto = (index) => {
@@ -149,7 +167,6 @@ export default function SiteRekiForm({
     }));
   };
 
-  /* ================= FIELD HELPER ================= */
   /* ================= FIELD HELPER ================= */
   const field = (key, label, type = "input") => (
     <div className="space-y-1.5">
@@ -221,7 +238,7 @@ export default function SiteRekiForm({
       {/* MAIN CONTENT */}
       <ScrollArea className="flex-1 p-6">
         <div className="mx-auto max-w-4xl space-y-6">
-          {/* Project Selection */}
+          {/* Project Information */}
           <Card className="p-6">
             <h2 className="mb-4 text-lg font-semibold">Project Information</h2>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -243,6 +260,7 @@ export default function SiteRekiForm({
                   </SelectContent>
                 </Select>
               </div>
+
               {field("visit_date", "Visit Date")}
               {field("area_type", "Area Type")}
               {field("plot_type", "Plot Type")}
@@ -264,9 +282,7 @@ export default function SiteRekiForm({
                 onClick={() => toggleSection(key)}
                 className="w-full flex items-center justify-between p-5 hover:bg-muted/50 transition-colors"
               >
-                <div className="flex items-center gap-3">
-                  <span className="font-semibold text-lg">{title}</span>
-                </div>
+                <span className="font-semibold text-lg">{title}</span>
                 {openSections[key] ? (
                   <ChevronDown className="h-5 w-5 text-muted-foreground" />
                 ) : (
@@ -299,6 +315,7 @@ export default function SiteRekiForm({
                           )}
                         </>
                       )}
+
                       {key === "structure" && (
                         <>
                           {field(
@@ -315,6 +332,7 @@ export default function SiteRekiForm({
                           )}
                         </>
                       )}
+
                       {key === "measurements" && (
                         <>
                           {field("built_up_area", "Built-up Area (sq.ft)")}
@@ -325,6 +343,7 @@ export default function SiteRekiForm({
                           {field("slab_thickness", "Slab Thickness")}
                         </>
                       )}
+
                       {key === "risks" && (
                         <>
                           {field("dampness", "Dampness", "checkbox")}
@@ -345,6 +364,7 @@ export default function SiteRekiForm({
                           )}
                         </>
                       )}
+
                       {key === "services" && (
                         <>
                           {field(
@@ -360,6 +380,7 @@ export default function SiteRekiForm({
                           {field("tanks_present", "Water Tanks", "checkbox")}
                         </>
                       )}
+
                       {key === "demolition" && (
                         <>
                           {field(
@@ -370,6 +391,7 @@ export default function SiteRekiForm({
                           {field("demolition_type", "Demolition Type")}
                         </>
                       )}
+
                       {key === "output" && (
                         <>
                           {field(
@@ -397,7 +419,7 @@ export default function SiteRekiForm({
               <h2 className="text-lg font-semibold">Site Photos</h2>
               <Button
                 onClick={() => photoRef.current?.click()}
-                disabled={uploadingPhoto}
+                disabled={uploadingPhoto || !selectedProjectId}
                 variant="outline"
               >
                 <Camera className="mr-2 h-4 w-4" />
@@ -434,6 +456,7 @@ export default function SiteRekiForm({
                   </Button>
                 </div>
               ))}
+
               {(!form.photos || form.photos.length === 0) && (
                 <div className="col-span-full text-center py-12 text-muted-foreground">
                   No photos uploaded yet

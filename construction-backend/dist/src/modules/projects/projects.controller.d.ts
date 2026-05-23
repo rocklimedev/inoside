@@ -75,9 +75,17 @@ export declare class ProjectsController {
     addPitchReference(projectId: string, dto: any): Promise<import("./models/pitch_references.model").PitchReference>;
     getPitchReferences(projectId: string): Promise<import("./models/pitch_references.model").PitchReference[]>;
     deletePitchReference(refId: string): Promise<number>;
+    getAllRekiReports(): Promise<import("./models/reki_reports.model").RekiReport[]>;
+    getRekiById(id: string): Promise<import("./models/reki_reports.model").RekiReport>;
+    deleteReki(id: string): Promise<{
+        success: boolean;
+        message: string;
+    }>;
+    markRekiAsDone(projectId: string): Promise<import("./models/reki_reports.model").RekiReport>;
+    markRekiAsPending(projectId: string): Promise<import("./models/reki_reports.model").RekiReport>;
     createReki(projectId: string, dto: any): Promise<import("./models/reki_reports.model").RekiReport>;
     getReki(projectId: string): Promise<import("./models/reki_reports.model").RekiReport>;
-    updateReki(id: string, dto: any): Promise<import("./models/reki_reports.model").RekiReport>;
+    updateReki(projectId: string, dto: any): Promise<import("./models/reki_reports.model").RekiReport>;
     addRekiPhoto(projectId: string, dto: any): Promise<import("./models/reki_photos.model").RekiPhoto>;
     deleteRekiPhoto(photoId: string): Promise<{
         success: boolean;

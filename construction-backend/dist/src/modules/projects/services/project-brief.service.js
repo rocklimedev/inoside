@@ -20,6 +20,7 @@ const project_model_1 = require("../models/project.model");
 const client_model_1 = require("../../clients/models/client.model");
 const site_model_1 = require("../../sites/models/site.model");
 const user_model_1 = require("../../users/models/user.model");
+const address_model_1 = require("../../address/models/address.model");
 let ProjectBriefService = class ProjectBriefService {
     briefModel;
     projectModel;
@@ -55,7 +56,25 @@ let ProjectBriefService = class ProjectBriefService {
                             model: client_model_1.Client,
                             attributes: ['id', 'name', 'email', 'contact_number'],
                         },
-                        { model: site_model_1.Site, attributes: ['id', 'address', 'city'] },
+                        {
+                            model: site_model_1.Site,
+                            attributes: ['id', 'ownership_status', 'access_available'],
+                            include: [
+                                {
+                                    model: address_model_1.Address,
+                                    attributes: [
+                                        'id',
+                                        'line1',
+                                        'line2',
+                                        'landmark',
+                                        'city',
+                                        'state',
+                                        'country',
+                                        'pincode',
+                                    ],
+                                },
+                            ],
+                        },
                     ],
                 },
                 {
@@ -179,7 +198,25 @@ let ProjectBriefService = class ProjectBriefService {
                             model: client_model_1.Client,
                             attributes: ['id', 'name', 'email', 'contact_number'],
                         },
-                        { model: site_model_1.Site, attributes: ['id', 'address', 'city'] },
+                        {
+                            model: site_model_1.Site,
+                            attributes: ['id', 'ownership_status', 'access_available'],
+                            include: [
+                                {
+                                    model: address_model_1.Address,
+                                    attributes: [
+                                        'id',
+                                        'line1',
+                                        'line2',
+                                        'landmark',
+                                        'city',
+                                        'state',
+                                        'country',
+                                        'pincode',
+                                    ],
+                                },
+                            ],
+                        },
                     ],
                 },
                 {

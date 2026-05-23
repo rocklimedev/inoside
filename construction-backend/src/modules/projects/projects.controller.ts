@@ -261,10 +261,39 @@ export class ProjectsController {
     return this.pitchRefService.delete(refId);
   }
 
+  // projects.controller.ts
+
   // =================================================
-  // 🏗️ REKI (FIXED)
+  // 🏗️ REKI
+  // =================================================
+  // =================================================
+  // ADD THESE IN projects.controller.ts
   // =================================================
 
+  @Get('reki/all')
+  getAllRekiReports() {
+    return this.rekiService.findAll();
+  }
+
+  @Get('reki/:id')
+  getRekiById(@Param('id') id: string) {
+    return this.rekiService.findById(id);
+  }
+
+  @Delete('reki/:id')
+  deleteReki(@Param('id') id: string) {
+    return this.rekiService.delete(id);
+  }
+
+  @Patch(':id/reki/done')
+  markRekiAsDone(@Param('id') projectId: string) {
+    return this.rekiService.markAsDone(projectId);
+  }
+
+  @Patch(':id/reki/pending')
+  markRekiAsPending(@Param('id') projectId: string) {
+    return this.rekiService.markAsPending(projectId);
+  }
   @Post(':id/reki')
   createReki(@Param('id') projectId: string, @Body() dto: any) {
     return this.rekiService.create({ ...dto, project_id: projectId });
@@ -276,24 +305,27 @@ export class ProjectsController {
   }
 
   @Patch(':id/reki')
-  updateReki(@Param('id') id: string, @Body() dto: any) {
-    return this.rekiService.update(id, dto);
+  updateReki(@Param('id') projectId: string, @Body() dto: any) {
+    return this.rekiService.update(projectId, dto); // ← Fixed: Use projectId, not 'id'
   }
 
   // =================================================
-  // 📸 REKI PHOTOS
+  // 📸 REKI PHOTOS (Better Implementation)
   // =================================================
 
   @Post(':id/reki/photos')
-  addRekiPhoto(@Param('id') projectId: string, @Body() dto: any) {
-    return this.rekiPhotoService.add({ ...dto, project_id: projectId });
+  async addRekiPhoto(@Param('id') projectId: string, @Body() dto: any) {
+    return this.rekiPhotoService.add({
+      ...dto,
+      project_id: projectId,
+      reki_report_id: dto.reki_report_id,
+    });
   }
 
   @Delete('reki/photos/:photoId')
   deleteRekiPhoto(@Param('photoId') photoId: string) {
     return this.rekiPhotoService.delete(photoId);
   }
-
   // =================================================
   // 📐 SCOPE OF WORK
   // =================================================

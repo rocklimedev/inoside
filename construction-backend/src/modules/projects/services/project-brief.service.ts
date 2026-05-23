@@ -9,7 +9,7 @@ import { Project } from '../models/project.model';
 import { Client } from '@/modules/clients/models/client.model';
 import { Site } from '@/modules/sites/models/site.model';
 import { User } from '@/modules/users/models/user.model';
-
+import { Address } from '@/modules/address/models/address.model';
 @Injectable()
 export class ProjectBriefService {
   constructor(
@@ -47,7 +47,26 @@ export class ProjectBriefService {
               model: Client,
               attributes: ['id', 'name', 'email', 'contact_number'],
             },
-            { model: Site, attributes: ['id', 'address', 'city'] },
+            {
+              model: Site,
+              attributes: ['id', 'ownership_status', 'access_available'],
+
+              include: [
+                {
+                  model: Address,
+                  attributes: [
+                    'id',
+                    'line1',
+                    'line2',
+                    'landmark',
+                    'city',
+                    'state',
+                    'country',
+                    'pincode',
+                  ],
+                },
+              ],
+            },
           ],
         },
         {
@@ -188,7 +207,26 @@ export class ProjectBriefService {
               model: Client,
               attributes: ['id', 'name', 'email', 'contact_number'],
             },
-            { model: Site, attributes: ['id', 'address', 'city'] },
+            {
+              model: Site,
+              attributes: ['id', 'ownership_status', 'access_available'],
+
+              include: [
+                {
+                  model: Address,
+                  attributes: [
+                    'id',
+                    'line1',
+                    'line2',
+                    'landmark',
+                    'city',
+                    'state',
+                    'country',
+                    'pincode',
+                  ],
+                },
+              ],
+            },
           ],
         },
         {
