@@ -12,6 +12,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.Boq = void 0;
 const sequelize_typescript_1 = require("sequelize-typescript");
 const project_model_1 = require("../../projects/models/project.model");
+const client_model_1 = require("../../clients/models/client.model");
 const boq_category_model_1 = require("./boq-category.model");
 const boq_section_model_1 = require("./boq-section.model");
 const user_model_1 = require("../../users/models/user.model");
@@ -30,10 +31,18 @@ __decorate([
     (0, sequelize_typescript_1.ForeignKey)(() => project_model_1.Project),
     (0, sequelize_typescript_1.Column)({
         type: sequelize_typescript_1.DataType.UUID,
-        allowNull: false,
+        allowNull: true,
     }),
-    __metadata("design:type", String)
+    __metadata("design:type", Object)
 ], Boq.prototype, "project_id", void 0);
+__decorate([
+    (0, sequelize_typescript_1.ForeignKey)(() => client_model_1.Client),
+    (0, sequelize_typescript_1.Column)({
+        type: sequelize_typescript_1.DataType.UUID,
+        allowNull: true,
+    }),
+    __metadata("design:type", Object)
+], Boq.prototype, "client_id", void 0);
 __decorate([
     (0, sequelize_typescript_1.ForeignKey)(() => boq_category_model_1.BoqCategory),
     (0, sequelize_typescript_1.Column)({
@@ -118,6 +127,10 @@ __decorate([
     (0, sequelize_typescript_1.BelongsTo)(() => project_model_1.Project),
     __metadata("design:type", Object)
 ], Boq.prototype, "project", void 0);
+__decorate([
+    (0, sequelize_typescript_1.BelongsTo)(() => client_model_1.Client),
+    __metadata("design:type", Object)
+], Boq.prototype, "client", void 0);
 __decorate([
     (0, sequelize_typescript_1.BelongsTo)(() => boq_category_model_1.BoqCategory),
     __metadata("design:type", Object)

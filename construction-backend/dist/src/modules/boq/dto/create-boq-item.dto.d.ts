@@ -2,7 +2,7 @@ export declare class CreateBoqItemDto {
     boq_id: string;
     section_id: string;
     subheading_id?: string;
-    inventory_item_id?: string;
+    inventory_master_id?: string;
     unit_id?: string;
     item_name: string;
     sno?: string;

@@ -29,6 +29,9 @@ let SitesController = class SitesController {
     findAll() {
         return this.sitesService.findAll();
     }
+    findByClient(clientId) {
+        return this.sitesService.findByClient(clientId);
+    }
     findOne(id) {
         return this.sitesService.findOne(id);
     }
@@ -53,6 +56,13 @@ __decorate([
     __metadata("design:paramtypes", []),
     __metadata("design:returntype", void 0)
 ], SitesController.prototype, "findAll", null);
+__decorate([
+    (0, common_1.Get)('client/:clientId'),
+    __param(0, (0, common_1.Param)('clientId')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String]),
+    __metadata("design:returntype", void 0)
+], SitesController.prototype, "findByClient", null);
 __decorate([
     (0, common_1.Get)(':id'),
     __param(0, (0, common_1.Param)('id')),

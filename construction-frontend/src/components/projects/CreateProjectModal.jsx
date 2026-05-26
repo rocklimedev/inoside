@@ -1,11 +1,15 @@
 "use client";
 
 import { useState } from "react";
+
 import { Plus } from "lucide-react";
+
+import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Switch } from "@/components/ui/switch";
 
 import {
   Select,
@@ -23,67 +27,117 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 
-import { toast } from "sonner";
+import { useGetClientsQuery, useCreateClientMutation } from "@/api/clientsApi";
 
-import { useGetClientsQuery } from "@/api/clientsApi";
-import { useGetSitesQuery } from "@/api/sitesApi";
+import { useGetSitesByClientQuery } from "@/api/sitesApi";
+
 import { useCreateProjectMutation } from "@/api/projectsApi";
 
 import { SiteFormModal } from "../sites/SiteFormModal";
 
 import ClientForm from "../client/ClientForm";
+
 export function CreateProjectModal({ open, onClose, onProjectCreated }) {
+  // ======================================================
+  // API
+  // ======================================================
+
   const [createProject, { isLoading }] = useCreateProjectMutation();
+
+  const [createClient, { isLoading: isCreatingClient }] =
+    useCreateClientMutation();
 
   const { data: clients = [], refetch: refetchClients } = useGetClientsQuery();
 
-  const { data: sites = [], refetch: refetchSites } = useGetSitesQuery();
+  // ======================================================
+  // FORM
+  // ======================================================
+
+  const [form, setForm] = useState({
+    name: "",
+
+    client_id: "",
+
+    site_id: "",
+
+    project_type: "Interior Fit-out",
+
+    service_type: "Interior",
+
+    purpose: "Residential",
+
+    number_of_floors: "",
+
+    approximate_area_sqft: "",
+
+    budget_range: "",
+
+    timeline_expectation: "",
+
+    design_preference: "",
+
+    current_stage: "",
+
+    token_received: false,
+  });
+
+  // ======================================================
+  // GET SITES BY CLIENT
+  // ======================================================
+
+  const {
+    data: sites = [],
+    refetch: refetchSites,
+    isFetching: isFetchingSites,
+  } = useGetSitesByClientQuery(form.client_id, {
+    skip: !form.client_id,
+  });
+
+  // ======================================================
+  // MODALS
+  // ======================================================
 
   const [siteModalOpen, setSiteModalOpen] = useState(false);
 
   const [clientModalOpen, setClientModalOpen] = useState(false);
 
-  const [form, setForm] = useState({
-    name: "",
-    client_id: "",
-    site_id: "",
-
-    project_type: "Interior Fit-out",
-    service_type: "Interior",
-    purpose: "Residential",
-
-    number_of_floors: "",
-    approximate_area_sqft: "",
-
-    budget_range: "",
-    timeline_expectation: "",
-    design_preference: "",
-
-    current_stage: "",
-    token_received: false,
-  });
+  // ======================================================
+  // RESET
+  // ======================================================
 
   const resetForm = () => {
     setForm({
       name: "",
+
       client_id: "",
+
       site_id: "",
 
       project_type: "Interior Fit-out",
+
       service_type: "Interior",
+
       purpose: "Residential",
 
       number_of_floors: "",
+
       approximate_area_sqft: "",
 
       budget_range: "",
+
       timeline_expectation: "",
+
       design_preference: "",
 
       current_stage: "",
+
       token_received: false,
     });
   };
+
+  // ======================================================
+  // CREATE PROJECT
+  // ======================================================
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -140,6 +194,7 @@ export function CreateProjectModal({ open, onClose, onProjectCreated }) {
       }
 
       resetForm();
+
       onClose();
     } catch (error) {
       console.error(error);
@@ -150,23 +205,41 @@ export function CreateProjectModal({ open, onClose, onProjectCreated }) {
 
   return (
     <>
+      {/* ====================================================== */}
+      {/* PROJECT MODAL */}
+      {/* ====================================================== */}
+
       <Dialog open={open} onOpenChange={onClose}>
         <DialogContent
           className="
             w-[95vw]
-            sm:max-w-2xl
-            max-h-[90vh]
-            flex flex-col
+            sm:max-w-3xl
+            max-h-[92vh]
             overflow-hidden
+            flex
+            flex-col
+            rounded-3xl
+            p-0
           "
         >
-          <DialogHeader className="shrink-0">
-            <DialogTitle>Create Project</DialogTitle>
+          {/* HEADER */}
+
+          <DialogHeader className="border-b px-6 py-5 shrink-0">
+            <DialogTitle className="text-xl font-bold">
+              Create Project
+            </DialogTitle>
           </DialogHeader>
 
-          <div className="flex-1 overflow-y-auto pr-2">
-            <form onSubmit={handleSubmit} className="space-y-5">
+          {/* BODY */}
+
+          <div className="flex-1 overflow-y-auto px-6 py-6">
+            <form
+              id="create-project-form"
+              onSubmit={handleSubmit}
+              className="space-y-6"
+            >
               {/* PROJECT NAME */}
+
               <div className="space-y-2">
                 <Label>Project Name *</Label>
 
@@ -179,10 +252,12 @@ export function CreateProjectModal({ open, onClose, onProjectCreated }) {
                       name: e.target.value,
                     })
                   }
+                  className="h-11 rounded-xl"
                 />
               </div>
 
               {/* CLIENT */}
+
               <div className="space-y-2">
                 <div className="flex items-center justify-between">
                   <Label>Client *</Label>
@@ -191,7 +266,7 @@ export function CreateProjectModal({ open, onClose, onProjectCreated }) {
                     type="button"
                     variant="outline"
                     size="icon"
-                    className="h-8 w-8"
+                    className="h-9 w-9 rounded-xl"
                     onClick={() => setClientModalOpen(true)}
                   >
                     <Plus className="h-4 w-4" />
@@ -201,13 +276,17 @@ export function CreateProjectModal({ open, onClose, onProjectCreated }) {
                 <Select
                   value={form.client_id}
                   onValueChange={(value) =>
-                    setForm({
-                      ...form,
+                    setForm((prev) => ({
+                      ...prev,
+
                       client_id: value,
-                    })
+
+                      // RESET SITE WHEN CLIENT CHANGES
+                      site_id: "",
+                    }))
                   }
                 >
-                  <SelectTrigger>
+                  <SelectTrigger className="h-11 rounded-xl">
                     <SelectValue placeholder="Select Client" />
                   </SelectTrigger>
 
@@ -222,6 +301,7 @@ export function CreateProjectModal({ open, onClose, onProjectCreated }) {
               </div>
 
               {/* SITE */}
+
               <div className="space-y-2">
                 <div className="flex items-center justify-between">
                   <Label>Site</Label>
@@ -230,7 +310,8 @@ export function CreateProjectModal({ open, onClose, onProjectCreated }) {
                     type="button"
                     variant="outline"
                     size="icon"
-                    className="h-8 w-8"
+                    className="h-9 w-9 rounded-xl"
+                    disabled={!form.client_id}
                     onClick={() => setSiteModalOpen(true)}
                   >
                     <Plus className="h-4 w-4" />
@@ -239,6 +320,7 @@ export function CreateProjectModal({ open, onClose, onProjectCreated }) {
 
                 <Select
                   value={form.site_id}
+                  disabled={!form.client_id}
                   onValueChange={(value) =>
                     setForm({
                       ...form,
@@ -246,8 +328,18 @@ export function CreateProjectModal({ open, onClose, onProjectCreated }) {
                     })
                   }
                 >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select Site" />
+                  <SelectTrigger className="h-11 rounded-xl">
+                    <SelectValue
+                      placeholder={
+                        !form.client_id
+                          ? "Select client first"
+                          : isFetchingSites
+                            ? "Loading sites..."
+                            : sites.length === 0
+                              ? "No sites found"
+                              : "Select Site"
+                      }
+                    />
                   </SelectTrigger>
 
                   <SelectContent>
@@ -262,7 +354,10 @@ export function CreateProjectModal({ open, onClose, onProjectCreated }) {
               </div>
 
               {/* TYPES */}
+
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                {/* PROJECT TYPE */}
+
                 <div className="space-y-2">
                   <Label>Project Type</Label>
 
@@ -275,7 +370,9 @@ export function CreateProjectModal({ open, onClose, onProjectCreated }) {
                       })
                     }
                   >
-                    <SelectTrigger />
+                    <SelectTrigger className="h-11 rounded-xl">
+                      <SelectValue />
+                    </SelectTrigger>
 
                     <SelectContent>
                       <SelectItem value="New Construction">
@@ -291,6 +388,8 @@ export function CreateProjectModal({ open, onClose, onProjectCreated }) {
                   </Select>
                 </div>
 
+                {/* SERVICE TYPE */}
+
                 <div className="space-y-2">
                   <Label>Service Type</Label>
 
@@ -303,7 +402,9 @@ export function CreateProjectModal({ open, onClose, onProjectCreated }) {
                       })
                     }
                   >
-                    <SelectTrigger />
+                    <SelectTrigger className="h-11 rounded-xl">
+                      <SelectValue />
+                    </SelectTrigger>
 
                     <SelectContent>
                       <SelectItem value="Construction">Construction</SelectItem>
@@ -314,6 +415,8 @@ export function CreateProjectModal({ open, onClose, onProjectCreated }) {
                     </SelectContent>
                   </Select>
                 </div>
+
+                {/* PURPOSE */}
 
                 <div className="space-y-2">
                   <Label>Purpose</Label>
@@ -327,7 +430,9 @@ export function CreateProjectModal({ open, onClose, onProjectCreated }) {
                       })
                     }
                   >
-                    <SelectTrigger />
+                    <SelectTrigger className="h-11 rounded-xl">
+                      <SelectValue />
+                    </SelectTrigger>
 
                     <SelectContent>
                       <SelectItem value="Residential">Residential</SelectItem>
@@ -341,6 +446,7 @@ export function CreateProjectModal({ open, onClose, onProjectCreated }) {
               </div>
 
               {/* AREA */}
+
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label>Approx Area (sqft)</Label>
@@ -354,6 +460,7 @@ export function CreateProjectModal({ open, onClose, onProjectCreated }) {
                         approximate_area_sqft: e.target.value,
                       })
                     }
+                    className="h-11 rounded-xl"
                   />
                 </div>
 
@@ -369,11 +476,13 @@ export function CreateProjectModal({ open, onClose, onProjectCreated }) {
                         number_of_floors: e.target.value,
                       })
                     }
+                    className="h-11 rounded-xl"
                   />
                 </div>
               </div>
 
               {/* BUDGET */}
+
               <div className="space-y-2">
                 <Label>Budget Range</Label>
 
@@ -386,10 +495,12 @@ export function CreateProjectModal({ open, onClose, onProjectCreated }) {
                       budget_range: e.target.value,
                     })
                   }
+                  className="h-11 rounded-xl"
                 />
               </div>
 
               {/* TIMELINE */}
+
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label>Timeline</Label>
@@ -403,6 +514,7 @@ export function CreateProjectModal({ open, onClose, onProjectCreated }) {
                         timeline_expectation: e.target.value,
                       })
                     }
+                    className="h-11 rounded-xl"
                   />
                 </div>
 
@@ -417,11 +529,13 @@ export function CreateProjectModal({ open, onClose, onProjectCreated }) {
                         design_preference: e.target.value,
                       })
                     }
+                    className="h-11 rounded-xl"
                   />
                 </div>
               </div>
 
               {/* STAGE */}
+
               <div className="space-y-2">
                 <Label>Current Stage</Label>
 
@@ -433,80 +547,125 @@ export function CreateProjectModal({ open, onClose, onProjectCreated }) {
                       current_stage: e.target.value,
                     })
                   }
+                  className="h-11 rounded-xl"
                 />
               </div>
 
               {/* TOKEN */}
-              <div className="flex items-center justify-between border rounded-lg p-3">
-                <div>
-                  <Label>Token Received</Label>
 
-                  <p className="text-xs text-muted-foreground">
+              <div
+                className="
+                  flex items-center justify-between
+                  rounded-2xl
+                  border
+                  p-4
+                "
+              >
+                <div>
+                  <Label className="font-medium">Token Received</Label>
+
+                  <p className="text-xs text-muted-foreground mt-1">
                     Advance payment status
                   </p>
                 </div>
 
-                <input
-                  type="checkbox"
+                <Switch
                   checked={form.token_received}
-                  onChange={(e) =>
+                  onCheckedChange={(checked) =>
                     setForm({
                       ...form,
-                      token_received: e.target.checked,
+                      token_received: checked,
                     })
                   }
-                  className="h-4 w-4"
+                  className="
+                    data-[state=checked]:bg-black
+                    data-[state=unchecked]:bg-gray-300
+                  "
                 />
               </div>
             </form>
           </div>
 
-          <DialogFooter className="shrink-0">
-            <Button type="button" variant="outline" onClick={onClose}>
+          {/* FOOTER */}
+
+          <DialogFooter className="border-t px-6 py-4 shrink-0">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={onClose}
+              className="rounded-xl"
+            >
               Cancel
             </Button>
 
-            <Button type="submit" onClick={handleSubmit} disabled={isLoading}>
+            <Button
+              type="submit"
+              form="create-project-form"
+              disabled={isLoading}
+              className="
+                rounded-xl
+                bg-black
+                hover:bg-black/90
+              "
+            >
               {isLoading ? "Creating..." : "Create Project"}
             </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
 
+      {/* ====================================================== */}
+      {/* CLIENT MODAL */}
+      {/* ====================================================== */}
+
       <Dialog open={clientModalOpen} onOpenChange={setClientModalOpen}>
-        <DialogContent className="sm:max-w-lg">
+        <DialogContent
+          className="
+            w-[95vw]
+            sm:max-w-2xl
+            max-h-[92vh]
+            overflow-y-auto
+            rounded-3xl
+          "
+        >
           <DialogHeader>
             <DialogTitle>Create Client</DialogTitle>
           </DialogHeader>
 
           <ClientForm
+            disabled={isCreatingClient}
             onSubmit={async (values) => {
               try {
-                // call create client api here
-
                 const client = await createClient(values).unwrap();
 
-                toast.success("Client created");
+                toast.success("Client created successfully");
 
                 await refetchClients();
 
                 setForm((prev) => ({
                   ...prev,
-                  client_id: client.id,
+
+                  client_id: client?.id || client?.data?.id,
                 }));
 
                 setClientModalOpen(false);
               } catch (err) {
-                toast.error("Failed to create client");
+                console.error(err);
+
+                toast.error(err?.data?.message || "Failed to create client");
               }
             }}
           />
         </DialogContent>
       </Dialog>
 
+      {/* ====================================================== */}
       {/* SITE MODAL */}
+      {/* ====================================================== */}
+
       <SiteFormModal
         open={siteModalOpen}
+        clientId={form.client_id}
         onClose={() => setSiteModalOpen(false)}
         onCreated={async (site) => {
           await refetchSites();
@@ -514,6 +673,7 @@ export function CreateProjectModal({ open, onClose, onProjectCreated }) {
           if (site?.id) {
             setForm((prev) => ({
               ...prev,
+
               site_id: site.id,
             }));
           }

@@ -12,44 +12,69 @@ import {
 import { SitesService } from './sites.service';
 
 import { CreateSiteDto } from './dto/create-site.dto';
+
 import { UpdateSiteDto } from './dto/update-site.dto';
 
 import { JwtAuthGuard } from '@/common/guards/jwt-auth.guard';
-import { RolesGuard } from '@/common/guards/roles.guard';
-
-import { Roles } from '@/common/decorators/roles.decorator';
 
 @Controller('sites')
 @UseGuards(JwtAuthGuard)
 export class SitesController {
   constructor(private readonly sitesService: SitesService) {}
 
-  // ================= CREATE =================
+  // ======================================================
+  // CREATE SITE
+  // ======================================================
 
   @Post()
-  create(@Body() createSiteDto: CreateSiteDto) {
+  create(
+    @Body()
+    createSiteDto: CreateSiteDto,
+  ) {
     return this.sitesService.create(createSiteDto);
   }
 
-  // ================= GET ALL =================
+  // ======================================================
+  // GET ALL SITES
+  // ======================================================
 
   @Get()
   findAll() {
     return this.sitesService.findAll();
   }
 
-  // ================= GET ONE =================
+  // ======================================================
+  // GET SITE BY CLIENT
+  // ======================================================
+
+  @Get('client/:clientId')
+  findByClient(
+    @Param('clientId')
+    clientId: string,
+  ) {
+    return this.sitesService.findByClient(clientId);
+  }
+
+  // ======================================================
+  // GET SINGLE SITE
+  // ======================================================
 
   @Get(':id')
-  findOne(@Param('id') id: string) {
+  findOne(
+    @Param('id')
+    id: string,
+  ) {
     return this.sitesService.findOne(id);
   }
 
-  // ================= UPDATE =================
+  // ======================================================
+  // UPDATE SITE
+  // ======================================================
 
   @Patch(':id')
   update(
-    @Param('id') id: string,
+    @Param('id')
+    id: string,
 
     @Body()
     updateSiteDto: UpdateSiteDto,
@@ -57,10 +82,15 @@ export class SitesController {
     return this.sitesService.update(id, updateSiteDto);
   }
 
-  // ================= DELETE =================
+  // ======================================================
+  // DELETE SITE
+  // ======================================================
 
   @Delete(':id')
-  remove(@Param('id') id: string) {
+  remove(
+    @Param('id')
+    id: string,
+  ) {
     return this.sitesService.remove(id);
   }
 }

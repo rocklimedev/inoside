@@ -1,6 +1,7 @@
 import { Model } from 'sequelize-typescript';
 import type { InferAttributes, InferCreationAttributes, CreationOptional, NonAttribute } from 'sequelize';
 import { Project } from '../../projects/models/project.model';
+import { Site } from '@/modules/sites/models/site.model';
 export declare class Client extends Model<InferAttributes<Client>, InferCreationAttributes<Client>> {
     id: CreationOptional<string>;
     name: string;
@@ -13,4 +14,5 @@ export declare class Client extends Model<InferAttributes<Client>, InferCreation
     created_at: CreationOptional<Date>;
     updated_at: CreationOptional<Date>;
     projects?: NonAttribute<Project[]>;
+    sites?: NonAttribute<Site[]>;
 }

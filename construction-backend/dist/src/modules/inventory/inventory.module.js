@@ -16,6 +16,7 @@ const inventory_dispatch_model_1 = require("./models/inventory-dispatch.model");
 const inventory_master_model_1 = require("./models/inventory-master.model");
 const materials_model_1 = require("./models/materials.model");
 const brand_model_1 = require("./models/brand.model");
+const unit_model_1 = require("../boq/models/unit.model");
 let InventoryModule = class InventoryModule {
 };
 exports.InventoryModule = InventoryModule;
@@ -27,6 +28,7 @@ exports.InventoryModule = InventoryModule = __decorate([
                 inventory_dispatch_model_1.InventoryDispatch,
                 inventory_master_model_1.InventoryMaster,
                 materials_model_1.Material,
+                unit_model_1.Unit,
                 brand_model_1.Brand,
             ]),
         ],

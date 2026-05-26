@@ -34,10 +34,18 @@ export const boqApi = baseApi.injectEndpoints({
     }),
 
     getBoqs: builder.query({
-      query: (projectId) => ({
+      query: ({ projectId, clientId } = {}) => ({
         url: "/boq",
-        params: projectId ? { projectId } : undefined,
+        params: {
+          ...(projectId ? { projectId } : {}),
+          ...(clientId ? { clientId } : {}),
+        },
       }),
+      providesTags: ["Boq"],
+    }),
+
+    getBoqsByClient: builder.query({
+      query: (clientId) => `/boq/client/${clientId}`,
       providesTags: ["Boq"],
     }),
 
@@ -46,14 +54,6 @@ export const boqApi = baseApi.injectEndpoints({
       providesTags: ["Boq"],
     }),
 
-    // ✅ DELETE BOQ
-    deleteBoq: builder.mutation({
-      query: (id) => ({
-        url: `/boq/${id}`,
-        method: "DELETE",
-      }),
-      invalidatesTags: ["Boq"],
-    }),
     updateBoq: builder.mutation({
       query: ({ id, ...body }) => ({
         url: `/boq/${id}`,
@@ -62,6 +62,15 @@ export const boqApi = baseApi.injectEndpoints({
       }),
       invalidatesTags: ["Boq"],
     }),
+
+    deleteBoq: builder.mutation({
+      query: (id) => ({
+        url: `/boq/${id}`,
+        method: "DELETE",
+      }),
+      invalidatesTags: ["Boq"],
+    }),
+
     calculateBoqTotal: builder.mutation({
       query: (id) => ({
         url: `/boq/${id}/calculate`,
@@ -71,7 +80,7 @@ export const boqApi = baseApi.injectEndpoints({
     }),
 
     // =====================================================
-    // BOQ SECTIONS
+    // SECTIONS
     // =====================================================
 
     createSection: builder.mutation({
@@ -83,13 +92,30 @@ export const boqApi = baseApi.injectEndpoints({
       invalidatesTags: ["Boq"],
     }),
 
+    updateSection: builder.mutation({
+      query: ({ id, ...body }) => ({
+        url: `/boq/sections/${id}`,
+        method: "PATCH",
+        body,
+      }),
+      invalidatesTags: ["Boq"],
+    }),
+
+    deleteSection: builder.mutation({
+      query: (id) => ({
+        url: `/boq/sections/${id}`,
+        method: "DELETE",
+      }),
+      invalidatesTags: ["Boq"],
+    }),
+
     getSectionsByBoq: builder.query({
       query: (boqId) => `/boq/${boqId}/sections`,
       providesTags: ["Boq"],
     }),
 
     // =====================================================
-    // BOQ SUBHEADINGS
+    // SUBHEADINGS
     // =====================================================
 
     createSubHeading: builder.mutation({
@@ -101,13 +127,30 @@ export const boqApi = baseApi.injectEndpoints({
       invalidatesTags: ["Boq"],
     }),
 
+    updateSubHeading: builder.mutation({
+      query: ({ id, ...body }) => ({
+        url: `/boq/subheadings/${id}`,
+        method: "PATCH",
+        body,
+      }),
+      invalidatesTags: ["Boq"],
+    }),
+
+    deleteSubHeading: builder.mutation({
+      query: (id) => ({
+        url: `/boq/subheadings/${id}`,
+        method: "DELETE",
+      }),
+      invalidatesTags: ["Boq"],
+    }),
+
     getSubHeadingsBySection: builder.query({
       query: (sectionId) => `/boq/sections/${sectionId}/subheadings`,
       providesTags: ["Boq"],
     }),
 
     // =====================================================
-    // BOQ ITEMS
+    // ITEMS
     // =====================================================
 
     createItem: builder.mutation({
@@ -141,41 +184,32 @@ export const boqApi = baseApi.injectEndpoints({
 });
 
 export const {
-  // =====================================================
-  // CATEGORY
-  // =====================================================
-
+  // Categories
   useGetBoqCategoriesQuery,
   useCreateBoqCategoryMutation,
 
-  // =====================================================
   // BOQ
-  // =====================================================
-
   useCreateBoqMutation,
   useGetBoqsQuery,
+  useGetBoqsByClientQuery,
   useGetBoqByIdQuery,
-  useCalculateBoqTotalMutation,
-  useDeleteBoqMutation, // ✅ ADDED
   useUpdateBoqMutation,
-  // =====================================================
-  // SECTIONS
-  // =====================================================
+  useDeleteBoqMutation,
+  useCalculateBoqTotalMutation,
 
+  // Sections
   useCreateSectionMutation,
+  useUpdateSectionMutation, // ← New
+  useDeleteSectionMutation, // ← New
   useGetSectionsByBoqQuery,
 
-  // =====================================================
-  // SUBHEADINGS
-  // =====================================================
-
+  // Subheadings
   useCreateSubHeadingMutation,
+  useUpdateSubHeadingMutation, // ← New
+  useDeleteSubHeadingMutation, // ← New
   useGetSubHeadingsBySectionQuery,
 
-  // =====================================================
-  // ITEMS
-  // =====================================================
-
+  // Items
   useCreateItemMutation,
   useUpdateItemMutation,
   useDeleteItemMutation,

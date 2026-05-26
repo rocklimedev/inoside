@@ -1,9 +1,13 @@
 import { IsNotEmpty, IsString, IsOptional, IsUUID } from 'class-validator';
 
 export class CreateBoqDto {
-  @IsNotEmpty()
+  @IsOptional()
   @IsUUID()
-  project_id!: string;
+  project_id?: string | null;
+
+  @IsOptional()
+  @IsUUID()
+  client_id?: string | null;
 
   @IsNotEmpty()
   @IsUUID()
@@ -20,4 +24,12 @@ export class CreateBoqDto {
   @IsOptional()
   @IsUUID()
   prepared_by?: string;
+
+  @IsOptional()
+  @IsString()
+  code?: string;
+
+  @IsOptional()
+  @IsString()
+  revision_no?: string;
 }

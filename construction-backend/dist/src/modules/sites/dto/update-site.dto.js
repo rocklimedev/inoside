@@ -78,12 +78,18 @@ __decorate([
     __metadata("design:type", String)
 ], UpdateAddressDto.prototype, "google_map_link", void 0);
 class UpdateSiteDto {
+    client_id;
     address;
     ownership_status;
     access_available;
     existing_structure;
 }
 exports.UpdateSiteDto = UpdateSiteDto;
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsUUID)(),
+    __metadata("design:type", String)
+], UpdateSiteDto.prototype, "client_id", void 0);
 __decorate([
     (0, class_validator_1.IsOptional)(),
     (0, class_validator_1.ValidateNested)(),

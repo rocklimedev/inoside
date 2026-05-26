@@ -13,6 +13,7 @@ exports.Site = void 0;
 const sequelize_typescript_1 = require("sequelize-typescript");
 const project_model_1 = require("../../projects/models/project.model");
 const address_model_1 = require("../../address/models/address.model");
+const client_model_1 = require("../../clients/models/client.model");
 let Site = class Site extends sequelize_typescript_1.Model {
 };
 exports.Site = Site;
@@ -24,6 +25,18 @@ __decorate([
     }),
     __metadata("design:type", Object)
 ], Site.prototype, "id", void 0);
+__decorate([
+    (0, sequelize_typescript_1.ForeignKey)(() => client_model_1.Client),
+    (0, sequelize_typescript_1.Column)({
+        type: sequelize_typescript_1.DataType.UUID,
+        allowNull: false,
+    }),
+    __metadata("design:type", String)
+], Site.prototype, "client_id", void 0);
+__decorate([
+    (0, sequelize_typescript_1.BelongsTo)(() => client_model_1.Client),
+    __metadata("design:type", Object)
+], Site.prototype, "client", void 0);
 __decorate([
     (0, sequelize_typescript_1.ForeignKey)(() => address_model_1.Address),
     (0, sequelize_typescript_1.Column)({
@@ -66,9 +79,9 @@ __decorate([
     __metadata("design:type", Object)
 ], Site.prototype, "updated_at", void 0);
 __decorate([
-    (0, sequelize_typescript_1.HasOne)(() => project_model_1.Project),
+    (0, sequelize_typescript_1.HasMany)(() => project_model_1.Project),
     __metadata("design:type", Object)
-], Site.prototype, "project", void 0);
+], Site.prototype, "projects", void 0);
 exports.Site = Site = __decorate([
     (0, sequelize_typescript_1.Table)({
         tableName: 'sites',

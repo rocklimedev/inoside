@@ -79,6 +79,7 @@ export const inventoryApi = baseApi.injectEndpoints({
       },
       providesTags: ["InventoryMaster"],
     }),
+
     createInventoryMaster: builder.mutation({
       query: (body) => ({
         url: "/inventory/master",
@@ -106,7 +107,47 @@ export const inventoryApi = baseApi.injectEndpoints({
     }),
 
     // =========================
-    // 🏷️ BRANDS (NEW)
+    // 🧱 UNITS (NEW)
+    // =========================
+
+    getUnits: builder.query({
+      query: () => `/inventory/units`,
+      providesTags: ["Unit"],
+    }),
+
+    getUnitById: builder.query({
+      query: (id) => `/inventory/units/${id}`,
+      providesTags: ["Unit"],
+    }),
+
+    createUnit: builder.mutation({
+      query: (body) => ({
+        url: "/inventory/units",
+        method: "POST",
+        body,
+      }),
+      invalidatesTags: ["Unit"],
+    }),
+
+    updateUnit: builder.mutation({
+      query: ({ id, ...body }) => ({
+        url: `/inventory/units/${id}`,
+        method: "PUT",
+        body,
+      }),
+      invalidatesTags: ["Unit"],
+    }),
+
+    deleteUnit: builder.mutation({
+      query: (id) => ({
+        url: `/inventory/units/${id}`,
+        method: "DELETE",
+      }),
+      invalidatesTags: ["Unit"],
+    }),
+
+    // =========================
+    // 🏷️ BRANDS
     // =========================
 
     getBrands: builder.query({
@@ -157,6 +198,13 @@ export const {
   useCreateInventoryMasterMutation,
   useUpdateInventoryMasterMutation,
   useDeleteInventoryMasterMutation,
+
+  // === Units ===
+  useGetUnitsQuery,
+  useGetUnitByIdQuery,
+  useCreateUnitMutation,
+  useUpdateUnitMutation,
+  useDeleteUnitMutation,
 
   useGetBrandsQuery,
   useCreateBrandMutation,

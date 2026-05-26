@@ -9,6 +9,7 @@ import { InventoryDispatch } from './models/inventory-dispatch.model';
 import { InventoryMaster } from './models/inventory-master.model';
 import { Material } from './models/materials.model';
 import { Brand } from './models/brand.model';
+import { Unit } from '../boq/models/unit.model';
 @Module({
   imports: [
     SequelizeModule.forFeature([
@@ -16,6 +17,7 @@ import { Brand } from './models/brand.model';
       InventoryDispatch,
       InventoryMaster,
       Material,
+      Unit,
       Brand,
     ]),
   ],

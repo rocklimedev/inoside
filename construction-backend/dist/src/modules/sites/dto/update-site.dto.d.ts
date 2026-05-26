@@ -12,6 +12,7 @@ declare class UpdateAddressDto {
     google_map_link?: string;
 }
 export declare class UpdateSiteDto {
+    client_id?: string;
     address?: UpdateAddressDto;
     ownership_status?: OwnershipStatus;
     access_available?: boolean;

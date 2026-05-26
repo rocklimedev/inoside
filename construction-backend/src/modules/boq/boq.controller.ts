@@ -19,8 +19,6 @@ import { CreateBoqSubHeadingDto } from './dto/create-boq-subheading.dto';
 import { CreateBoqCategoryDto } from './dto/create-boq-category.dto';
 
 import { JwtAuthGuard } from '@/common/guards/jwt-auth.guard';
-import { RolesGuard } from '@/common/guards/roles.guard';
-import { Roles } from '@/common/decorators/roles.decorator';
 
 @Controller('boq')
 @UseGuards(JwtAuthGuard)
@@ -50,19 +48,22 @@ export class BoqController {
     return this.boqService.createBoq(dto);
   }
 
+  @Patch(':id')
+  updateBoq(@Param('id') id: string, @Body() dto: Partial<CreateBoqDto>) {
+    return this.boqService.updateBoq(id, dto);
+  }
+
   @Get()
-  findAllBoqs(@Query('projectId') projectId?: string) {
-    return this.boqService.findAllBoqs(projectId);
+  findAllBoqs(
+    @Query('projectId') projectId?: string,
+    @Query('clientId') clientId?: string,
+  ) {
+    return this.boqService.findAllBoqs(projectId, clientId);
   }
 
-  @Get(':id')
-  findBoq(@Param('id') id: string) {
-    return this.boqService.getBoqWithDetails(id);
-  }
-
-  @Post(':id/calculate')
-  calculateTotal(@Param('id') id: string) {
-    return this.boqService.calculateBoqTotal(id);
+  @Get('client/:clientId')
+  getBoqsByClient(@Param('clientId') clientId: string) {
+    return this.boqService.getBoqsByClient(clientId);
   }
 
   // =========================================================
@@ -72,6 +73,19 @@ export class BoqController {
   @Post('sections')
   createSection(@Body() dto: CreateBoqSectionDto) {
     return this.boqService.createSection(dto);
+  }
+
+  @Patch('sections/:id')
+  updateSection(
+    @Param('id') id: string,
+    @Body() dto: Partial<CreateBoqSectionDto>,
+  ) {
+    return this.boqService.updateSection(id, dto);
+  }
+
+  @Delete('sections/:id')
+  deleteSection(@Param('id') id: string) {
+    return this.boqService.deleteSection(id);
   }
 
   @Get(':boqId/sections')
@@ -86,6 +100,19 @@ export class BoqController {
   @Post('subheadings')
   createSubHeading(@Body() dto: CreateBoqSubHeadingDto) {
     return this.boqService.createSubHeading(dto);
+  }
+
+  @Patch('subheadings/:id')
+  updateSubHeading(
+    @Param('id') id: string,
+    @Body() dto: Partial<CreateBoqSubHeadingDto>,
+  ) {
+    return this.boqService.updateSubHeading(id, dto);
+  }
+
+  @Delete('subheadings/:id')
+  deleteSubHeading(@Param('id') id: string) {
+    return this.boqService.deleteSubHeading(id);
   }
 
   @Get('sections/:sectionId/subheadings')
@@ -103,16 +130,32 @@ export class BoqController {
   }
 
   @Patch('items/:id')
-  updateItem(
-    @Param('id') id: string,
-    @Body()
-    dto: Partial<CreateBoqItemDto>,
-  ) {
+  updateItem(@Param('id') id: string, @Body() dto: Partial<CreateBoqItemDto>) {
+    console.log('PATCH ITEM HIT:', id);
+
     return this.boqService.updateItem(id, dto);
   }
 
   @Delete('items/:id')
   deleteItem(@Param('id') id: string) {
     return this.boqService.deleteItem(id);
+  }
+
+  // =========================================================
+  // CALCULATIONS
+  // =========================================================
+
+  @Post(':id/calculate')
+  calculateTotal(@Param('id') id: string) {
+    return this.boqService.calculateBoqTotal(id);
+  }
+
+  // =========================================================
+  // KEEP THIS LAST
+  // =========================================================
+
+  @Get(':id')
+  findBoq(@Param('id') id: string) {
+    return this.boqService.getBoqWithDetails(id);
   }
 }

@@ -35,23 +35,35 @@ let BoqController = class BoqController {
     createBoq(dto) {
         return this.boqService.createBoq(dto);
     }
-    findAllBoqs(projectId) {
-        return this.boqService.findAllBoqs(projectId);
+    updateBoq(id, dto) {
+        return this.boqService.updateBoq(id, dto);
     }
-    findBoq(id) {
-        return this.boqService.getBoqWithDetails(id);
+    findAllBoqs(projectId, clientId) {
+        return this.boqService.findAllBoqs(projectId, clientId);
     }
-    calculateTotal(id) {
-        return this.boqService.calculateBoqTotal(id);
+    getBoqsByClient(clientId) {
+        return this.boqService.getBoqsByClient(clientId);
     }
     createSection(dto) {
         return this.boqService.createSection(dto);
+    }
+    updateSection(id, dto) {
+        return this.boqService.updateSection(id, dto);
+    }
+    deleteSection(id) {
+        return this.boqService.deleteSection(id);
     }
     findSections(boqId) {
         return this.boqService.findSectionsByBoq(boqId);
     }
     createSubHeading(dto) {
         return this.boqService.createSubHeading(dto);
+    }
+    updateSubHeading(id, dto) {
+        return this.boqService.updateSubHeading(id, dto);
+    }
+    deleteSubHeading(id) {
+        return this.boqService.deleteSubHeading(id);
     }
     findSubHeadings(sectionId) {
         return this.boqService.findSubHeadingsBySection(sectionId);
@@ -60,10 +72,17 @@ let BoqController = class BoqController {
         return this.boqService.createItem(dto);
     }
     updateItem(id, dto) {
+        console.log('PATCH ITEM HIT:', id);
         return this.boqService.updateItem(id, dto);
     }
     deleteItem(id) {
         return this.boqService.deleteItem(id);
+    }
+    calculateTotal(id) {
+        return this.boqService.calculateBoqTotal(id);
+    }
+    findBoq(id) {
+        return this.boqService.getBoqWithDetails(id);
     }
 };
 exports.BoqController = BoqController;
@@ -88,26 +107,28 @@ __decorate([
     __metadata("design:returntype", void 0)
 ], BoqController.prototype, "createBoq", null);
 __decorate([
+    (0, common_1.Patch)(':id'),
+    __param(0, (0, common_1.Param)('id')),
+    __param(1, (0, common_1.Body)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String, Object]),
+    __metadata("design:returntype", void 0)
+], BoqController.prototype, "updateBoq", null);
+__decorate([
     (0, common_1.Get)(),
     __param(0, (0, common_1.Query)('projectId')),
+    __param(1, (0, common_1.Query)('clientId')),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [String]),
+    __metadata("design:paramtypes", [String, String]),
     __metadata("design:returntype", void 0)
 ], BoqController.prototype, "findAllBoqs", null);
 __decorate([
-    (0, common_1.Get)(':id'),
-    __param(0, (0, common_1.Param)('id')),
+    (0, common_1.Get)('client/:clientId'),
+    __param(0, (0, common_1.Param)('clientId')),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [String]),
     __metadata("design:returntype", void 0)
-], BoqController.prototype, "findBoq", null);
-__decorate([
-    (0, common_1.Post)(':id/calculate'),
-    __param(0, (0, common_1.Param)('id')),
-    __metadata("design:type", Function),
-    __metadata("design:paramtypes", [String]),
-    __metadata("design:returntype", void 0)
-], BoqController.prototype, "calculateTotal", null);
+], BoqController.prototype, "getBoqsByClient", null);
 __decorate([
     (0, common_1.Post)('sections'),
     __param(0, (0, common_1.Body)()),
@@ -115,6 +136,21 @@ __decorate([
     __metadata("design:paramtypes", [create_boq_section_dto_1.CreateBoqSectionDto]),
     __metadata("design:returntype", void 0)
 ], BoqController.prototype, "createSection", null);
+__decorate([
+    (0, common_1.Patch)('sections/:id'),
+    __param(0, (0, common_1.Param)('id')),
+    __param(1, (0, common_1.Body)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String, Object]),
+    __metadata("design:returntype", void 0)
+], BoqController.prototype, "updateSection", null);
+__decorate([
+    (0, common_1.Delete)('sections/:id'),
+    __param(0, (0, common_1.Param)('id')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String]),
+    __metadata("design:returntype", void 0)
+], BoqController.prototype, "deleteSection", null);
 __decorate([
     (0, common_1.Get)(':boqId/sections'),
     __param(0, (0, common_1.Param)('boqId')),
@@ -129,6 +165,21 @@ __decorate([
     __metadata("design:paramtypes", [create_boq_subheading_dto_1.CreateBoqSubHeadingDto]),
     __metadata("design:returntype", void 0)
 ], BoqController.prototype, "createSubHeading", null);
+__decorate([
+    (0, common_1.Patch)('subheadings/:id'),
+    __param(0, (0, common_1.Param)('id')),
+    __param(1, (0, common_1.Body)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String, Object]),
+    __metadata("design:returntype", void 0)
+], BoqController.prototype, "updateSubHeading", null);
+__decorate([
+    (0, common_1.Delete)('subheadings/:id'),
+    __param(0, (0, common_1.Param)('id')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String]),
+    __metadata("design:returntype", void 0)
+], BoqController.prototype, "deleteSubHeading", null);
 __decorate([
     (0, common_1.Get)('sections/:sectionId/subheadings'),
     __param(0, (0, common_1.Param)('sectionId')),
@@ -158,6 +209,20 @@ __decorate([
     __metadata("design:paramtypes", [String]),
     __metadata("design:returntype", void 0)
 ], BoqController.prototype, "deleteItem", null);
+__decorate([
+    (0, common_1.Post)(':id/calculate'),
+    __param(0, (0, common_1.Param)('id')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String]),
+    __metadata("design:returntype", void 0)
+], BoqController.prototype, "calculateTotal", null);
+__decorate([
+    (0, common_1.Get)(':id'),
+    __param(0, (0, common_1.Param)('id')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String]),
+    __metadata("design:returntype", void 0)
+], BoqController.prototype, "findBoq", null);
 exports.BoqController = BoqController = __decorate([
     (0, common_1.Controller)('boq'),
     (0, common_1.UseGuards)(jwt_auth_guard_1.JwtAuthGuard),

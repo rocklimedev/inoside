@@ -17,6 +17,7 @@ import type {
 } from 'sequelize';
 
 import { Project } from '@/modules/projects/models/project.model';
+import { Client } from '@/modules/clients/models/client.model';
 import { BoqCategory } from './boq-category.model';
 import { BoqSection } from './boq-section.model';
 import { User } from '../../users/models/user.model';
@@ -41,9 +42,16 @@ export class Boq extends Model<
   @ForeignKey(() => Project)
   @Column({
     type: DataType.UUID,
-    allowNull: false,
+    allowNull: true,
   })
-  declare project_id: string;
+  declare project_id: CreationOptional<string | null>;
+
+  @ForeignKey(() => Client)
+  @Column({
+    type: DataType.UUID,
+    allowNull: true,
+  })
+  declare client_id: CreationOptional<string | null>;
 
   @ForeignKey(() => BoqCategory)
   @Column({
@@ -126,6 +134,9 @@ export class Boq extends Model<
 
   @BelongsTo(() => Project)
   declare project?: NonAttribute<Project>;
+
+  @BelongsTo(() => Client)
+  declare client?: NonAttribute<Client>;
 
   @BelongsTo(() => BoqCategory)
   declare category?: NonAttribute<BoqCategory>;

@@ -1,10 +1,9 @@
 "use client";
 
-import { useState, useEffect, useMemo, useCallback } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { Plus, Save, ArrowLeft, FileSpreadsheet } from "lucide-react";
 import { toast } from "sonner";
-import { useAuth } from "@/contexts/AuthContext";
 
 import { PageHeader } from "@/components/PageHeader";
 import { Button } from "@/components/ui/button";
@@ -38,13 +37,16 @@ import {
   useCreateItemMutation,
 } from "@/api/boqApi";
 
-import { useGetInventoryMasterQuery } from "@/api/inventoryApi";
+import {
+  useGetInventoryMasterQuery,
+  useGetUnitsQuery,
+} from "@/api/inventoryApi";
 
 export default function BoqPage({ projectId: initialProjectId, boqId }) {
   const router = useRouter();
 
   // ======================================================
-  // STATE — all hooks must come before any conditional return
+  // STATE
   // ======================================================
   const [selectedProjectId, setSelectedProjectId] = useState(
     initialProjectId || "",
@@ -68,7 +70,7 @@ export default function BoqPage({ projectId: initialProjectId, boqId }) {
   const [isSavingStructure, setIsSavingStructure] = useState(false);
 
   // ======================================================
-  // API HOOKS — unconditional
+  // API HOOKS
   // ======================================================
   const [createBoq, { isLoading: isCreatingBoq }] = useCreateBoqMutation();
   const [createSection] = useCreateSectionMutation();
@@ -83,20 +85,18 @@ export default function BoqPage({ projectId: initialProjectId, boqId }) {
       { skip: itemSearchTerm.length < 2 },
     );
 
-  // ======================================================
-  // EFFECTS — all before any conditional return
-  // ======================================================
+  // New: Units API
+  const { data: units = [], isLoading: isLoadingUnits } = useGetUnitsQuery();
 
-  // Keep boq.project_id in sync with the project selector
+  // ======================================================
+  // EFFECTS
+  // ======================================================
   useEffect(() => {
-    setBoq((prev) => ({
-      ...prev,
-      project_id: selectedProjectId,
-    }));
+    setBoq((prev) => ({ ...prev, project_id: selectedProjectId }));
   }, [selectedProjectId]);
 
   // ======================================================
-  // MEMOS — all before any conditional return
+  // MEMOS
   // ======================================================
   const totals = useMemo(() => {
     let subtotal = 0;
@@ -137,7 +137,6 @@ export default function BoqPage({ projectId: initialProjectId, boqId }) {
     setBoq((prev) => ({ ...prev, ...patch }));
   };
 
-  // ── Sections ──────────────────────────────────────────
   const addSection = (data) => {
     const newSection = {
       id: `temp_${Date.now()}`,
@@ -151,12 +150,10 @@ export default function BoqPage({ projectId: initialProjectId, boqId }) {
       ...prev,
       sections: [...prev.sections, newSection],
     }));
-
     setSectionModalOpen(false);
     toast.success("Section added");
   };
 
-  // ── Subheadings ───────────────────────────────────────
   const openAddSubheading = (sectionId) => {
     setCurrentSectionId(sectionId);
     setSubheadingModalOpen(true);
@@ -184,7 +181,6 @@ export default function BoqPage({ projectId: initialProjectId, boqId }) {
     toast.success("Subheading added");
   };
 
-  // ── Items ─────────────────────────────────────────────
   const handleAddItem = (sectionId, subheadingId) => {
     setActiveItem({ sectionId, subheadingId, item: null });
   };
@@ -241,13 +237,9 @@ export default function BoqPage({ projectId: initialProjectId, boqId }) {
     }));
   };
 
-  // ── Save ──────────────────────────────────────────────
-
-  /**
-   * Saves all sections → subheadings → items for the given boqId.
-   * Sections are saved in parallel; subheadings and items within each
-   * section remain sequential because they depend on the parent IDs.
-   */
+  // ======================================================
+  // SAVE STRUCTURE
+  // ======================================================
   const saveBoqStructure = async (boqIdCreated) => {
     setIsSavingStructure(true);
     try {
@@ -262,7 +254,6 @@ export default function BoqPage({ projectId: initialProjectId, boqId }) {
 
           const sectionId = createdSection.id || createdSection.data?.id;
 
-          // Subheadings depend on sectionId — keep sequential
           for (const subheading of section.subheadings) {
             const createdSubheading = await createSubHeading({
               boq_id: boqIdCreated,
@@ -275,14 +266,14 @@ export default function BoqPage({ projectId: initialProjectId, boqId }) {
             const subheadingId =
               createdSubheading.id || createdSubheading.data?.id;
 
-            // Items can be parallelized within a subheading
             await Promise.all(
               subheading.items.map((item) =>
                 createItem({
                   boq_id: boqIdCreated,
                   section_id: sectionId,
                   subheading_id: subheadingId,
-                  item_name: item.item_name,
+                  inventory_master_id: item.inventory_master_id || undefined,
+                  item_name: item.item_name?.trim() || "",
                   item_code: item.item_code || null,
                   description: item.description || null,
                   specification: item.specification || null,
@@ -305,7 +296,10 @@ export default function BoqPage({ projectId: initialProjectId, boqId }) {
       toast.success("BOQ structure saved successfully");
     } catch (err) {
       console.error("[BOQ SAVE STRUCTURE ERROR]", err);
-      toast.error("Some items failed to save. Please review and retry.");
+      toast.error(
+        err?.data?.message ||
+          "Some items failed to save. Please review and retry.",
+      );
     } finally {
       setIsSavingStructure(false);
     }
@@ -347,7 +341,7 @@ export default function BoqPage({ projectId: initialProjectId, boqId }) {
   // ======================================================
   return (
     <div className="min-h-screen bg-[#fafafa]">
-      {/* ── Header ── */}
+      {/* Header */}
       <div className="sticky top-0 z-20 border-b bg-white/80 backdrop-blur-xl">
         <div className="px-4 md:px-8 py-5">
           <PageHeader
@@ -379,14 +373,13 @@ export default function BoqPage({ projectId: initialProjectId, boqId }) {
       </div>
 
       <div className="px-4 md:px-8 py-6 space-y-6">
-        {/* ── Project Selector ── */}
         <ProjectSelector
           value={selectedProjectId}
           onChange={setSelectedProjectId}
           disabled={!!boqId}
         />
 
-        {/* ── BOQ Information ── */}
+        {/* BOQ Information */}
         <Card className="rounded-3xl border-0 shadow-sm overflow-hidden">
           <CardContent className="p-6 md:p-8">
             <div className="flex items-center gap-3 mb-6">
@@ -471,9 +464,8 @@ export default function BoqPage({ projectId: initialProjectId, boqId }) {
           </CardContent>
         </Card>
 
-        {/* ── Structure Builder ── */}
+        {/* Structure Builder */}
         <div className="grid grid-cols-1 xl:grid-cols-12 gap-6">
-          {/* Left — Tree */}
           <div className="xl:col-span-4">
             <Card className="rounded-3xl border-0 shadow-sm overflow-hidden">
               <div className="border-b px-6 py-5 bg-white">
@@ -507,7 +499,6 @@ export default function BoqPage({ projectId: initialProjectId, boqId }) {
             </Card>
           </div>
 
-          {/* Right — Item Form / Placeholder */}
           <div className="xl:col-span-8">
             <Card className="rounded-3xl border-0 shadow-sm min-h-[700px] overflow-hidden">
               {!activeItem ? (
@@ -535,7 +526,9 @@ export default function BoqPage({ projectId: initialProjectId, boqId }) {
                   <BoqItemForm
                     item={activeItem.item}
                     inventoryItems={inventoryItems}
+                    units={units} // ← Dynamic Units
                     isLoadingInventory={isLoadingInventory}
+                    isLoadingUnits={isLoadingUnits} // ← Loading state
                     searchTerm={itemSearchTerm}
                     onSearchChange={setItemSearchTerm}
                     onSave={(item) =>
@@ -553,11 +546,10 @@ export default function BoqPage({ projectId: initialProjectId, boqId }) {
           </div>
         </div>
 
-        {/* ── Summary ── */}
         <BoqSummary totals={totals} itemCount={itemCount} />
       </div>
 
-      {/* ── Modals ── */}
+      {/* Modals */}
       <BoqSectionForm
         open={sectionModalOpen}
         onClose={() => setSectionModalOpen(false)}

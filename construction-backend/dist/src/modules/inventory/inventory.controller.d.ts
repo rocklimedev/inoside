@@ -8,6 +8,20 @@ import { UpdateInventoryMasterDto } from './dto/update-inventory-master.dto';
 export declare class InventoryController {
     private readonly inventoryService;
     constructor(inventoryService: InventoryService);
+    createUnit(body: {
+        name: string;
+        short_name: string;
+    }): Promise<import("../boq/models/unit.model").Unit>;
+    findAllUnits(): Promise<import("../boq/models/unit.model").Unit[]>;
+    findUnit(id: string): Promise<import("../boq/models/unit.model").Unit>;
+    findUnitByShortName(shortName: string): Promise<import("../boq/models/unit.model").Unit>;
+    updateUnit(id: string, body: {
+        name?: string;
+        short_name?: string;
+    }): Promise<import("../boq/models/unit.model").Unit>;
+    deleteUnit(id: string): Promise<{
+        message: string;
+    }>;
     createRequest(dto: CreateInventoryRequestDto): Promise<import("./models/inventory-request.model").InventoryRequest>;
     findAllRequests(): Promise<import("./models/inventory-request.model").InventoryRequest[]>;
     findRequest(id: string): Promise<import("./models/inventory-request.model").InventoryRequest>;
@@ -21,4 +35,9 @@ export declare class InventoryController {
     updateMaster(id: string, dto: UpdateInventoryMasterDto): Promise<import("./models/inventory-master.model").InventoryMaster>;
     deleteMaster(id: string): Promise<void>;
     findMaterials(): Promise<import("./models/materials.model").Material[]>;
+    findBrands(): Promise<import("./models/brand.model").Brand[]>;
+    createBrand(body: {
+        name: string;
+    }): Promise<import("./models/brand.model").Brand>;
+    deleteBrand(id: string): Promise<void>;
 }

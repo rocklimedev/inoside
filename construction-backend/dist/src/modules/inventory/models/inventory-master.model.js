@@ -20,6 +20,7 @@ __decorate([
     sequelize_typescript_1.PrimaryKey,
     (0, sequelize_typescript_1.Column)({
         type: sequelize_typescript_1.DataType.CHAR(36),
+        defaultValue: sequelize_typescript_1.DataType.UUIDV4,
     }),
     __metadata("design:type", String)
 ], InventoryMaster.prototype, "id", void 0);
@@ -43,7 +44,7 @@ __decorate([
         type: sequelize_typescript_1.DataType.TEXT,
         allowNull: true,
     }),
-    __metadata("design:type", String)
+    __metadata("design:type", Object)
 ], InventoryMaster.prototype, "description", void 0);
 __decorate([
     (0, sequelize_typescript_1.ForeignKey)(() => unit_model_1.Unit),
@@ -51,7 +52,7 @@ __decorate([
         type: sequelize_typescript_1.DataType.CHAR(36),
         allowNull: true,
     }),
-    __metadata("design:type", String)
+    __metadata("design:type", Object)
 ], InventoryMaster.prototype, "unit_id", void 0);
 __decorate([
     (0, sequelize_typescript_1.BelongsTo)(() => unit_model_1.Unit),
@@ -63,7 +64,7 @@ __decorate([
         type: sequelize_typescript_1.DataType.CHAR(36),
         allowNull: true,
     }),
-    __metadata("design:type", String)
+    __metadata("design:type", Object)
 ], InventoryMaster.prototype, "brand_id", void 0);
 __decorate([
     (0, sequelize_typescript_1.BelongsTo)(() => brand_model_1.Brand),
@@ -82,7 +83,7 @@ __decorate([
         type: sequelize_typescript_1.DataType.TEXT,
         allowNull: true,
     }),
-    __metadata("design:type", String)
+    __metadata("design:type", Object)
 ], InventoryMaster.prototype, "specification", void 0);
 __decorate([
     (0, sequelize_typescript_1.Default)(true),

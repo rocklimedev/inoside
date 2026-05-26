@@ -259,7 +259,7 @@ export default function BoqsPage() {
               </div>
 
               <Button
-                onClick={() => router.push("/boq/create")}
+                onClick={() => router.push("/boq/add")}
                 className="bg-[#ef7f1b] hover:bg-[#d66e15]"
               >
                 <Plus className="w-4 h-4 mr-2" /> New BOQ
@@ -281,7 +281,7 @@ export default function BoqsPage() {
                 projectMap={projectMap}
                 onQuickView={setSelectedBoqId}
                 onView={(id) => router.push(`/boq/view?boqId=${id}`)}
-                onEdit={(id) => router.push(`/boq/${id}/edit`)}
+                onEdit={(id) => router.push(`/boq/add?boqId=${id}`)}
                 onDelete={setBoqToDelete}
               />
             ) : (
@@ -290,7 +290,7 @@ export default function BoqsPage() {
                 projectMap={projectMap}
                 onQuickView={setSelectedBoqId}
                 onView={(id) => router.push(`/boq/view?boqId=${id}`)}
-                onEdit={(id) => router.push(`/boq/${id}/edit`)}
+                onEdit={(id) => router.push(`/boq/add?boqId=${id}`)}
                 onDelete={setBoqToDelete}
               />
             )}
@@ -356,7 +356,9 @@ export default function BoqsPage() {
                   </Button>
                   <Button
                     className="flex-1 bg-[#ef7f1b] hover:bg-[#d66e15]"
-                    onClick={() => router.push(`/boq/${selectedBoq.id}/edit`)}
+                    onClick={() =>
+                      router.push(`/boq/add?boqId=${selectedBoq.id}`)
+                    }
                   >
                     <Edit className="w-4 h-4 mr-2" /> Edit BOQ
                   </Button>

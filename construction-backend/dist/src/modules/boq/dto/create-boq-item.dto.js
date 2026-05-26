@@ -16,7 +16,7 @@ class CreateBoqItemDto {
     boq_id;
     section_id;
     subheading_id;
-    inventory_item_id;
+    inventory_master_id;
     unit_id;
     item_name;
     sno;
@@ -52,10 +52,10 @@ __decorate([
     (0, class_validator_1.IsOptional)(),
     (0, class_validator_1.IsUUID)(),
     __metadata("design:type", String)
-], CreateBoqItemDto.prototype, "inventory_item_id", void 0);
+], CreateBoqItemDto.prototype, "inventory_master_id", void 0);
 __decorate([
     (0, class_validator_1.IsOptional)(),
-    (0, class_validator_1.IsUUID)(),
+    (0, class_validator_1.IsString)(),
     __metadata("design:type", String)
 ], CreateBoqItemDto.prototype, "unit_id", void 0);
 __decorate([

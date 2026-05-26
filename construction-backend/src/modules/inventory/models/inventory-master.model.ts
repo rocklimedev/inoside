@@ -22,6 +22,7 @@ export class InventoryMaster extends Model<InventoryMaster> {
   @PrimaryKey
   @Column({
     type: DataType.CHAR(36),
+    defaultValue: DataType.UUIDV4, // Recommended
   })
   declare id: string;
 
@@ -42,34 +43,31 @@ export class InventoryMaster extends Model<InventoryMaster> {
     type: DataType.TEXT,
     allowNull: true,
   })
-  declare description: string;
+  declare description: string | null; // ← Fixed
 
   // ================= UNIT =================
-
   @ForeignKey(() => Unit)
   @Column({
     type: DataType.CHAR(36),
     allowNull: true,
   })
-  declare unit_id: string;
+  declare unit_id: string | null; // ← Fixed
 
   @BelongsTo(() => Unit)
   declare unit?: Unit;
 
   // ================= BRAND =================
-
   @ForeignKey(() => Brand)
   @Column({
     type: DataType.CHAR(36),
     allowNull: true,
   })
-  declare brand_id: string;
+  declare brand_id: string | null; // ← Fixed
 
   @BelongsTo(() => Brand)
   declare brand?: Brand;
 
   // ================= PRICING =================
-
   @Default(0)
   @Column({
     type: DataType.DECIMAL(14, 2),
@@ -78,15 +76,13 @@ export class InventoryMaster extends Model<InventoryMaster> {
   declare default_rate: number;
 
   // ================= SPEC =================
-
   @Column({
     type: DataType.TEXT,
     allowNull: true,
   })
-  declare specification: string;
+  declare specification: string | null; // ← Fixed
 
   // ================= STATUS =================
-
   @Default(true)
   @Column({
     type: DataType.BOOLEAN,
@@ -95,7 +91,6 @@ export class InventoryMaster extends Model<InventoryMaster> {
   declare is_active: boolean;
 
   // ================= TIMESTAMPS =================
-
   @Column({ type: DataType.DATE })
   declare created_at: Date;
 

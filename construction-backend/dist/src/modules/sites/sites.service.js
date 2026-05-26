@@ -18,6 +18,7 @@ const sequelize_1 = require("@nestjs/sequelize");
 const uuid_1 = require("uuid");
 const site_model_1 = require("./models/site.model");
 const address_model_1 = require("../address/models/address.model");
+const client_model_1 = require("../clients/models/client.model");
 let SitesService = class SitesService {
     siteModel;
     addressModel;
@@ -32,29 +33,39 @@ let SitesService = class SitesService {
         });
         const site = await this.siteModel.create({
             id: (0, uuid_1.v4)(),
+            client_id: createSiteDto.client_id,
             address_id: address.id,
             ownership_status: createSiteDto.ownership_status,
             access_available: createSiteDto.access_available,
             existing_structure: createSiteDto.existing_structure,
         });
         return this.siteModel.findByPk(site.id, {
-            include: [address_model_1.Address],
+            include: [address_model_1.Address, client_model_1.Client],
         });
     }
     async findAll() {
         return this.siteModel.findAll({
-            include: [address_model_1.Address],
+            include: [address_model_1.Address, client_model_1.Client],
             order: [['created_at', 'DESC']],
         });
     }
     async findOne(id) {
         const site = await this.siteModel.findByPk(id, {
-            include: [address_model_1.Address],
+            include: [address_model_1.Address, client_model_1.Client],
         });
         if (!site) {
             throw new common_1.NotFoundException(`Site with ID ${id} not found`);
         }
         return site;
+    }
+    async findByClient(clientId) {
+        return this.siteModel.findAll({
+            where: {
+                client_id: clientId,
+            },
+            include: [address_model_1.Address, client_model_1.Client],
+            order: [['created_at', 'DESC']],
+        });
     }
     async update(id, updateSiteDto) {
         const site = await this.findOne(id);
@@ -65,6 +76,7 @@ let SitesService = class SitesService {
             }
         }
         await site.update({
+            client_id: updateSiteDto.client_id ?? site.client_id,
             ownership_status: updateSiteDto.ownership_status,
             access_available: updateSiteDto.access_available,
             existing_structure: updateSiteDto.existing_structure,

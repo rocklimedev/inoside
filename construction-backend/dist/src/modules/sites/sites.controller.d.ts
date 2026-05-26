@@ -6,6 +6,7 @@ export declare class SitesController {
     constructor(sitesService: SitesService);
     create(createSiteDto: CreateSiteDto): Promise<import("./models/site.model").Site | null>;
     findAll(): Promise<import("./models/site.model").Site[]>;
+    findByClient(clientId: string): Promise<import("./models/site.model").Site[]>;
     findOne(id: string): Promise<import("./models/site.model").Site>;
     update(id: string, updateSiteDto: UpdateSiteDto): Promise<import("./models/site.model").Site>;
     remove(id: string): Promise<{

@@ -21,6 +21,51 @@ import { UpdateInventoryMasterDto } from './dto/update-inventory-master.dto';
 export class InventoryController {
   constructor(private readonly inventoryService: InventoryService) {}
 
+  // ====================== UNITS ======================
+
+  @Post('units')
+  createUnit(
+    @Body()
+    body: {
+      name: string;
+      short_name: string;
+    },
+  ) {
+    return this.inventoryService.createUnit(body.name, body.short_name);
+  }
+
+  @Get('units')
+  findAllUnits() {
+    return this.inventoryService.findAllUnits();
+  }
+
+  @Get('units/:id')
+  findUnit(@Param('id') id: string) {
+    return this.inventoryService.findUnitById(id);
+  }
+
+  @Get('units/short/:shortName')
+  findUnitByShortName(@Param('shortName') shortName: string) {
+    return this.inventoryService.findUnitByShortName(shortName);
+  }
+
+  @Put('units/:id')
+  updateUnit(
+    @Param('id') id: string,
+    @Body()
+    body: {
+      name?: string;
+      short_name?: string;
+    },
+  ) {
+    return this.inventoryService.updateUnit(id, body.name, body.short_name);
+  }
+
+  @Delete('units/:id')
+  deleteUnit(@Param('id') id: string) {
+    return this.inventoryService.deleteUnit(id);
+  }
+
   // ---------------- REQUESTS ----------------
 
   @Post('requests')
@@ -98,5 +143,22 @@ export class InventoryController {
   @Get('materials')
   findMaterials() {
     return this.inventoryService.findAllMaterials();
+  }
+
+  // ---------------- BRANDS ----------------
+
+  @Get('brands')
+  findBrands() {
+    return this.inventoryService.findAllBrands();
+  }
+
+  @Post('brands')
+  createBrand(@Body() body: { name: string }) {
+    return this.inventoryService.createBrand(body.name);
+  }
+
+  @Delete('brands/:id')
+  deleteBrand(@Param('id') id: string) {
+    return this.inventoryService.deleteBrand(id);
   }
 }

@@ -4,7 +4,7 @@ import { BoqSection } from './models/boq-section.model';
 import { BoqSubHeading } from './models/boq-subheading.model';
 import { BoqItem } from './models/boq-item.model';
 import { Unit } from './models/unit.model';
-import { InventoryMaster } from '../inventory/models/inventory-master.model';
+import { InventoryMaster } from '@/modules/inventory/models/inventory-master.model';
 import { CreateBoqDto } from './dto/create-boq.dto';
 import { CreateBoqSectionDto } from './dto/create-boq-section.dto';
 import { CreateBoqItemDto } from './dto/create-boq-item.dto';
@@ -22,21 +22,34 @@ export declare class BoqService {
     findAllCategories(): Promise<BoqCategory[]>;
     createCategory(data: CreateBoqCategoryDto): Promise<BoqCategory>;
     createBoq(dto: CreateBoqDto): Promise<Boq>;
-    findAllBoqs(projectId?: string): Promise<Boq[]>;
+    updateBoq(id: string, dto: Partial<CreateBoqDto>): Promise<Boq>;
+    findAllBoqs(projectId?: string, clientId?: string): Promise<Boq[]>;
     getBoqWithDetails(id: string): Promise<Boq>;
-    validateBoqExists(id: string): Promise<Boq>;
+    getBoqsByClient(clientId: string): Promise<Boq[]>;
     createSection(dto: CreateBoqSectionDto): Promise<BoqSection>;
+    updateSection(id: string, dto: Partial<CreateBoqSectionDto>): Promise<BoqSection>;
+    deleteSection(id: string): Promise<{
+        message: string;
+    }>;
     findSectionsByBoq(boqId: string): Promise<BoqSection[]>;
     createSubHeading(data: CreateBoqSubHeadingDto): Promise<BoqSubHeading>;
+    updateSubHeading(id: string, dto: Partial<CreateBoqSubHeadingDto>): Promise<BoqSubHeading>;
+    deleteSubHeading(id: string): Promise<{
+        message: string;
+    }>;
     findSubHeadingsBySection(sectionId: string): Promise<BoqSubHeading[]>;
+    private resolveUnitId;
     createItem(dto: CreateBoqItemDto): Promise<BoqItem | null>;
     updateItem(id: string, updateData: Partial<CreateBoqItemDto>): Promise<BoqItem | null>;
     deleteItem(id: string): Promise<{
+        message: string;
+    }>;
+    deleteBoq(id: string): Promise<{
         message: string;
     }>;
     calculateBoqTotal(boqId: string): Promise<{
         subtotal: number;
         grand_total: number;
     }>;
-    recalculateSectionTotal(sectionId: string): Promise<number>;
+    validateBoqExists(id: string): Promise<Boq>;
 }

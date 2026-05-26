@@ -22,14 +22,15 @@ export class CreateBoqItemDto {
 
   @IsOptional()
   @IsUUID()
-  inventory_item_id?: string;
+  inventory_master_id?: string;
 
+  // ================= UNIT =================
   @IsOptional()
-  @IsUUID()
-  unit_id?: string;
+  @IsString() // ← Changed from IsUUID
+  unit_id?: string; // Accepts UUID OR short_name (sqft, nos, kg, etc.)
 
   // ================= REQUIRED =================
-  @IsNotEmpty() // ← CHANGED
+  @IsNotEmpty()
   @IsString()
   item_name!: string;
 

@@ -3,7 +3,7 @@ import {
   Column,
   Model,
   DataType,
-  HasOne,
+  HasMany,
   Default,
   ForeignKey,
   BelongsTo,
@@ -17,7 +17,10 @@ import type {
 } from 'sequelize';
 
 import { Project } from '../../projects/models/project.model';
+
 import { Address } from '@/modules/address/models/address.model';
+
+import { Client } from '@/modules/clients/models/client.model';
 
 @Table({
   tableName: 'sites',
@@ -39,7 +42,24 @@ export class Site extends Model<
   })
   declare id: CreationOptional<string>;
 
-  // ================= ADDRESS =================
+  // ======================================================
+  // CLIENT
+  // ======================================================
+
+  @ForeignKey(() => Client)
+  @Column({
+    type: DataType.UUID,
+
+    allowNull: false,
+  })
+  declare client_id: string;
+
+  @BelongsTo(() => Client)
+  declare client?: NonAttribute<Client>;
+
+  // ======================================================
+  // ADDRESS
+  // ======================================================
 
   @ForeignKey(() => Address)
   @Column({
@@ -52,7 +72,9 @@ export class Site extends Model<
   @BelongsTo(() => Address)
   declare address?: NonAttribute<Address>;
 
-  // ================= SITE DETAILS =================
+  // ======================================================
+  // SITE DETAILS
+  // ======================================================
 
   @Column({
     type: DataType.ENUM('Owned', 'Rented', 'Under Process'),
@@ -75,7 +97,9 @@ export class Site extends Model<
   })
   declare existing_structure: CreationOptional<boolean>;
 
-  // ================= TIMESTAMPS =================
+  // ======================================================
+  // TIMESTAMPS
+  // ======================================================
 
   @Column(DataType.DATE)
   declare created_at: CreationOptional<Date>;
@@ -83,8 +107,10 @@ export class Site extends Model<
   @Column(DataType.DATE)
   declare updated_at: CreationOptional<Date>;
 
-  // ================= RELATIONS =================
+  // ======================================================
+  // RELATIONS
+  // ======================================================
 
-  @HasOne(() => Project)
-  declare project?: NonAttribute<Project>;
+  @HasMany(() => Project)
+  declare projects?: NonAttribute<Project[]>;
 }

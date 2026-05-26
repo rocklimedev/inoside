@@ -27,6 +27,7 @@ import {
 } from "@/components/ui/command";
 import { Check, ChevronsUpDown, Search } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { toast } from "sonner";
 
 export function BoqItemForm({
   item,
@@ -41,13 +42,14 @@ export function BoqItemForm({
 
   const [form, setForm] = useState({
     id: item?.id || null,
+    inventory_master_id: item?.inventory_master_id || null,
     item_name: item?.item_name || "",
     item_code: item?.item_code || "",
     description: item?.description || "",
     specification: item?.specification || "",
     brand: item?.brand || "",
     qty: item?.qty || 0,
-    unit_id: item?.unit_id || "",
+    unit_id: item?.unit_id || "", // This should be short_name like "sqft"
     rate: item?.rate || 0,
     wastage_percent: item?.wastage_percent || 0,
     discount_percent: item?.discount_percent || 0,
@@ -61,6 +63,7 @@ export function BoqItemForm({
   useEffect(() => {
     setForm({
       id: item?.id || null,
+      inventory_master_id: item?.inventory_master_id || null,
       item_name: item?.item_name || "",
       item_code: item?.item_code || "",
       description: item?.description || "",
@@ -79,16 +82,14 @@ export function BoqItemForm({
   const handleInventorySelect = (invItem) => {
     setForm({
       ...form,
+      inventory_master_id: invItem.id,
       item_name: invItem.item_name || invItem.name || "",
       item_code: invItem.item_code || invItem.code || "",
       description: invItem.description || form.description,
       specification: invItem.specification || form.specification,
-
-      // ✅ FIX HERE
-      brand: invItem.brand?.name || "",
-
+      brand: invItem.brand?.name || invItem.brand || "",
       rate: invItem.default_rate || invItem.rate || form.rate,
-      unit_id: invItem.unit_id || form.unit_id,
+      unit_id: invItem.unit_id || form.unit_id, // Will carry short_name
     });
 
     setOpenInventory(false);
@@ -98,15 +99,15 @@ export function BoqItemForm({
     e.preventDefault();
 
     if (!form.item_name?.trim()) {
-      alert("Item Name is required");
+      toast.error("Item Name is required");
       return;
     }
     if (form.qty <= 0) {
-      alert("Quantity must be greater than 0");
+      toast.error("Quantity must be greater than 0");
       return;
     }
     if (form.rate <= 0) {
-      alert("Rate must be greater than 0");
+      toast.error("Rate must be greater than 0");
       return;
     }
 
@@ -124,12 +125,13 @@ export function BoqItemForm({
         </Button>
       </div>
 
-      {/* ====================== INVENTORY SEARCH ====================== */}
+      {/* Inventory Search */}
       <div className="space-y-2">
         <Label className="flex items-center gap-2">
           <Search className="w-4 h-4" />
           Load from Inventory (Optional)
         </Label>
+
         <Popover open={openInventory} onOpenChange={setOpenInventory}>
           <PopoverTrigger asChild>
             <Button
@@ -145,6 +147,7 @@ export function BoqItemForm({
               <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
             </Button>
           </PopoverTrigger>
+
           <PopoverContent className="w-full p-0" align="start">
             <Command>
               <CommandInput
@@ -161,30 +164,31 @@ export function BoqItemForm({
                   searchTerm.length > 1 && (
                     <CommandEmpty>No items found.</CommandEmpty>
                   )}
+
                 <CommandGroup>
                   {inventoryItems.map((inv) => (
                     <CommandItem
                       key={inv.id}
-                      value={inv.name || inv.item_name || ""}
+                      value={inv.item_name || inv.name || ""}
                       onSelect={() => handleInventorySelect(inv)}
                     >
                       <Check
                         className={cn(
                           "mr-2 h-4 w-4",
-                          form.item_name === (inv.name || inv.item_name)
+                          form.inventory_master_id === inv.id
                             ? "opacity-100"
                             : "opacity-0",
                         )}
                       />
                       <div className="flex flex-col">
                         <span className="font-medium">
-                          {inv.name || inv.item_name}
+                          {inv.item_name || inv.name}
                         </span>
-                        {inv.code || inv.item_code ? (
+                        {(inv.item_code || inv.code) && (
                           <span className="text-xs text-muted-foreground">
-                            {inv.code || inv.item_code}
+                            {inv.item_code || inv.code}
                           </span>
-                        ) : null}
+                        )}
                       </div>
                     </CommandItem>
                   ))}
@@ -193,12 +197,14 @@ export function BoqItemForm({
             </Command>
           </PopoverContent>
         </Popover>
+
         <p className="text-xs text-muted-foreground">
-          You can still edit all fields after selecting from inventory
+          Selecting from inventory will auto-fill fields and link the master
+          item.
         </p>
       </div>
 
-      {/* ====================== ITEM DETAILS ====================== */}
+      {/* Manual Entry Fields */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div className="md:col-span-2">
           <Label>Item Name *</Label>
@@ -224,6 +230,7 @@ export function BoqItemForm({
           <Input
             value={form.brand}
             onChange={(e) => setForm({ ...form, brand: e.target.value })}
+            placeholder="e.g. Saint-Gobain"
           />
         </div>
 
@@ -240,6 +247,7 @@ export function BoqItemForm({
           />
         </div>
 
+        {/* Updated Unit Select - using short_name */}
         <div>
           <Label>Unit</Label>
           <Select
@@ -257,6 +265,8 @@ export function BoqItemForm({
               <SelectItem value="m">Meter</SelectItem>
               <SelectItem value="ltr">Liter</SelectItem>
               <SelectItem value="ton">Ton</SelectItem>
+              <SelectItem value="pcs">Pieces</SelectItem>
+              <SelectItem value="box">Box</SelectItem>
             </SelectContent>
           </Select>
         </div>

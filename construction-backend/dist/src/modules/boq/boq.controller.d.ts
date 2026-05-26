@@ -10,19 +10,29 @@ export declare class BoqController {
     findCategories(): Promise<import("./models/boq-category.model").BoqCategory[]>;
     createCategory(dto: CreateBoqCategoryDto): Promise<import("./models/boq-category.model").BoqCategory>;
     createBoq(dto: CreateBoqDto): Promise<import("./models/boq.model").Boq>;
-    findAllBoqs(projectId?: string): Promise<import("./models/boq.model").Boq[]>;
-    findBoq(id: string): Promise<import("./models/boq.model").Boq>;
-    calculateTotal(id: string): Promise<{
-        subtotal: number;
-        grand_total: number;
-    }>;
+    updateBoq(id: string, dto: Partial<CreateBoqDto>): Promise<import("./models/boq.model").Boq>;
+    findAllBoqs(projectId?: string, clientId?: string): Promise<import("./models/boq.model").Boq[]>;
+    getBoqsByClient(clientId: string): Promise<import("./models/boq.model").Boq[]>;
     createSection(dto: CreateBoqSectionDto): Promise<import("./models/boq-section.model").BoqSection>;
+    updateSection(id: string, dto: Partial<CreateBoqSectionDto>): Promise<import("./models/boq-section.model").BoqSection>;
+    deleteSection(id: string): Promise<{
+        message: string;
+    }>;
     findSections(boqId: string): Promise<import("./models/boq-section.model").BoqSection[]>;
     createSubHeading(dto: CreateBoqSubHeadingDto): Promise<import("./models/boq-subheading.model").BoqSubHeading>;
+    updateSubHeading(id: string, dto: Partial<CreateBoqSubHeadingDto>): Promise<import("./models/boq-subheading.model").BoqSubHeading>;
+    deleteSubHeading(id: string): Promise<{
+        message: string;
+    }>;
     findSubHeadings(sectionId: string): Promise<import("./models/boq-subheading.model").BoqSubHeading[]>;
     createItem(dto: CreateBoqItemDto): Promise<import("./models/boq-item.model").BoqItem | null>;
     updateItem(id: string, dto: Partial<CreateBoqItemDto>): Promise<import("./models/boq-item.model").BoqItem | null>;
     deleteItem(id: string): Promise<{
         message: string;
     }>;
+    calculateTotal(id: string): Promise<{
+        subtotal: number;
+        grand_total: number;
+    }>;
+    findBoq(id: string): Promise<import("./models/boq.model").Boq>;
 }

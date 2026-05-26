@@ -7,6 +7,7 @@ import {
   IsNumber,
   ValidateNested,
   IsUrl,
+  IsUUID,
 } from 'class-validator';
 
 import { Type } from 'class-transformer';
@@ -58,10 +59,26 @@ class AddressDto {
 }
 
 export class CreateSiteDto {
+  // ======================================================
+  // CLIENT
+  // ======================================================
+
+  @IsNotEmpty()
+  @IsUUID()
+  client_id!: string;
+
+  // ======================================================
+  // ADDRESS
+  // ======================================================
+
   @IsNotEmpty()
   @ValidateNested()
   @Type(() => AddressDto)
   address!: AddressDto;
+
+  // ======================================================
+  // SITE DETAILS
+  // ======================================================
 
   @IsOptional()
   @IsEnum(OwnershipStatus)

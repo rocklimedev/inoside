@@ -13,17 +13,25 @@ exports.CreateBoqDto = void 0;
 const class_validator_1 = require("class-validator");
 class CreateBoqDto {
     project_id;
+    client_id;
     boq_category_id;
     title;
     notes;
     prepared_by;
+    code;
+    revision_no;
 }
 exports.CreateBoqDto = CreateBoqDto;
 __decorate([
-    (0, class_validator_1.IsNotEmpty)(),
+    (0, class_validator_1.IsOptional)(),
     (0, class_validator_1.IsUUID)(),
-    __metadata("design:type", String)
+    __metadata("design:type", Object)
 ], CreateBoqDto.prototype, "project_id", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsUUID)(),
+    __metadata("design:type", Object)
+], CreateBoqDto.prototype, "client_id", void 0);
 __decorate([
     (0, class_validator_1.IsNotEmpty)(),
     (0, class_validator_1.IsUUID)(),
@@ -44,4 +52,14 @@ __decorate([
     (0, class_validator_1.IsUUID)(),
     __metadata("design:type", String)
 ], CreateBoqDto.prototype, "prepared_by", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsString)(),
+    __metadata("design:type", String)
+], CreateBoqDto.prototype, "code", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsString)(),
+    __metadata("design:type", String)
+], CreateBoqDto.prototype, "revision_no", void 0);
 //# sourceMappingURL=create-boq.dto.js.map

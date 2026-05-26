@@ -5,8 +5,13 @@ import { InjectModel } from '@nestjs/sequelize';
 import { v4 as uuid } from 'uuid';
 
 import { Site } from './models/site.model';
+
 import { Address } from '../address/models/address.model';
+
+import { Client } from '../clients/models/client.model';
+
 import { CreateSiteDto } from './dto/create-site.dto';
+
 import { UpdateSiteDto } from './dto/update-site.dto';
 
 @Injectable()
@@ -19,6 +24,10 @@ export class SitesService {
     private addressModel: typeof Address,
   ) {}
 
+  // ======================================================
+  // CREATE SITE
+  // ======================================================
+
   async create(createSiteDto: CreateSiteDto) {
     const address = await this.addressModel.create({
       id: uuid(),
@@ -28,6 +37,8 @@ export class SitesService {
 
     const site = await this.siteModel.create({
       id: uuid(),
+
+      client_id: createSiteDto.client_id,
 
       address_id: address.id,
 
@@ -39,21 +50,29 @@ export class SitesService {
     });
 
     return this.siteModel.findByPk(site.id, {
-      include: [Address],
+      include: [Address, Client],
     });
   }
 
+  // ======================================================
+  // GET ALL SITES
+  // ======================================================
+
   async findAll() {
     return this.siteModel.findAll({
-      include: [Address],
+      include: [Address, Client],
 
       order: [['created_at', 'DESC']],
     });
   }
 
+  // ======================================================
+  // GET SINGLE SITE
+  // ======================================================
+
   async findOne(id: string) {
     const site = await this.siteModel.findByPk(id, {
-      include: [Address],
+      include: [Address, Client],
     });
 
     if (!site) {
@@ -63,10 +82,33 @@ export class SitesService {
     return site;
   }
 
+  // ======================================================
+  // GET SITES BY CLIENT
+  // ======================================================
+
+  async findByClient(clientId: string) {
+    return this.siteModel.findAll({
+      where: {
+        client_id: clientId,
+      },
+
+      include: [Address, Client],
+
+      order: [['created_at', 'DESC']],
+    });
+  }
+
+  // ======================================================
+  // UPDATE SITE
+  // ======================================================
+
   async update(id: string, updateSiteDto: UpdateSiteDto) {
     const site = await this.findOne(id);
 
+    // ======================================================
     // UPDATE ADDRESS
+    // ======================================================
+
     if (updateSiteDto.address) {
       const address = await this.addressModel.findByPk(site.address_id);
 
@@ -75,8 +117,13 @@ export class SitesService {
       }
     }
 
+    // ======================================================
     // UPDATE SITE
+    // ======================================================
+
     await site.update({
+      client_id: updateSiteDto.client_id ?? site.client_id,
+
       ownership_status: updateSiteDto.ownership_status,
 
       access_available: updateSiteDto.access_available,
@@ -87,6 +134,10 @@ export class SitesService {
     return this.findOne(id);
   }
 
+  // ======================================================
+  // DELETE SITE
+  // ======================================================
+
   async remove(id: string) {
     const site = await this.findOne(id);
 
@@ -95,7 +146,9 @@ export class SitesService {
     await site.destroy();
 
     // OPTIONAL:
-    // delete unused address too
+    // DELETE UNUSED ADDRESS
+    // ======================================================
+
     if (addressId) {
       await this.addressModel.destroy({
         where: {

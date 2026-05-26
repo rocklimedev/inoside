@@ -26,6 +26,24 @@ let InventoryController = class InventoryController {
     constructor(inventoryService) {
         this.inventoryService = inventoryService;
     }
+    createUnit(body) {
+        return this.inventoryService.createUnit(body.name, body.short_name);
+    }
+    findAllUnits() {
+        return this.inventoryService.findAllUnits();
+    }
+    findUnit(id) {
+        return this.inventoryService.findUnitById(id);
+    }
+    findUnitByShortName(shortName) {
+        return this.inventoryService.findUnitByShortName(shortName);
+    }
+    updateUnit(id, body) {
+        return this.inventoryService.updateUnit(id, body.name, body.short_name);
+    }
+    deleteUnit(id) {
+        return this.inventoryService.deleteUnit(id);
+    }
     createRequest(dto) {
         return this.inventoryService.createRequest(dto);
     }
@@ -65,8 +83,59 @@ let InventoryController = class InventoryController {
     findMaterials() {
         return this.inventoryService.findAllMaterials();
     }
+    findBrands() {
+        return this.inventoryService.findAllBrands();
+    }
+    createBrand(body) {
+        return this.inventoryService.createBrand(body.name);
+    }
+    deleteBrand(id) {
+        return this.inventoryService.deleteBrand(id);
+    }
 };
 exports.InventoryController = InventoryController;
+__decorate([
+    (0, common_1.Post)('units'),
+    __param(0, (0, common_1.Body)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Object]),
+    __metadata("design:returntype", void 0)
+], InventoryController.prototype, "createUnit", null);
+__decorate([
+    (0, common_1.Get)('units'),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", []),
+    __metadata("design:returntype", void 0)
+], InventoryController.prototype, "findAllUnits", null);
+__decorate([
+    (0, common_1.Get)('units/:id'),
+    __param(0, (0, common_1.Param)('id')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String]),
+    __metadata("design:returntype", void 0)
+], InventoryController.prototype, "findUnit", null);
+__decorate([
+    (0, common_1.Get)('units/short/:shortName'),
+    __param(0, (0, common_1.Param)('shortName')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String]),
+    __metadata("design:returntype", void 0)
+], InventoryController.prototype, "findUnitByShortName", null);
+__decorate([
+    (0, common_1.Put)('units/:id'),
+    __param(0, (0, common_1.Param)('id')),
+    __param(1, (0, common_1.Body)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String, Object]),
+    __metadata("design:returntype", void 0)
+], InventoryController.prototype, "updateUnit", null);
+__decorate([
+    (0, common_1.Delete)('units/:id'),
+    __param(0, (0, common_1.Param)('id')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String]),
+    __metadata("design:returntype", void 0)
+], InventoryController.prototype, "deleteUnit", null);
 __decorate([
     (0, common_1.Post)('requests'),
     __param(0, (0, common_1.Body)()),
@@ -157,6 +226,26 @@ __decorate([
     __metadata("design:paramtypes", []),
     __metadata("design:returntype", void 0)
 ], InventoryController.prototype, "findMaterials", null);
+__decorate([
+    (0, common_1.Get)('brands'),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", []),
+    __metadata("design:returntype", void 0)
+], InventoryController.prototype, "findBrands", null);
+__decorate([
+    (0, common_1.Post)('brands'),
+    __param(0, (0, common_1.Body)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Object]),
+    __metadata("design:returntype", void 0)
+], InventoryController.prototype, "createBrand", null);
+__decorate([
+    (0, common_1.Delete)('brands/:id'),
+    __param(0, (0, common_1.Param)('id')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String]),
+    __metadata("design:returntype", void 0)
+], InventoryController.prototype, "deleteBrand", null);
 exports.InventoryController = InventoryController = __decorate([
     (0, common_1.Controller)('inventory'),
     __metadata("design:paramtypes", [inventory_service_1.InventoryService])

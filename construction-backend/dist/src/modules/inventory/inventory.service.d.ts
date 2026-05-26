@@ -3,6 +3,7 @@ import { InventoryDispatch } from './models/inventory-dispatch.model';
 import { InventoryMaster } from './models/inventory-master.model';
 import { Material } from './models/materials.model';
 import { Brand } from './models/brand.model';
+import { Unit } from '../boq/models/unit.model';
 import { CreateInventoryRequestDto } from './dto/create-inventory-request.dto';
 import { UpdateInventoryRequestDto } from './dto/update-inventory-request.dto';
 import { CreateInventoryDispatchDto } from './dto/create-inventory-dispatch.dto';
@@ -15,7 +16,16 @@ export declare class InventoryService {
     private masterModel;
     private materialModel;
     private brandModel;
-    constructor(requestModel: typeof InventoryRequest, dispatchModel: typeof InventoryDispatch, masterModel: typeof InventoryMaster, materialModel: typeof Material, brandModel: typeof Brand);
+    private unitModel;
+    constructor(requestModel: typeof InventoryRequest, dispatchModel: typeof InventoryDispatch, masterModel: typeof InventoryMaster, materialModel: typeof Material, brandModel: typeof Brand, unitModel: typeof Unit);
+    createUnit(name: string, shortName: string): Promise<Unit>;
+    findAllUnits(): Promise<Unit[]>;
+    findUnitById(id: string): Promise<Unit>;
+    findUnitByShortName(shortName: string): Promise<Unit>;
+    updateUnit(id: string, name?: string, shortName?: string): Promise<Unit>;
+    deleteUnit(id: string): Promise<{
+        message: string;
+    }>;
     createRequest(dto: CreateInventoryRequestDto): Promise<InventoryRequest>;
     findAllRequests(): Promise<InventoryRequest[]>;
     findRequestById(id: string): Promise<InventoryRequest>;

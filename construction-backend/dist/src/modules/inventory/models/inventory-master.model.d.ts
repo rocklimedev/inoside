@@ -5,13 +5,13 @@ export declare class InventoryMaster extends Model<InventoryMaster> {
     id: string;
     item_code: string;
     item_name: string;
-    description: string;
-    unit_id: string;
+    description: string | null;
+    unit_id: string | null;
     unit?: Unit;
-    brand_id: string;
+    brand_id: string | null;
     brand?: Brand;
     default_rate: number;
-    specification: string;
+    specification: string | null;
     is_active: boolean;
     created_at: Date;
     updated_at: Date;

@@ -9,6 +9,7 @@ export declare class SitesService {
     create(createSiteDto: CreateSiteDto): Promise<Site | null>;
     findAll(): Promise<Site[]>;
     findOne(id: string): Promise<Site>;
+    findByClient(clientId: string): Promise<Site[]>;
     update(id: string, updateSiteDto: UpdateSiteDto): Promise<Site>;
     remove(id: string): Promise<{
         message: string;
