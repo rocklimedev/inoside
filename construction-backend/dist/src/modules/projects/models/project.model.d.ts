@@ -23,11 +23,11 @@ export declare class Project extends Model<InferAttributes<Project>, InferCreati
     purpose: 'Residential' | 'Commercial' | 'Mixed' | null;
     number_of_floors: CreationOptional<number> | null;
     approximate_area_sqft: CreationOptional<number> | null;
-    budget_range: CreationOptional<string> | null;
+    budget_range: CreationOptional<string | null>;
     timeline_expectation: 'Immediate' | 'Flexible' | 'Fixed Date' | null;
-    design_preference: CreationOptional<string> | null;
+    design_preference: CreationOptional<string | null>;
     status: CreationOptional<'brief' | 'pitch' | 'reki_pending' | 'reki_done' | 'scope_done' | 'boq_done' | 'design' | 'execution' | 'vendor_selection' | 'inventory' | 'quality' | 'handover' | 'completed' | 'cancelled' | 'on_hold'>;
-    current_stage: CreationOptional<string> | null;
+    current_stage: CreationOptional<string | null>;
     progress_percentage: CreationOptional<number>;
     token_received: CreationOptional<boolean>;
     is_archived: CreationOptional<boolean>;

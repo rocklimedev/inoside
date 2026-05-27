@@ -23,6 +23,7 @@ import {
   SelectItem,
   SelectValue,
 } from "@/components/ui/select";
+
 import {
   Sheet,
   SheetContent,
@@ -32,12 +33,14 @@ import {
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Separator } from "@/components/ui/separator";
+
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+
 import {
   AlertDialog,
   AlertDialogAction,
@@ -76,15 +79,21 @@ export default function BoqsPage() {
   const [viewMode, setViewMode] = useState("grid");
   const [search, setSearch] = useState("");
   const [showFilters, setShowFilters] = useState(false);
-  const [filters, setFilters] = useState({ statuses: [], projects: [] });
+
+  const [filters, setFilters] = useState({
+    statuses: [],
+    projects: [],
+  });
+
   const [sortBy, setSortBy] = useState("total");
+
   const [selectedBoqId, setSelectedBoqId] = useState(null);
   const [boqToDelete, setBoqToDelete] = useState(null);
 
-  // RTK Query
   const { data: boqs = [], isLoading, error } = useGetBoqsQuery();
   const { data: projects = [] } = useGetProjectsQuery();
   const [deleteBoq, { isLoading: isDeleting }] = useDeleteBoqMutation();
+
   const { data: selectedBoq } = useGetBoqByIdQuery(selectedBoqId, {
     skip: !selectedBoqId,
   });
@@ -101,10 +110,11 @@ export default function BoqsPage() {
       result = result.filter((b) => b.title?.toLowerCase().includes(term));
     }
 
-    if (filters.statuses.length > 0) {
+    if (filters.statuses.length) {
       result = result.filter((b) => filters.statuses.includes(b.status));
     }
-    if (filters.projects.length > 0) {
+
+    if (filters.projects.length) {
       result = result.filter((b) => filters.projects.includes(b.project_id));
     }
 
@@ -112,9 +122,11 @@ export default function BoqsPage() {
       if (sortBy === "name") {
         return (a.title || "").localeCompare(b.title || "");
       }
+
       if (sortBy === "total") {
         return Number(b.grand_total || 0) - Number(a.grand_total || 0);
       }
+
       return (
         new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
       );
@@ -122,17 +134,6 @@ export default function BoqsPage() {
 
     return result;
   }, [boqs, search, filters, sortBy]);
-
-  const handleDelete = async () => {
-    if (!boqToDelete) return;
-    try {
-      await deleteBoq(boqToDelete).unwrap();
-      toast.success("BOQ deleted successfully");
-      setBoqToDelete(null);
-    } catch (err) {
-      toast.error(err?.data?.message || "Failed to delete BOQ");
-    }
-  };
 
   const toggleFilter = (key, value) => {
     setFilters((prev) => ({
@@ -145,46 +146,60 @@ export default function BoqsPage() {
 
   const clearFilters = () => setFilters({ statuses: [], projects: [] });
 
+  const handleDelete = async () => {
+    if (!boqToDelete) return;
+
+    try {
+      await deleteBoq(boqToDelete).unwrap();
+      toast.success("BOQ deleted");
+      setBoqToDelete(null);
+    } catch (err) {
+      toast.error(err?.data?.message || "Delete failed");
+    }
+  };
+
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center h-screen">
-        <Loader2 className="w-8 h-8 animate-spin text-[#ef7f1b]" />
+      <div className="h-screen flex items-center justify-center bg-gray-50">
+        <Loader2 className="w-6 h-6 animate-spin text-gray-500" />
       </div>
     );
   }
 
   if (error) {
     return (
-      <div className="flex items-center justify-center h-screen text-red-600">
-        Failed to load BOQs. Please try again.
+      <div className="h-screen flex items-center justify-center text-red-500">
+        Failed to load BOQs
       </div>
     );
   }
 
   return (
-    <div className="flex h-full">
-      {/* Filter Sidebar */}
+    <div className="flex h-full bg-gray-50">
+      {/* FILTER SIDEBAR */}
       {showFilters && (
-        <div className="w-72 border-r border-gray-200 bg-white p-6 shrink-0 overflow-auto">
-          <div className="flex items-center justify-between mb-6">
-            <h3 className="text-sm font-bold uppercase tracking-wider">
+        <aside className="w-72 bg-white border-r p-5">
+          <div className="flex justify-between items-center mb-6">
+            <h2 className="text-xs uppercase tracking-widest text-gray-500">
               Filters
-            </h3>
+            </h2>
             <button onClick={() => setShowFilters(false)}>
-              <X className="w-5 h-5" />
+              <X className="w-4 h-4 text-gray-400" />
             </button>
           </div>
 
-          <div className="space-y-8">
+          <div className="space-y-6">
             <FilterSection
               title="Status"
               items={BOQ_STATUSES}
               selected={filters.statuses}
               onToggle={(v) => toggleFilter("statuses", v)}
             />
+
             <Separator />
+
             <FilterSection
-              title="Project"
+              title="Projects"
               items={projects.map((p) => p.id)}
               getLabel={(id) => projectMap.get(id) || id}
               selected={filters.projects}
@@ -192,43 +207,52 @@ export default function BoqsPage() {
             />
           </div>
 
-          {(filters.statuses.length > 0 || filters.projects.length > 0) && (
+          {(filters.statuses.length || filters.projects.length) > 0 && (
             <button
               onClick={clearFilters}
-              className="mt-6 text-sm text-[#ef7f1b] hover:underline"
+              className="mt-6 text-sm text-gray-900 font-medium"
             >
-              Clear all filters
+              Clear filters
             </button>
           )}
-        </div>
+        </aside>
       )}
 
+      {/* MAIN */}
       <div className="flex-1 flex flex-col overflow-hidden">
-        {/* Header */}
-        <div className="p-6 border-b border-gray-200 bg-white">
-          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-            <h1 className="text-3xl font-black">Bill of Quantities (BOQ)</h1>
+        {/* HEADER */}
+        <div className="bg-white border-b px-6 py-4">
+          <div className="flex flex-col lg:flex-row gap-4 lg:items-center lg:justify-between">
+            <div>
+              <h1 className="text-lg font-semibold text-gray-900">
+                BOQ Management
+              </h1>
+              <p className="text-sm text-gray-500">
+                {filteredBoqs.length} records
+              </p>
+            </div>
 
+            {/* SEARCH */}
             <div className="flex-1 max-w-md">
-              <div className="flex items-center gap-2 bg-gray-50 rounded-xl px-4 py-2.5 border focus-within:border-[#ef7f1b]">
+              <div className="flex items-center gap-2 bg-gray-50 border rounded-lg px-3 py-2">
                 <Search className="w-4 h-4 text-gray-400" />
                 <Input
-                  type="text"
-                  placeholder="Search BOQs by title..."
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
-                  className="bg-transparent border-0 focus-visible:ring-0 text-sm"
+                  placeholder="Search BOQs..."
+                  className="border-0 bg-transparent focus:ring-0"
                 />
               </div>
             </div>
 
-            <div className="flex items-center gap-3">
+            {/* ACTIONS */}
+            <div className="flex items-center gap-2">
               <Button
                 variant="outline"
                 onClick={() => setShowFilters(!showFilters)}
-                className={showFilters ? "border-[#ef7f1b] text-[#ef7f1b]" : ""}
               >
-                <Filter className="w-4 h-4 mr-2" /> Filter
+                <Filter className="w-4 h-4 mr-2" />
+                Filters
               </Button>
 
               <Select value={sortBy} onValueChange={setSortBy}>
@@ -237,22 +261,27 @@ export default function BoqsPage() {
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="date">Date Created</SelectItem>
-                  <SelectItem value="name">Title</SelectItem>
-                  <SelectItem value="total">Total Amount</SelectItem>
+                  <SelectItem value="date">Newest</SelectItem>
+                  <SelectItem value="name">Name</SelectItem>
+                  <SelectItem value="total">Amount</SelectItem>
                 </SelectContent>
               </Select>
 
-              <div className="flex border rounded-xl overflow-hidden">
+              <div className="flex border rounded-lg overflow-hidden">
                 <button
                   onClick={() => setViewMode("grid")}
-                  className={`p-2.5 ${viewMode === "grid" ? "bg-[#ef7f1b] text-white" : "hover:bg-gray-100"}`}
+                  className={`px-3 py-2 ${
+                    viewMode === "grid" ? "bg-gray-900 text-white" : "bg-white"
+                  }`}
                 >
                   <LayoutGrid className="w-4 h-4" />
                 </button>
+
                 <button
                   onClick={() => setViewMode("list")}
-                  className={`p-2.5 ${viewMode === "list" ? "bg-[#ef7f1b] text-white" : "hover:bg-gray-100"}`}
+                  className={`px-3 py-2 ${
+                    viewMode === "list" ? "bg-gray-900 text-white" : "bg-white"
+                  }`}
                 >
                   <List className="w-4 h-4" />
                 </button>
@@ -260,19 +289,16 @@ export default function BoqsPage() {
 
               <Button
                 onClick={() => router.push("/boq/add")}
-                className="bg-[#ef7f1b] hover:bg-[#d66e15]"
+                className="bg-gray-900 text-white"
               >
-                <Plus className="w-4 h-4 mr-2" /> New BOQ
+                <Plus className="w-4 h-4 mr-2" />
+                New BOQ
               </Button>
             </div>
           </div>
-
-          <p className="text-sm text-gray-500 mt-2">
-            {filteredBoqs.length} BOQ{filteredBoqs.length !== 1 ? "s" : ""}
-          </p>
         </div>
 
-        {/* Content */}
+        {/* CONTENT */}
         <ScrollArea className="flex-1">
           <div className="p-6">
             {viewMode === "grid" ? (
@@ -298,78 +324,7 @@ export default function BoqsPage() {
         </ScrollArea>
       </div>
 
-      {/* Detail Sheet - Quick View */}
-      <Sheet open={!!selectedBoqId} onOpenChange={() => setSelectedBoqId(null)}>
-        <SheetContent className="w-[440px] sm:w-[520px]">
-          {selectedBoq && (
-            <>
-              <SheetHeader>
-                <SheetTitle>{selectedBoq.title}</SheetTitle>
-                <p className="text-sm text-gray-500">
-                  {projectMap.get(selectedBoq.project_id)}
-                </p>
-              </SheetHeader>
-
-              <div className="mt-8 space-y-6">
-                <div className="grid grid-cols-2 gap-4 text-sm">
-                  <InfoRow
-                    icon={FileText}
-                    label="Status"
-                    value={selectedBoq.status}
-                  />
-                  <InfoRow
-                    icon={Calendar}
-                    label="Revision"
-                    value={selectedBoq.revision_no}
-                  />
-                  <InfoRow
-                    icon={DollarSign}
-                    label="Grand Total"
-                    value={`₹${Number(selectedBoq.grand_total || 0).toLocaleString()}`}
-                  />
-                  <InfoRow
-                    icon={TrendingUp}
-                    label="Items"
-                    value={
-                      selectedBoq.sections?.reduce((acc, section) => {
-                        return (
-                          acc +
-                          (section.subheadings?.reduce(
-                            (a, sh) => a + (sh.items?.length || 0),
-                            0,
-                          ) || 0)
-                        );
-                      }, 0) || 0
-                    }
-                  />
-                </div>
-
-                <div className="flex gap-3 pt-4">
-                  <Button
-                    variant="outline"
-                    className="flex-1"
-                    onClick={() =>
-                      router.push(`/boq/view?boqId=${selectedBoq.id}`)
-                    }
-                  >
-                    <Eye className="w-4 h-4 mr-2" /> View Full BOQ
-                  </Button>
-                  <Button
-                    className="flex-1 bg-[#ef7f1b] hover:bg-[#d66e15]"
-                    onClick={() =>
-                      router.push(`/boq/add?boqId=${selectedBoq.id}`)
-                    }
-                  >
-                    <Edit className="w-4 h-4 mr-2" /> Edit BOQ
-                  </Button>
-                </div>
-              </div>
-            </>
-          )}
-        </SheetContent>
-      </Sheet>
-
-      {/* Delete Dialog */}
+      {/* DELETE DIALOG */}
       <AlertDialog
         open={!!boqToDelete}
         onOpenChange={() => setBoqToDelete(null)}
@@ -378,18 +333,18 @@ export default function BoqsPage() {
           <AlertDialogHeader>
             <AlertDialogTitle>Delete BOQ?</AlertDialogTitle>
             <AlertDialogDescription>
-              This action cannot be undone. This will permanently delete the BOQ
-              and all its items.
+              This action cannot be undone.
             </AlertDialogDescription>
           </AlertDialogHeader>
+
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
             <AlertDialogAction
-              onClick={handleDelete}
-              className="bg-red-600 hover:bg-red-700"
               disabled={isDeleting}
+              onClick={handleDelete}
+              className="bg-red-600"
             >
-              {isDeleting ? "Deleting..." : "Delete BOQ"}
+              Delete
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
@@ -398,21 +353,7 @@ export default function BoqsPage() {
   );
 }
 
-/* ===================== Helper Components ===================== */
-
-function InfoRow({ icon: Icon, label, value }) {
-  return (
-    <div className="flex gap-3">
-      <Icon className="w-4 h-4 text-gray-400 mt-0.5" />
-      <div>
-        <p className="text-xs uppercase tracking-wider text-gray-500">
-          {label}
-        </p>
-        <p className="font-medium">{value}</p>
-      </div>
-    </div>
-  );
-}
+/* ================= FILTER ================= */
 
 function FilterSection({
   title,
@@ -423,17 +364,16 @@ function FilterSection({
 }) {
   return (
     <div>
-      <p className="text-xs font-bold uppercase tracking-wider text-gray-500 mb-3">
-        {title}
-      </p>
+      <p className="text-xs uppercase text-gray-500 mb-3">{title}</p>
+
       <div className="space-y-2">
         {items.map((item) => (
-          <label key={item} className="flex items-center gap-3 cursor-pointer">
+          <label key={item} className="flex items-center gap-2 text-sm">
             <Checkbox
               checked={selected.includes(item)}
               onCheckedChange={() => onToggle(item)}
             />
-            <span className="text-sm">{getLabel(item)}</span>
+            {getLabel(item)}
           </label>
         ))}
       </div>
@@ -441,66 +381,49 @@ function FilterSection({
   );
 }
 
-/* ===================== Updated Views ===================== */
+/* ================= GRID ================= */
 
 function GridView({ boqs, projectMap, onQuickView, onView, onEdit, onDelete }) {
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+    <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
       {boqs.map((b) => (
-        <Card
-          key={b.id}
-          className="p-5 hover:shadow-lg hover:border-[#ef7f1b]/30 transition-all group cursor-pointer"
-        >
-          <div className="flex justify-between items-start mb-4">
-            <div className="min-w-0 flex-1">
-              <h3 className="font-bold truncate">{b.title}</h3>
-              <p className="text-xs text-gray-500 mt-1">
+        <Card key={b.id} className="p-5 bg-white border hover:shadow-sm">
+          <div className="flex justify-between">
+            <div>
+              <h3 className="font-semibold text-gray-900">{b.title}</h3>
+              <p className="text-xs text-gray-500">
                 {projectMap.get(b.project_id)}
               </p>
             </div>
+
             <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <button className="p-1.5 opacity-0 group-hover:opacity-100 hover:bg-gray-100 rounded-md">
-                  <MoreHorizontal className="w-4 h-4" />
-                </button>
+              <DropdownMenuTrigger>
+                <MoreHorizontal className="w-4 h-4 text-gray-500" />
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
+
+              <DropdownMenuContent>
                 <DropdownMenuItem onClick={() => onQuickView(b.id)}>
-                  <Eye className="w-4 h-4 mr-2" /> Quick View
+                  Quick View
                 </DropdownMenuItem>
                 <DropdownMenuItem onClick={() => onView(b.id)}>
-                  <Eye className="w-4 h-4 mr-2" /> View Full BOQ
+                  View
                 </DropdownMenuItem>
                 <DropdownMenuItem onClick={() => onEdit(b.id)}>
-                  <Edit className="w-4 h-4 mr-2" /> Edit
+                  Edit
                 </DropdownMenuItem>
-                <DropdownMenuItem
-                  className="text-red-600"
-                  onClick={() => onDelete(b.id)}
-                >
-                  <Trash2 className="w-4 h-4 mr-2" /> Delete
+                <DropdownMenuItem onClick={() => onDelete(b.id)}>
+                  Delete
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
           </div>
 
-          <div className="flex flex-wrap gap-2 mb-4">
-            <Badge className="bg-orange-50 text-[#ef7f1b] border-orange-200 text-xs">
-              {b.revision_no}
-            </Badge>
-            <Badge
-              variant="secondary"
-              className={
-                b.status === "approved"
-                  ? "bg-green-100 text-green-700"
-                  : "bg-amber-100 text-amber-700"
-              }
-            >
-              {b.status}
-            </Badge>
+          <div className="flex gap-2 mt-3">
+            <Badge>{b.status}</Badge>
+            <Badge variant="secondary">Rev {b.revision_no}</Badge>
           </div>
 
-          <div className="text-xl font-bold text-[#ef7f1b] mb-1">
+          <div className="mt-4 text-lg font-semibold text-gray-900">
             ₹{Number(b.grand_total || 0).toLocaleString()}
           </div>
         </Card>
@@ -509,11 +432,13 @@ function GridView({ boqs, projectMap, onQuickView, onView, onEdit, onDelete }) {
   );
 }
 
+/* ================= LIST ================= */
+
 function ListView({ boqs, projectMap, onQuickView, onView, onEdit, onDelete }) {
   return (
-    <div className="bg-white rounded-xl border">
-      <div className="grid grid-cols-12 gap-4 px-6 py-3 bg-gray-50 text-xs font-bold uppercase text-gray-500 border-b">
-        <div className="col-span-5">BOQ Title</div>
+    <div className="bg-white border rounded-lg overflow-hidden">
+      <div className="grid grid-cols-12 text-xs uppercase text-gray-500 bg-gray-50 p-3">
+        <div className="col-span-5">Title</div>
         <div className="col-span-3">Project</div>
         <div className="col-span-2">Status</div>
         <div className="col-span-1 text-right">Total</div>
@@ -523,51 +448,39 @@ function ListView({ boqs, projectMap, onQuickView, onView, onEdit, onDelete }) {
       {boqs.map((b) => (
         <div
           key={b.id}
-          className="grid grid-cols-12 gap-4 px-6 py-4 border-b hover:bg-orange-50/50 items-center"
+          className="grid grid-cols-12 p-4 border-t hover:bg-gray-50"
         >
           <div className="col-span-5">
             <p className="font-medium">{b.title}</p>
             <p className="text-xs text-gray-500">{b.revision_no}</p>
           </div>
+
           <div className="col-span-3 text-sm">
             {projectMap.get(b.project_id)}
           </div>
+
           <div className="col-span-2">
-            <Badge
-              className={
-                b.status === "approved"
-                  ? "bg-green-100 text-green-700"
-                  : "bg-amber-100 text-amber-700"
-              }
-            >
-              {b.status}
-            </Badge>
+            <Badge>{b.status}</Badge>
           </div>
-          <div className="col-span-1 text-right font-semibold">
+
+          <div className="col-span-1 text-right font-medium">
             ₹{Number(b.grand_total || 0).toLocaleString()}
           </div>
+
           <div className="col-span-1 flex justify-end">
             <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <button className="p-2 hover:bg-gray-100 rounded-md">
-                  <MoreHorizontal className="w-4 h-4" />
-                </button>
+              <DropdownMenuTrigger>
+                <MoreHorizontal className="w-4 h-4" />
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
-                <DropdownMenuItem onClick={() => onQuickView(b.id)}>
-                  <Eye className="w-4 h-4 mr-2" /> Quick View
-                </DropdownMenuItem>
+              <DropdownMenuContent>
                 <DropdownMenuItem onClick={() => onView(b.id)}>
-                  <Eye className="w-4 h-4 mr-2" /> View Full BOQ
+                  View
                 </DropdownMenuItem>
                 <DropdownMenuItem onClick={() => onEdit(b.id)}>
-                  <Edit className="w-4 h-4 mr-2" /> Edit
+                  Edit
                 </DropdownMenuItem>
-                <DropdownMenuItem
-                  className="text-red-600"
-                  onClick={() => onDelete(b.id)}
-                >
-                  <Trash2 className="w-4 h-4 mr-2" /> Delete
+                <DropdownMenuItem onClick={() => onDelete(b.id)}>
+                  Delete
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>

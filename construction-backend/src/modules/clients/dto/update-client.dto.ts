@@ -6,21 +6,26 @@ import {
   IsEnum,
 } from 'class-validator';
 
+import { Transform } from 'class-transformer';
 import { PreferredCommunication } from '@/common/enums';
+
 export class UpdateClientDto {
   @IsOptional()
   @IsString()
   name?: string;
 
   @IsOptional()
+  @Transform(({ value }) => (value === '' ? undefined : value))
   @IsString()
   contact_number?: string;
 
   @IsOptional()
+  @Transform(({ value }) => (value === '' ? undefined : value))
   @IsEmail()
   email?: string;
 
   @IsOptional()
+  @Transform(({ value }) => (value === '' ? undefined : value))
   @IsEnum(PreferredCommunication)
   preferred_communication?: PreferredCommunication;
 

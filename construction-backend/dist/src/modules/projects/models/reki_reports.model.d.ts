@@ -1,7 +1,8 @@
 import { Model } from 'sequelize-typescript';
+import type { InferAttributes, InferCreationAttributes, CreationOptional, NonAttribute } from 'sequelize';
 import { Project } from './project.model';
 import { User } from '@/modules/users/models/user.model';
-import type { InferAttributes, InferCreationAttributes, CreationOptional, NonAttribute } from 'sequelize';
+import { RekiPhoto } from './reki_photos.model';
 export declare class RekiReport extends Model<InferAttributes<RekiReport>, InferCreationAttributes<RekiReport>> {
     id: CreationOptional<string>;
     project_id: string;
@@ -46,4 +47,5 @@ export declare class RekiReport extends Model<InferAttributes<RekiReport>, Infer
     reki_pdf_url: string;
     project?: NonAttribute<Project>;
     supervisor?: NonAttribute<User>;
+    rekiPhotos?: NonAttribute<RekiPhoto[]>;
 }

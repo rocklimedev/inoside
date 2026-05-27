@@ -1,7 +1,7 @@
 import { PreferredCommunication } from '@/common/enums';
 export declare class CreateClientDto {
     name: string;
-    contact_number: string;
+    contact_number?: string;
     email?: string;
     preferred_communication?: PreferredCommunication;
     is_owner?: boolean;

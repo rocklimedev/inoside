@@ -12,6 +12,7 @@ import {
   useSendBriefToClientMutation,
   useMarkBriefAsDraftMutation,
 } from "@/api/projectsApi";
+
 import {
   Table,
   TableBody,
@@ -20,20 +21,22 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Separator } from "@/components/ui/separator";
 import { Input } from "@/components/ui/input";
 
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
-  DropdownMenuTrigger,
   DropdownMenuSeparator,
+  DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+
+import { FilterSection } from "@/components/projects/FilterSection";
 
 import {
   Search,
@@ -53,9 +56,9 @@ import {
   FileText,
   FolderKanban,
   ArrowUpRight,
+  BriefcaseBusiness,
+  Clock3,
 } from "lucide-react";
-
-import { FilterSection } from "@/components/projects/FilterSection";
 
 const BRIEF_STATUSES = [
   "Pending",
@@ -66,11 +69,15 @@ const BRIEF_STATUSES = [
 ];
 
 const STATUS_STYLES = {
-  Approved: "bg-emerald-500/10 text-emerald-400 border-emerald-500/20",
-  "Changes Requested": "bg-red-500/10 text-red-400 border-red-500/20",
-  sent_to_client: "bg-amber-500/10 text-amber-400 border-amber-500/20",
-  draft: "bg-slate-700 text-slate-300 border-slate-600",
-  Pending: "bg-blue-500/10 text-blue-400 border-blue-500/20",
+  Approved: "border-emerald-500/20 bg-emerald-500/10 text-emerald-400",
+
+  "Changes Requested": "border-red-500/20 bg-red-500/10 text-red-400",
+
+  sent_to_client: "border-amber-500/20 bg-amber-500/10 text-amber-400",
+
+  draft: "border-slate-500/20 bg-slate-500/10 text-slate-300",
+
+  Pending: "border-blue-500/20 bg-blue-500/10 text-blue-400",
 };
 
 export default function BriefList() {
@@ -91,30 +98,38 @@ export default function BriefList() {
   const [sendToClient] = useSendBriefToClientMutation();
   const [markAsDraft] = useMarkBriefAsDraftMutation();
 
-  // Transform Data
+  // Transform
   const briefs = useMemo(() => {
     return briefsData.map((brief) => ({
       id: brief.project_id,
       briefId: brief.id,
+
       projectName:
         brief.project?.name || brief.project_name || "Untitled Project",
+
       client: brief.project?.client?.name || brief.client_name || "—",
+
       clientEmail: brief.project?.client?.email || brief.client_email || "—",
+
       stage: brief.project?.status || "—",
+
       briefStatus: brief.status || "Pending",
+
       lastUpdated: brief.updated_at
         ? new Date(brief.updated_at).toLocaleDateString()
         : "—",
+
       raw: brief,
     }));
   }, [briefsData]);
 
-  // Filtered & Sorted
+  // Filter + Sort
   const filteredBriefs = useMemo(() => {
     let result = [...briefs];
 
     if (search.trim()) {
       const term = search.toLowerCase();
+
       result = result.filter((b) =>
         [b.projectName, b.client, b.clientEmail, b.stage, b.briefStatus]
           .join(" ")
@@ -128,14 +143,17 @@ export default function BriefList() {
     }
 
     result.sort((a, b) => {
-      if (sortBy === "project")
+      if (sortBy === "project") {
         return a.projectName.localeCompare(b.projectName);
+      }
+
       if (sortBy === "status") {
         return (
           BRIEF_STATUSES.indexOf(a.briefStatus) -
           BRIEF_STATUSES.indexOf(b.briefStatus)
         );
       }
+
       return (
         new Date(b.raw?.updated_at || 0).getTime() -
         new Date(a.raw?.updated_at || 0).getTime()
@@ -144,6 +162,18 @@ export default function BriefList() {
 
     return result;
   }, [briefs, search, filters, sortBy]);
+
+  // Stats
+  const stats = useMemo(() => {
+    return {
+      total: briefs.length,
+      approved: briefs.filter((b) => b.briefStatus === "Approved").length,
+
+      pending: briefs.filter((b) => b.briefStatus === "Pending").length,
+
+      draft: briefs.filter((b) => b.briefStatus === "draft").length,
+    };
+  }, [briefs]);
 
   // Actions
   const handleApprove = async (briefId) => {
@@ -166,9 +196,15 @@ export default function BriefList() {
 
   const handleRequestChanges = async (briefId) => {
     const note = prompt("Enter reason for requesting changes:");
+
     if (!note?.trim()) return;
+
     try {
-      await requestChanges({ briefId, note }).unwrap();
+      await requestChanges({
+        briefId,
+        note,
+      }).unwrap();
+
       toast.success("Change request sent");
     } catch (err) {
       toast.error(err?.data?.message || "Failed to request changes");
@@ -193,212 +229,228 @@ export default function BriefList() {
     }
   };
 
-  const handleEditBrief = (briefId) =>
+  const handleEditBrief = (briefId) => {
     router.push(`/brief/add?briefId=${briefId}`);
-  const handleCardClick = (projectId, briefId) =>
+  };
+
+  const handleCardClick = (projectId, briefId) => {
     router.push(`/brief/view?briefId=${briefId}&projectId=${projectId}`);
-  const handleNewBrief = () => router.push("/brief/add");
+  };
+
+  const handleNewBrief = () => {
+    router.push("/brief/add");
+  };
 
   if (isLoading) {
     return (
       <div className="flex h-screen items-center justify-center bg-background">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        <div className="flex flex-col items-center gap-4">
+          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+          <p className="text-sm text-muted-foreground">Loading briefs...</p>
+        </div>
       </div>
     );
   }
 
   if (error) {
     return (
-      <div className="flex h-screen items-center justify-center text-destructive">
-        Failed to load briefs. Please try again.
+      <div className="flex h-screen items-center justify-center">
+        <Card className="w-full max-w-md rounded-2xl border border-destructive/20">
+          <CardContent className="flex flex-col items-center py-10 text-center">
+            <AlertCircle className="h-10 w-10 text-destructive" />
+
+            <h3 className="mt-4 text-lg font-semibold">
+              Failed to load briefs
+            </h3>
+
+            <p className="mt-2 text-sm text-muted-foreground">
+              Please refresh the page and try again.
+            </p>
+          </CardContent>
+        </Card>
       </div>
     );
   }
 
   return (
-    <div className="flex h-full" data-testid="briefs-page">
-      {/* Filter Sidebar - Desktop */}
+    <div className="flex h-full bg-background">
+      {/* Desktop Filters */}
       {showFilters && (
-        <div className="w-72 border-r border-border bg-card p-6 shrink-0 overflow-auto">
-          <div className="flex items-center justify-between mb-6">
-            <h3 className="text-sm font-bold uppercase tracking-wider text-muted-foreground">
-              Filters
-            </h3>
-            <button
+        <div className="hidden lg:block w-72 shrink-0 border-r border-border/50 bg-card/40 backdrop-blur-xl">
+          <div className="flex items-center justify-between border-b border-border/50 p-5">
+            <div>
+              <h3 className="font-semibold">Filters</h3>
+              <p className="text-xs text-muted-foreground">
+                Refine your results
+              </p>
+            </div>
+
+            <Button
+              size="icon"
+              variant="ghost"
+              className="rounded-xl"
               onClick={() => setShowFilters(false)}
-              className="text-muted-foreground hover:text-foreground"
             >
-              <X className="h-5 w-5" />
-            </button>
+              <X className="h-4 w-4" />
+            </Button>
           </div>
 
-          <FilterSection
-            title="Brief Status"
-            items={BRIEF_STATUSES}
-            selected={filters.statuses}
-            onToggle={(value) =>
-              setFilters((prev) => ({
-                statuses: prev.statuses.includes(value)
-                  ? prev.statuses.filter((v) => v !== value)
-                  : [...prev.statuses, value],
-              }))
-            }
-          />
+          <ScrollArea className="h-[calc(100vh-80px)]">
+            <div className="p-5">
+              <FilterSection
+                title="Brief Status"
+                items={BRIEF_STATUSES}
+                selected={filters.statuses}
+                onToggle={(value) =>
+                  setFilters((prev) => ({
+                    statuses: prev.statuses.includes(value)
+                      ? prev.statuses.filter((v) => v !== value)
+                      : [...prev.statuses, value],
+                  }))
+                }
+              />
+            </div>
+          </ScrollArea>
         </div>
       )}
 
-      {/* Main Content */}
-      <div className="flex-1 flex flex-col overflow-hidden">
+      {/* Main */}
+      <div className="flex flex-1 flex-col overflow-hidden">
         {/* Header */}
-        <div className="border-b border-border bg-card p-6">
-          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-            <h1 className="text-3xl font-black">Project Briefs</h1>
+        <div className="sticky top-0 z-20 border-b border-border/50 bg-background/80 backdrop-blur-xl">
+          <div className="flex flex-col gap-6 p-6">
+            {/* Top */}
+            <div className="flex flex-col gap-5 xl:flex-row xl:items-center xl:justify-between">
+              <div>
+                <h1 className="text-3xl font-semibold tracking-tight">
+                  Project Briefs
+                </h1>
 
-            {/* Search */}
-            <div className="flex-1 max-w-md">
-              <div className="flex items-center gap-2 bg-input border border-border rounded-xl px-4 py-2.5 focus-within:border-primary">
-                <Search className="h-4 w-4 text-muted-foreground" />
-                <Input
-                  type="text"
-                  placeholder="Search projects, clients, emails... (Press /)"
-                  value={search}
-                  onChange={(e) => setSearch(e.target.value)}
-                  className="bg-transparent border-0 p-0 text-sm outline-none focus-visible:ring-0"
-                />
-              </div>
-            </div>
-
-            {/* Controls */}
-            <div className="flex items-center gap-3">
-              <Button
-                variant="outline"
-                onClick={() => setShowFilters(!showFilters)}
-              >
-                <Filter className="mr-2 h-4 w-4" />
-                Filter
-              </Button>
-
-              <div className="flex border border-border rounded-xl overflow-hidden">
-                <button
-                  onClick={() => setView("cards")}
-                  className={`p-2.5 ${view === "cards" ? "bg-primary text-primary-foreground" : "hover:bg-muted"}`}
-                >
-                  <LayoutGrid className="h-4 w-4" />
-                </button>
-                <button
-                  onClick={() => setView("table")}
-                  className={`p-2.5 ${view === "table" ? "bg-primary text-primary-foreground" : "hover:bg-muted"}`}
-                >
-                  <Table2 className="h-4 w-4" />
-                </button>
+                <p className="mt-1 text-sm text-muted-foreground">
+                  Manage and review all client briefs
+                </p>
               </div>
 
-              <select
-                value={sortBy}
-                onChange={(e) => setSortBy(e.target.value)}
-                className="h-10 rounded-xl border border-border bg-input px-4 text-sm outline-none"
-              >
-                <option value="date">Sort by Date</option>
-                <option value="project">Sort by Project</option>
-                <option value="status">Sort by Status</option>
-              </select>
-
-              <Button
-                onClick={handleNewBrief}
-                className="bg-primary hover:bg-primary/90"
-              >
+              <Button onClick={handleNewBrief} className="h-11 rounded-xl px-5">
                 <Plus className="mr-2 h-4 w-4" />
                 New Brief
               </Button>
             </div>
-          </div>
 
-          <p className="text-sm text-muted-foreground mt-2">
-            {filteredBriefs.length} brief
-            {filteredBriefs.length !== 1 ? "s" : ""} found
-          </p>
+            {/* Toolbar */}
+            <div className="flex flex-wrap items-center gap-3">
+              {/* Search */}
+              <div className="relative min-w-[260px] flex-1 max-w-md">
+                <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+
+                <Input
+                  type="text"
+                  placeholder="Search briefs..."
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                  className="h-11 rounded-xl border-border/50 bg-card pl-10"
+                />
+              </div>
+
+              {/* Filter */}
+              <Button
+                variant="outline"
+                className="h-11 rounded-xl border-border/50"
+                onClick={() => setShowFilters(!showFilters)}
+              >
+                <Filter className="mr-2 h-4 w-4" />
+                Filters
+              </Button>
+
+              {/* Sort */}
+              <select
+                value={sortBy}
+                onChange={(e) => setSortBy(e.target.value)}
+                className="h-11 rounded-xl border border-border/50 bg-card px-4 text-sm outline-none"
+              >
+                <option value="date">Latest</option>
+                <option value="project">Project</option>
+                <option value="status">Status</option>
+              </select>
+
+              {/* View Switch */}
+              <div className="flex items-center rounded-xl border border-border/50 bg-card p-1">
+                <button
+                  onClick={() => setView("cards")}
+                  className={`rounded-lg px-3 py-2 transition ${
+                    view === "cards"
+                      ? "bg-primary text-primary-foreground"
+                      : "text-muted-foreground hover:bg-muted"
+                  }`}
+                >
+                  <LayoutGrid className="h-4 w-4" />
+                </button>
+
+                <button
+                  onClick={() => setView("table")}
+                  className={`rounded-lg px-3 py-2 transition ${
+                    view === "table"
+                      ? "bg-primary text-primary-foreground"
+                      : "text-muted-foreground hover:bg-muted"
+                  }`}
+                >
+                  <Table2 className="h-4 w-4" />
+                </button>
+              </div>
+            </div>
+          </div>
         </div>
 
-        {/* Content Area */}
+        {/* Content */}
         <ScrollArea className="flex-1">
           <div className="p-6">
-            {/* ================= CARD VIEW ================= */}
+            {/* CARD VIEW */}
             {view === "cards" && (
-              <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
+              <div className="grid grid-cols-1 gap-4 md:grid-cols-2 2xl:grid-cols-3">
                 {filteredBriefs.map((brief) => (
                   <Card
                     key={brief.briefId}
                     onClick={() => handleCardClick(brief.id, brief.briefId)}
-                    className="group relative overflow-hidden rounded-2xl border bg-card/80 backdrop-blur transition-all duration-300 hover:shadow-lg hover:-translate-y-1 cursor-pointer"
+                    className="
+                      group
+                      cursor-pointer
+                      rounded-2xl
+                      border
+                      border-border/50
+                      bg-card/70
+                      backdrop-blur-sm
+                      transition-all
+                      duration-200
+                      hover:border-primary/20
+                      hover:shadow-lg
+                    "
                   >
-                    {/* Accent Line */}
-                    <div className="absolute inset-x-0 top-0 h-[3px] bg-gradient-to-r from-primary via-blue-500 to-primary" />
-
                     <CardContent className="p-5">
-                      {/* HEADER */}
-                      <div className="flex items-start justify-between gap-3">
+                      {/* Top */}
+                      <div className="flex items-start justify-between gap-4">
                         <div className="min-w-0 flex-1">
-                          <h3 className="truncate font-semibold text-lg leading-tight group-hover:text-primary transition-colors">
+                          <h3 className="truncate text-base font-semibold transition-colors group-hover:text-primary">
                             {brief.projectName}
                           </h3>
-                          <p className="truncate text-sm text-muted-foreground mt-1">
-                            {brief.client}
-                          </p>
-                          <p className="truncate text-muted-foreground">
-                            {brief.clientEmail}
-                          </p>
+
+                          <div className="mt-1 space-y-0.5">
+                            <p className="text-sm text-muted-foreground">
+                              {brief.client}
+                            </p>
+
+                            <p className="truncate text-xs text-muted-foreground">
+                              {brief.clientEmail}
+                            </p>
+                          </div>
                         </div>
-
-                        <Button
-                          size="icon"
-                          variant="outline"
-                          className="h-9 w-9 rounded-xl shrink-0"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleEditBrief(brief.briefId);
-                          }}
-                        >
-                          <Edit className="h-4 w-4" />
-                        </Button>
-                      </div>
-
-                      {/* Status & Stage */}
-                      <div className="mt-5 flex flex-wrap gap-2">
-                        <Badge
-                          className={`rounded-full border px-3 py-1 text-xs font-semibold ${
-                            STATUS_STYLES[brief.briefStatus] ||
-                            STATUS_STYLES.Pending
-                          }`}
-                        >
-                          {brief.briefStatus}
-                        </Badge>
-                        <Badge variant="outline" className="rounded-full">
-                          {brief.stage}
-                        </Badge>
-                      </div>
-
-                      {/* Actions */}
-                      <div
-                        className="mt-6 flex gap-2"
-                        onClick={(e) => e.stopPropagation()}
-                      >
-                        <Button
-                          variant="outline"
-                          className="h-10 flex-1 rounded-xl"
-                          onClick={() =>
-                            handleCardClick(brief.id, brief.briefId)
-                          }
-                        >
-                          <Eye className="mr-2 h-4 w-4" />
-                          View
-                        </Button>
 
                         <DropdownMenu>
                           <DropdownMenuTrigger asChild>
                             <Button
-                              variant="outline"
                               size="icon"
-                              className="h-10 w-10 rounded-xl"
+                              variant="ghost"
+                              className="h-9 w-9 rounded-xl"
+                              onClick={(e) => e.stopPropagation()}
                             >
                               <MoreHorizontal className="h-4 w-4" />
                             </Button>
@@ -408,7 +460,8 @@ export default function BriefList() {
                             <DropdownMenuItem
                               onClick={() => handleEditBrief(brief.briefId)}
                             >
-                              <Edit className="mr-2 h-4 w-4" /> Edit Brief
+                              <Edit className="mr-2 h-4 w-4" />
+                              Edit Brief
                             </DropdownMenuItem>
 
                             <DropdownMenuSeparator />
@@ -417,14 +470,15 @@ export default function BriefList() {
                               <DropdownMenuItem
                                 onClick={() => handleApprove(brief.briefId)}
                               >
-                                <CheckCircle2 className="mr-2 h-4 w-4" />{" "}
+                                <CheckCircle2 className="mr-2 h-4 w-4" />
                                 Approve
                               </DropdownMenuItem>
                             ) : (
                               <DropdownMenuItem
                                 onClick={() => handleUnapprove(brief.briefId)}
                               >
-                                <Undo className="mr-2 h-4 w-4" /> Unapprove
+                                <Undo className="mr-2 h-4 w-4" />
+                                Unapprove
                               </DropdownMenuItem>
                             )}
 
@@ -433,24 +487,50 @@ export default function BriefList() {
                                 handleRequestChanges(brief.briefId)
                               }
                             >
-                              <AlertCircle className="mr-2 h-4 w-4" /> Request
-                              Changes
+                              <AlertCircle className="mr-2 h-4 w-4" />
+                              Request Changes
                             </DropdownMenuItem>
 
                             <DropdownMenuItem
                               onClick={() => handleSendToClient(brief.briefId)}
                             >
-                              <Send className="mr-2 h-4 w-4" /> Send to Client
+                              <Send className="mr-2 h-4 w-4" />
+                              Send to Client
                             </DropdownMenuItem>
 
                             <DropdownMenuItem
                               onClick={() => handleMarkAsDraft(brief.briefId)}
                             >
-                              <FileText className="mr-2 h-4 w-4" /> Mark as
-                              Draft
+                              <FileText className="mr-2 h-4 w-4" />
+                              Mark as Draft
                             </DropdownMenuItem>
                           </DropdownMenuContent>
                         </DropdownMenu>
+                      </div>
+
+                      {/* Meta */}
+                      <div className="mt-5 flex flex-wrap items-center gap-2">
+                        <Badge
+                          className={`border text-xs font-medium ${STATUS_STYLES[brief.briefStatus]}`}
+                        >
+                          {brief.briefStatus}
+                        </Badge>
+
+                        <Badge variant="secondary" className="rounded-lg">
+                          {brief.stage}
+                        </Badge>
+                      </div>
+
+                      {/* Footer */}
+                      <div className="mt-6 flex items-center justify-between border-t border-border/50 pt-4">
+                        <p className="text-xs text-muted-foreground">
+                          Updated {brief.lastUpdated}
+                        </p>
+
+                        <Button size="sm" className="rounded-xl">
+                          <Eye className="mr-2 h-4 w-4" />
+                          Open
+                        </Button>
                       </div>
                     </CardContent>
                   </Card>
@@ -458,12 +538,12 @@ export default function BriefList() {
               </div>
             )}
 
-            {/* ================= TABLE VIEW ================= */}
+            {/* TABLE VIEW */}
             {view === "table" && (
-              <Card className="overflow-hidden rounded-2xl border">
+              <Card className="overflow-hidden rounded-2xl border border-border/50 bg-card/60 backdrop-blur-sm">
                 <div className="overflow-x-auto">
                   <Table>
-                    <TableHeader className="bg-muted/50">
+                    <TableHeader className="bg-muted/30">
                       <TableRow>
                         <TableHead>Project</TableHead>
                         <TableHead>Client</TableHead>
@@ -481,49 +561,49 @@ export default function BriefList() {
                           onClick={() =>
                             handleCardClick(brief.id, brief.briefId)
                           }
-                          className="cursor-pointer hover:bg-muted/40 group"
+                          className="cursor-pointer border-border/50 hover:bg-muted/30"
                         >
-                          <TableCell>
-                            <div className="font-medium group-hover:text-primary transition-colors">
+                          <TableCell className="py-4">
+                            <div className="font-medium">
                               {brief.projectName}
                             </div>
-                            <div className="text-xs text-muted-foreground truncate">
+
+                            <div className="mt-1 text-xs text-muted-foreground">
                               {brief.clientEmail}
                             </div>
                           </TableCell>
 
-                          <TableCell className="text-sm text-muted-foreground">
+                          <TableCell className="py-4 text-sm text-muted-foreground">
                             {brief.client}
                           </TableCell>
 
-                          <TableCell>
-                            <Badge variant="outline">{brief.stage}</Badge>
+                          <TableCell className="py-4">
+                            <Badge variant="secondary" className="rounded-lg">
+                              {brief.stage}
+                            </Badge>
                           </TableCell>
 
-                          <TableCell>
+                          <TableCell className="py-4">
                             <Badge
-                              className={`rounded-full border px-3 py-1 text-xs font-semibold ${
-                                STATUS_STYLES[brief.briefStatus] ||
-                                STATUS_STYLES.Pending
-                              }`}
+                              className={`border text-xs font-medium ${STATUS_STYLES[brief.briefStatus]}`}
                             >
                               {brief.briefStatus}
                             </Badge>
                           </TableCell>
 
-                          <TableCell className="text-sm text-muted-foreground">
+                          <TableCell className="py-4 text-sm text-muted-foreground">
                             {brief.lastUpdated}
                           </TableCell>
 
                           <TableCell
-                            className="text-right"
+                            className="py-4 text-right"
                             onClick={(e) => e.stopPropagation()}
                           >
                             <div className="flex items-center justify-end gap-2">
                               <Button
                                 size="icon"
                                 variant="ghost"
-                                className="h-8 w-8"
+                                className="h-8 w-8 rounded-xl"
                                 onClick={() =>
                                   handleCardClick(brief.id, brief.briefId)
                                 }
@@ -534,9 +614,9 @@ export default function BriefList() {
                               <DropdownMenu>
                                 <DropdownMenuTrigger asChild>
                                   <Button
-                                    variant="ghost"
                                     size="icon"
-                                    className="h-8 w-8"
+                                    variant="ghost"
+                                    className="h-8 w-8 rounded-xl"
                                   >
                                     <MoreHorizontal className="h-4 w-4" />
                                   </Button>
@@ -548,12 +628,14 @@ export default function BriefList() {
                                       handleEditBrief(brief.briefId)
                                     }
                                   >
-                                    <Edit className="mr-2 h-4 w-4" /> Edit
+                                    <Edit className="mr-2 h-4 w-4" />
+                                    Edit
                                   </DropdownMenuItem>
+
                                   <DropdownMenuItem
                                     onClick={() => handleApprove(brief.briefId)}
                                   >
-                                    <CheckCircle2 className="mr-2 h-4 w-4" />{" "}
+                                    <CheckCircle2 className="mr-2 h-4 w-4" />
                                     Approve
                                   </DropdownMenuItem>
                                 </DropdownMenuContent>
@@ -567,21 +649,24 @@ export default function BriefList() {
                 </div>
               </Card>
             )}
-            {/* Empty State */}
+
+            {/* Empty */}
             {filteredBriefs.length === 0 && (
-              <Card className="rounded-3xl border border-border bg-card py-24 text-center">
-                <CardContent>
-                  <div className="mx-auto flex h-24 w-24 items-center justify-center rounded-full bg-primary/10">
+              <Card className="rounded-2xl border border-border/50 bg-card/60 backdrop-blur-sm">
+                <CardContent className="flex flex-col items-center py-24 text-center">
+                  <div className="rounded-2xl bg-primary/10 p-5">
                     <FolderKanban className="h-10 w-10 text-primary" />
                   </div>
-                  <h3 className="mt-8 text-3xl font-black">No briefs found</h3>
-                  <p className="mx-auto mt-4 max-w-md text-muted-foreground">
+
+                  <h3 className="mt-6 text-xl font-semibold">
+                    No briefs found
+                  </h3>
+
+                  <p className="mt-2 max-w-md text-sm text-muted-foreground">
                     Try adjusting your filters or create a new project brief.
                   </p>
-                  <Button
-                    onClick={handleNewBrief}
-                    className="mt-8 h-12 rounded-2xl bg-primary px-6 text-primary-foreground hover:bg-primary/90"
-                  >
+
+                  <Button onClick={handleNewBrief} className="mt-6 rounded-xl">
                     <Plus className="mr-2 h-4 w-4" />
                     Create Brief
                   </Button>
@@ -592,40 +677,50 @@ export default function BriefList() {
         </ScrollArea>
       </div>
 
-      {/* Mobile Filter Overlay */}
+      {/* Mobile Filter */}
       {showFilters && (
         <div
-          className="fixed inset-0 z-50 bg-black/80 md:hidden"
+          className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm lg:hidden"
           onClick={() => setShowFilters(false)}
         >
           <div
-            className="absolute right-0 top-0 h-full w-[85%] max-w-sm border-l border-border bg-card p-6 shadow-2xl"
+            className="absolute right-0 top-0 h-full w-[85%] max-w-sm border-l border-border/50 bg-card/95 backdrop-blur-xl"
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="flex items-center justify-between mb-6">
-              <h3 className="text-sm font-bold uppercase tracking-wider text-muted-foreground">
-                Filters
-              </h3>
+            <div className="flex items-center justify-between border-b border-border/50 p-5">
+              <div>
+                <h3 className="font-semibold">Filters</h3>
+                <p className="text-xs text-muted-foreground">
+                  Refine your results
+                </p>
+              </div>
+
               <Button
                 size="icon"
                 variant="ghost"
+                className="rounded-xl"
                 onClick={() => setShowFilters(false)}
               >
-                <X className="h-5 w-5" />
+                <X className="h-4 w-4" />
               </Button>
             </div>
-            <FilterSection
-              title="Brief Status"
-              items={BRIEF_STATUSES}
-              selected={filters.statuses}
-              onToggle={(value) =>
-                setFilters((prev) => ({
-                  statuses: prev.statuses.includes(value)
-                    ? prev.statuses.filter((v) => v !== value)
-                    : [...prev.statuses, value],
-                }))
-              }
-            />
+
+            <ScrollArea className="h-[calc(100vh-80px)]">
+              <div className="p-5">
+                <FilterSection
+                  title="Brief Status"
+                  items={BRIEF_STATUSES}
+                  selected={filters.statuses}
+                  onToggle={(value) =>
+                    setFilters((prev) => ({
+                      statuses: prev.statuses.includes(value)
+                        ? prev.statuses.filter((v) => v !== value)
+                        : [...prev.statuses, value],
+                    }))
+                  }
+                />
+              </div>
+            </ScrollArea>
           </div>
         </div>
       )}

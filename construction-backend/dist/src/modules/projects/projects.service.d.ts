@@ -8,7 +8,7 @@ export declare class ProjectsService {
     private siteModel;
     private userModel;
     constructor(projectModel: typeof Project, clientModel: typeof Client, siteModel: typeof Site, userModel: typeof User);
-    private getIncludes;
+    private getFullIncludes;
     create(dto: any): Promise<Project>;
     findAll(): Promise<Project[]>;
     findOne(id: string): Promise<Project>;

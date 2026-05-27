@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useEffect, useRef, useState } from "react";
+import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import {
   ArrowLeft,
@@ -37,10 +38,13 @@ import {
 } from "@/api/projectsApi";
 
 export default function SiteRekiForm({
-  projectId: initialProjectId,
+  initialProjectId,
+  initialRekiId,
+  isStandalonePage = false,
   onBack,
   onGenerated,
 }) {
+  const router = useRouter();
   const { data: projects = [] } = useGetProjectsQuery();
 
   const [selectedProjectId, setSelectedProjectId] = useState(
@@ -58,13 +62,13 @@ export default function SiteRekiForm({
   const [form, setForm] = useState({ photos: [] });
   const [openSections, setOpenSections] = useState({
     project: true,
+    access: true,
   });
 
   const [saving, setSaving] = useState(false);
   const [generating, setGenerating] = useState(false);
   const [uploadingPhoto, setUploadingPhoto] = useState(false);
 
-  // FIXED: Proper useRef for JavaScript
   const photoRef = useRef(null);
 
   /* ================= LOAD DATA ================= */
@@ -83,7 +87,16 @@ export default function SiteRekiForm({
     setForm((prev) => ({ ...prev, [key]: value }));
   };
 
-  /* ================= SAVE (Create or Update) ================= */
+  /* ================= BACK NAVIGATION ================= */
+  const handleBack = () => {
+    if (isStandalonePage) {
+      router.push("/site-reki");
+    } else {
+      onBack?.();
+    }
+  };
+
+  /* ================= SAVE ================= */
   const handleSave = async () => {
     if (!selectedProjectId) {
       return toast.error("Please select a project");
@@ -96,7 +109,7 @@ export default function SiteRekiForm({
         project_id: selectedProjectId,
       };
 
-      if (item?.id) {
+      if (item?.id || initialRekiId) {
         await updateReki({ projectId: selectedProjectId, ...payload }).unwrap();
         toast.success("Reki report updated successfully");
       } else {
@@ -119,7 +132,15 @@ export default function SiteRekiForm({
     try {
       await handleSave();
       toast.success("Report generated successfully");
-      onGenerated?.(form);
+
+      if (isStandalonePage) {
+        router.push("/site-reki");
+      } else {
+        onGenerated?.({
+          project_id: selectedProjectId,
+          id: initialRekiId || form.id,
+        });
+      }
     } catch (err) {
       toast.error("Failed to generate report");
     } finally {
@@ -217,7 +238,7 @@ export default function SiteRekiForm({
       {/* HEADER */}
       <div className="sticky top-0 z-10 border-b bg-white p-4 shadow-sm">
         <div className="flex items-center justify-between">
-          <Button variant="ghost" onClick={onBack} className="pl-0">
+          <Button variant="ghost" onClick={handleBack} className="pl-0">
             <ArrowLeft className="mr-2 h-5 w-5" />
             Back
           </Button>
@@ -225,7 +246,7 @@ export default function SiteRekiForm({
           <div className="flex gap-3">
             <Button onClick={handleSave} disabled={saving} variant="outline">
               <Save className="mr-2 h-4 w-4" />
-              Save
+              Save Draft
             </Button>
             <Button onClick={handleGenerate} disabled={generating}>
               <FileText className="mr-2 h-4 w-4" />

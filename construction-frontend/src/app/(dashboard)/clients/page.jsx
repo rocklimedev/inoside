@@ -363,40 +363,6 @@ export default function ClientsPage() {
                               {client.contact_number}
                             </span>
                           </div>
-
-                          <div className="flex items-center gap-3 text-sm">
-                            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-muted">
-                              <MessageSquare className="h-4 w-4 text-primary" />
-                            </div>
-
-                            <Badge
-                              className={
-                                COMMUNICATION_COLORS[
-                                  client.preferred_communication
-                                ] ||
-                                "bg-muted text-muted-foreground border-border"
-                              }
-                            >
-                              {client.preferred_communication ||
-                                "Not specified"}
-                            </Badge>
-                          </div>
-                        </div>
-
-                        {/* TAGS */}
-                        <div className="mt-4 flex flex-wrap gap-2">
-                          {client.is_owner && (
-                            <Badge variant="secondary" className="rounded-full">
-                              <UserCheck className="mr-1 h-3 w-3" />
-                              Owner
-                            </Badge>
-                          )}
-
-                          {client.representative_involved && (
-                            <Badge variant="outline" className="rounded-full">
-                              Representative
-                            </Badge>
-                          )}
                         </div>
                       </CardContent>
                     </Card>
@@ -413,8 +379,7 @@ export default function ClientsPage() {
                         <TableRow>
                           <TableHead>Client</TableHead>
                           <TableHead>Phone</TableHead>
-                          <TableHead>Communication</TableHead>
-                          <TableHead>Tags</TableHead>
+                          <TableHead>Email</TableHead>
 
                           <TableHead className="text-right">Actions</TableHead>
                         </TableRow>
@@ -436,10 +401,6 @@ export default function ClientsPage() {
                                   <p className="font-medium truncate">
                                     {client.name}
                                   </p>
-
-                                  <p className="text-xs text-muted-foreground truncate">
-                                    {client.email || "No email"}
-                                  </p>
                                 </div>
                               </div>
                             </TableCell>
@@ -449,29 +410,9 @@ export default function ClientsPage() {
                             </TableCell>
 
                             <TableCell>
-                              <Badge
-                                className={
-                                  COMMUNICATION_COLORS[
-                                    client.preferred_communication
-                                  ] ||
-                                  "bg-muted text-muted-foreground border-border"
-                                }
-                              >
-                                {client.preferred_communication ||
-                                  "Not specified"}
-                              </Badge>
-                            </TableCell>
-
-                            <TableCell>
-                              <div className="flex flex-wrap gap-2">
-                                {client.is_owner && (
-                                  <Badge variant="secondary">Owner</Badge>
-                                )}
-
-                                {client.representative_involved && (
-                                  <Badge variant="outline">Rep</Badge>
-                                )}
-                              </div>
+                              <p className="text-xs text-muted-foreground truncate">
+                                {client.email || "No email"}
+                              </p>
                             </TableCell>
 
                             <TableCell className="text-right">

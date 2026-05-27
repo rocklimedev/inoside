@@ -34,9 +34,9 @@ __decorate([
 __decorate([
     (0, sequelize_typescript_1.Column)({
         type: sequelize_typescript_1.DataType.STRING(50),
-        allowNull: false,
+        allowNull: true,
     }),
-    __metadata("design:type", String)
+    __metadata("design:type", Object)
 ], Client.prototype, "contact_number", void 0);
 __decorate([
     (0, sequelize_typescript_1.Column)({

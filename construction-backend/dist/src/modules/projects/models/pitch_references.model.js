@@ -46,6 +46,7 @@ exports.PitchReference = PitchReference = __decorate([
         tableName: 'pitch_references',
         timestamps: true,
         createdAt: 'created_at',
+        updatedAt: 'updated_at',
     })
 ], PitchReference);
 //# sourceMappingURL=pitch_references.model.js.map

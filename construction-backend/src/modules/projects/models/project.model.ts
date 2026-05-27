@@ -20,6 +20,8 @@ import type {
 import { Client } from '@/modules/clients/models/client.model';
 import { Site } from '@/modules/sites/models/site.model';
 import { User } from '@/modules/users/models/user.model';
+
+// Stage Models
 import { ProjectBrief } from './project_brief.model';
 import { PitchReference } from './pitch_references.model';
 import { ProjectPitch } from './project_pitch.model';
@@ -28,6 +30,7 @@ import { RekiPhoto } from './reki_photos.model';
 import { ScopeOfWork } from './scope_of_work.model';
 import { ProjectCostEstimate } from './project_cost_estimates.model';
 import { ProjectDrawing } from './project-drawings.model';
+import { DrawingApprovalLog } from './drawing_approval_logs.model';
 
 @Table({
   tableName: 'projects',
@@ -51,7 +54,7 @@ export class Project extends Model<
   declare id: CreationOptional<string>;
 
   // ======================================================
-  // RELATIONS
+  // RELATIONS (Foreign Keys)
   // ======================================================
 
   @ForeignKey(() => Client)
@@ -132,7 +135,7 @@ export class Project extends Model<
     type: DataType.STRING(100),
     allowNull: true,
   })
-  declare budget_range: CreationOptional<string> | null;
+  declare budget_range: CreationOptional<string | null>;
 
   @Column({
     type: DataType.ENUM('Immediate', 'Flexible', 'Fixed Date'),
@@ -144,7 +147,7 @@ export class Project extends Model<
     type: DataType.STRING(50),
     allowNull: true,
   })
-  declare design_preference: CreationOptional<string> | null;
+  declare design_preference: CreationOptional<string | null>;
 
   // ======================================================
   // PROJECT STATUS
@@ -193,7 +196,7 @@ export class Project extends Model<
     type: DataType.STRING(100),
     allowNull: true,
   })
-  declare current_stage: CreationOptional<string> | null;
+  declare current_stage: CreationOptional<string | null>;
 
   @Default(0)
   @Column({
@@ -288,7 +291,7 @@ export class Project extends Model<
   declare assignedUser?: NonAttribute<User>;
 
   // ======================================================
-  // MODULE RELATIONS
+  // STAGE RELATIONS
   // ======================================================
 
   @HasOne(() => ProjectBrief)

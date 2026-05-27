@@ -18,6 +18,7 @@ import type {
   tableName: 'pitch_references',
   timestamps: true,
   createdAt: 'created_at',
+  updatedAt: 'updated_at',
 })
 export class PitchReference extends Model<
   InferAttributes<PitchReference>,

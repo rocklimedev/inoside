@@ -21,6 +21,16 @@ const client_model_1 = require("../clients/models/client.model");
 const site_model_1 = require("../sites/models/site.model");
 const user_model_1 = require("../users/models/user.model");
 const address_model_1 = require("../address/models/address.model");
+const project_brief_model_1 = require("./models/project_brief.model");
+const project_pitch_model_1 = require("./models/project_pitch.model");
+const reki_reports_model_1 = require("./models/reki_reports.model");
+const scope_of_work_model_1 = require("./models/scope_of_work.model");
+const project_cost_estimates_model_1 = require("./models/project_cost_estimates.model");
+const project_drawings_model_1 = require("./models/project-drawings.model");
+const pitch_references_model_1 = require("./models/pitch_references.model");
+const pitch_comment_model_1 = require("./models/pitch-comment.model");
+const reki_photos_model_1 = require("./models/reki_photos.model");
+const drawing_approval_logs_model_1 = require("./models/drawing_approval_logs.model");
 let ProjectsService = class ProjectsService {
     projectModel;
     clientModel;
@@ -32,7 +42,7 @@ let ProjectsService = class ProjectsService {
         this.siteModel = siteModel;
         this.userModel = userModel;
     }
-    getIncludes() {
+    getFullIncludes() {
         return [
             {
                 model: client_model_1.Client,
@@ -53,39 +63,125 @@ let ProjectsService = class ProjectsService {
                 as: 'creator',
                 attributes: ['id', 'name', 'email'],
             },
+            {
+                model: user_model_1.User,
+                as: 'assignedUser',
+                attributes: ['id', 'name', 'email'],
+            },
+            {
+                model: project_brief_model_1.ProjectBrief,
+                as: 'brief',
+                include: [
+                    {
+                        model: user_model_1.User,
+                        as: 'approvedByUser',
+                        attributes: ['id', 'name'],
+                    },
+                    {
+                        model: user_model_1.User,
+                        as: 'changesRequestedByUser',
+                        attributes: ['id', 'name'],
+                    },
+                ],
+            },
+            {
+                model: project_pitch_model_1.ProjectPitch,
+                as: 'pitch',
+                include: [
+                    {
+                        model: pitch_comment_model_1.PitchComment,
+                        as: 'comments',
+                        include: [
+                            {
+                                model: user_model_1.User,
+                                attributes: ['id', 'name', 'email'],
+                            },
+                        ],
+                    },
+                    {
+                        model: user_model_1.User,
+                        as: 'createdByUser',
+                        attributes: ['id', 'name'],
+                    },
+                ],
+            },
+            {
+                model: pitch_references_model_1.PitchReference,
+                as: 'pitchReferences',
+            },
+            {
+                model: reki_reports_model_1.RekiReport,
+                as: 'reki',
+                include: [
+                    {
+                        model: user_model_1.User,
+                        as: 'supervisor',
+                        attributes: ['id', 'name'],
+                    },
+                    {
+                        model: reki_photos_model_1.RekiPhoto,
+                        as: 'rekiPhotos',
+                    },
+                ],
+            },
+            {
+                model: scope_of_work_model_1.ScopeOfWork,
+                as: 'scope',
+            },
+            {
+                model: project_cost_estimates_model_1.ProjectCostEstimate,
+                as: 'costEstimates',
+            },
+            {
+                model: project_drawings_model_1.ProjectDrawing,
+                as: 'drawings',
+                include: [
+                    {
+                        model: drawing_approval_logs_model_1.DrawingApprovalLog,
+                        as: 'approvalLogs',
+                    },
+                    {
+                        model: user_model_1.User,
+                        as: 'uploadedBy',
+                        attributes: ['id', 'name'],
+                    },
+                    {
+                        model: user_model_1.User,
+                        as: 'approvedBy',
+                        attributes: ['id', 'name'],
+                    },
+                ],
+            },
         ];
     }
     async create(dto) {
         if (dto.client_id) {
             const client = await this.clientModel.findByPk(dto.client_id);
-            if (!client) {
+            if (!client)
                 throw new common_1.BadRequestException('Client not found');
-            }
         }
         if (dto.site_id) {
             const site = await this.siteModel.findByPk(dto.site_id);
-            if (!site) {
+            if (!site)
                 throw new common_1.BadRequestException('Site not found');
-            }
         }
         if (dto.created_by) {
             const user = await this.userModel.findByPk(dto.created_by);
-            if (!user) {
+            if (!user)
                 throw new common_1.BadRequestException('Creator user not found');
-            }
         }
         const project = await this.projectModel.create(dto);
         return this.findOne(project.id);
     }
     async findAll() {
         return this.projectModel.findAll({
-            include: this.getIncludes(),
+            include: this.getFullIncludes(),
             order: [['created_at', 'DESC']],
         });
     }
     async findOne(id) {
         const project = await this.projectModel.findByPk(id, {
-            include: this.getIncludes(),
+            include: this.getFullIncludes(),
         });
         if (!project) {
             throw new common_1.NotFoundException(`Project with ID ${id} not found`);
@@ -96,15 +192,13 @@ let ProjectsService = class ProjectsService {
         const project = await this.findOne(id);
         if (dto.client_id) {
             const client = await this.clientModel.findByPk(dto.client_id);
-            if (!client) {
+            if (!client)
                 throw new common_1.BadRequestException('Client not found');
-            }
         }
         if (dto.site_id) {
             const site = await this.siteModel.findByPk(dto.site_id);
-            if (!site) {
+            if (!site)
                 throw new common_1.BadRequestException('Site not found');
-            }
         }
         await project.update(dto);
         return this.findOne(id);
@@ -121,52 +215,36 @@ let ProjectsService = class ProjectsService {
         if (progress < 0 || progress > 100) {
             throw new common_1.BadRequestException('Progress must be between 0 and 100');
         }
-        const project = await this.findOne(id);
-        await project.update({
-            progress_percentage: progress,
-        });
+        await this.projectModel.update({ progress_percentage: progress }, { where: { id } });
         return this.findOne(id);
     }
     async assignProject(id, dto) {
         const project = await this.findOne(id);
         const user = await this.userModel.findByPk(dto.assigned_to);
-        if (!user) {
+        if (!user)
             throw new common_1.NotFoundException('Assigned user not found');
-        }
-        await project.update({
-            assigned_to: dto.assigned_to,
-        });
+        await project.update({ assigned_to: dto.assigned_to });
         return this.findOne(id);
     }
     async archiveProject(id) {
-        const project = await this.findOne(id);
-        await project.update({
-            is_archived: true,
-        });
+        await this.projectModel.update({ is_archived: true }, { where: { id } });
         return this.findOne(id);
     }
     async unarchiveProject(id) {
-        const project = await this.findOne(id);
-        await project.update({
-            is_archived: false,
-        });
+        await this.projectModel.update({ is_archived: false }, { where: { id } });
         return this.findOne(id);
     }
     async getProjectsByClient(clientId) {
         return this.projectModel.findAll({
-            where: {
-                client_id: clientId,
-            },
-            include: this.getIncludes(),
+            where: { client_id: clientId },
+            include: this.getFullIncludes(),
             order: [['created_at', 'DESC']],
         });
     }
     async getProjectsByStatus(status) {
         return this.projectModel.findAll({
-            where: {
-                status,
-            },
-            include: this.getIncludes(),
+            where: { status },
+            include: this.getFullIncludes(),
             order: [['created_at', 'DESC']],
         });
     }
@@ -175,7 +253,7 @@ let ProjectsService = class ProjectsService {
             where: {
                 [sequelize_2.Op.or]: [{ created_by: userId }, { assigned_to: userId }],
             },
-            include: this.getIncludes(),
+            include: this.getFullIncludes(),
             order: [['created_at', 'DESC']],
         });
     }
@@ -183,69 +261,37 @@ let ProjectsService = class ProjectsService {
         return this.projectModel.findAll({
             where: {
                 [sequelize_2.Op.or]: [
-                    {
-                        name: {
-                            [sequelize_2.Op.iLike]: `%${query}%`,
-                        },
-                    },
-                    {
-                        description: {
-                            [sequelize_2.Op.iLike]: `%${query}%`,
-                        },
-                    },
+                    { name: { [sequelize_2.Op.iLike]: `%${query}%` } },
+                    { description: { [sequelize_2.Op.iLike]: `%${query}%` } },
                 ],
             },
-            include: this.getIncludes(),
+            include: this.getFullIncludes(),
             order: [['created_at', 'DESC']],
         });
     }
     async getActiveProjects() {
         return this.projectModel.findAll({
-            where: {
-                is_archived: false,
-            },
-            include: this.getIncludes(),
+            where: { is_archived: false },
+            include: this.getFullIncludes(),
             order: [['created_at', 'DESC']],
         });
     }
     async getArchivedProjects() {
         return this.projectModel.findAll({
-            where: {
-                is_archived: true,
-            },
-            include: this.getIncludes(),
+            where: { is_archived: true },
+            include: this.getFullIncludes(),
             order: [['created_at', 'DESC']],
         });
     }
     async getProjectStats() {
-        const total = await this.projectModel.count();
-        const active = await this.projectModel.count({
-            where: {
-                is_archived: false,
-            },
-        });
-        const archived = await this.projectModel.count({
-            where: {
-                is_archived: true,
-            },
-        });
-        const completed = await this.projectModel.count({
-            where: {
-                status: 'Completed',
-            },
-        });
-        const inProgress = await this.projectModel.count({
-            where: {
-                status: 'In Progress',
-            },
-        });
-        return {
-            total,
-            active,
-            archived,
-            completed,
-            inProgress,
-        };
+        const [total, active, archived, completed, inProgress] = await Promise.all([
+            this.projectModel.count(),
+            this.projectModel.count({ where: { is_archived: false } }),
+            this.projectModel.count({ where: { is_archived: true } }),
+            this.projectModel.count({ where: { status: 'completed' } }),
+            this.projectModel.count({ where: { status: 'In Progress' } }),
+        ]);
+        return { total, active, archived, completed, inProgress };
     }
 };
 exports.ProjectsService = ProjectsService;

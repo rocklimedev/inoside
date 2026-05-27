@@ -13,6 +13,7 @@ exports.RekiReport = void 0;
 const sequelize_typescript_1 = require("sequelize-typescript");
 const project_model_1 = require("./project.model");
 const user_model_1 = require("../../users/models/user.model");
+const reki_photos_model_1 = require("./reki_photos.model");
 let RekiReport = class RekiReport extends sequelize_typescript_1.Model {
 };
 exports.RekiReport = RekiReport;
@@ -23,12 +24,16 @@ __decorate([
 ], RekiReport.prototype, "id", void 0);
 __decorate([
     (0, sequelize_typescript_1.ForeignKey)(() => project_model_1.Project),
-    (0, sequelize_typescript_1.Column)({ type: sequelize_typescript_1.DataType.UUID, allowNull: false, unique: true }),
+    (0, sequelize_typescript_1.Column)({
+        type: sequelize_typescript_1.DataType.UUID,
+        allowNull: false,
+        unique: true,
+    }),
     __metadata("design:type", String)
 ], RekiReport.prototype, "project_id", void 0);
 __decorate([
     (0, sequelize_typescript_1.ForeignKey)(() => user_model_1.User),
-    (0, sequelize_typescript_1.Column)(sequelize_typescript_1.DataType.UUID),
+    (0, sequelize_typescript_1.Column)({ type: sequelize_typescript_1.DataType.UUID }),
     __metadata("design:type", String)
 ], RekiReport.prototype, "supervisor_id", void 0);
 __decorate([
@@ -191,6 +196,10 @@ __decorate([
     (0, sequelize_typescript_1.BelongsTo)(() => user_model_1.User),
     __metadata("design:type", Object)
 ], RekiReport.prototype, "supervisor", void 0);
+__decorate([
+    (0, sequelize_typescript_1.HasMany)(() => reki_photos_model_1.RekiPhoto),
+    __metadata("design:type", Object)
+], RekiReport.prototype, "rekiPhotos", void 0);
 exports.RekiReport = RekiReport = __decorate([
     (0, sequelize_typescript_1.Table)({
         tableName: 'reki_reports',
