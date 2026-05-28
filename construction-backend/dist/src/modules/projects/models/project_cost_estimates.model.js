@@ -39,11 +39,11 @@ __decorate([
 ], ProjectCostEstimate.prototype, "tentative_total_cost", void 0);
 __decorate([
     (0, sequelize_typescript_1.Column)(sequelize_typescript_1.DataType.JSON),
-    __metadata("design:type", Object)
+    __metadata("design:type", Array)
 ], ProjectCostEstimate.prototype, "material_labour_estimate", void 0);
 __decorate([
     (0, sequelize_typescript_1.Column)(sequelize_typescript_1.DataType.JSON),
-    __metadata("design:type", Object)
+    __metadata("design:type", Array)
 ], ProjectCostEstimate.prototype, "payment_plan", void 0);
 __decorate([
     (0, sequelize_typescript_1.Column)(sequelize_typescript_1.DataType.STRING),

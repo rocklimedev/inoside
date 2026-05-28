@@ -5,12 +5,12 @@ import {
 } from '@nestjs/common';
 
 import { InjectModel } from '@nestjs/sequelize';
-
 import { ScopeOfWork } from '../models/scope_of_work.model';
 import { Project } from '../models/project.model';
 import { Client } from '@/modules/clients/models/client.model';
 import { Site } from '@/modules/sites/models/site.model';
 import { User } from '@/modules/users/models/user.model';
+import { Address } from '@/modules/address/models/address.model';
 
 @Injectable()
 export class ScopeOfWorkService {
@@ -44,7 +44,32 @@ export class ScopeOfWorkService {
           },
           {
             model: Site,
-            attributes: ['id', 'address', 'city'],
+            as: 'site',
+            attributes: [
+              'id',
+              'ownership_status',
+              'access_available',
+              'existing_structure',
+            ],
+            include: [
+              {
+                model: Address,
+                as: 'address',
+                attributes: [
+                  'id',
+                  'line1',
+                  'line2',
+                  'landmark',
+                  'city',
+                  'state',
+                  'country',
+                  'pincode',
+                  'latitude',
+                  'longitude',
+                  'google_map_link',
+                ],
+              },
+            ],
           },
           {
             model: User,
@@ -56,29 +81,35 @@ export class ScopeOfWorkService {
     ];
   }
 
+  // Helper to sanitize JSON fields
+  private sanitizeScopeData(dto: any) {
+    return {
+      ...dto,
+      scope_summary: dto.scope_summary?.trim() || null,
+      civil_works: Array.isArray(dto.civil_works) ? dto.civil_works : [],
+      mep_works: Array.isArray(dto.mep_works) ? dto.mep_works : [],
+      interior_works: Array.isArray(dto.interior_works)
+        ? dto.interior_works
+        : [],
+      finishes: Array.isArray(dto.finishes) ? dto.finishes : [],
+      area_summary: Array.isArray(dto.area_summary) ? dto.area_summary : [],
+      scope_pdf_url: dto.scope_pdf_url?.trim() || null,
+    };
+  }
+
   // ======================================================
   // CREATE SCOPE OF WORK
   // ======================================================
 
   async create(dto: any) {
-    // ------------------------------------------
-    // VALIDATE PROJECT
-    // ------------------------------------------
-
     const project = await this.projectModel.findByPk(dto.project_id);
 
     if (!project) {
       throw new NotFoundException('Project not found');
     }
 
-    // ------------------------------------------
-    // CHECK EXISTING
-    // ------------------------------------------
-
     const exists = await this.scopeModel.findOne({
-      where: {
-        project_id: dto.project_id,
-      },
+      where: { project_id: dto.project_id },
     });
 
     if (exists) {
@@ -87,16 +118,12 @@ export class ScopeOfWorkService {
       );
     }
 
-    // ------------------------------------------
-    // CREATE SCOPE
-    // ------------------------------------------
+    // Sanitize data before saving
+    const sanitizedData = this.sanitizeScopeData(dto);
 
-    const scope = await this.scopeModel.create(dto);
+    const scope = await this.scopeModel.create(sanitizedData);
 
-    // ------------------------------------------
-    // UPDATE PROJECT STATUS
-    // ------------------------------------------
-
+    // Update project status
     await project.update({
       status: 'scope_done',
       current_stage: 'Scope of Work Created',
@@ -107,14 +134,32 @@ export class ScopeOfWorkService {
   }
 
   // ======================================================
+  // UPDATE SCOPE
+  // ======================================================
+
+  async update(projectId: string, dto: any) {
+    const scope = await this.scopeModel.findOne({
+      where: { project_id: projectId },
+    });
+
+    if (!scope) {
+      throw new NotFoundException('Scope of Work not found');
+    }
+
+    const sanitizedData = this.sanitizeScopeData(dto);
+
+    await scope.update(sanitizedData);
+
+    return this.findByProject(projectId);
+  }
+
+  // ======================================================
   // GET SCOPE BY PROJECT
   // ======================================================
 
   async findByProject(projectId: string) {
     const scope = await this.scopeModel.findOne({
-      where: {
-        project_id: projectId,
-      },
+      where: { project_id: projectId },
       include: this.getIncludes(),
     });
 
@@ -153,26 +198,6 @@ export class ScopeOfWorkService {
   }
 
   // ======================================================
-  // UPDATE SCOPE
-  // ======================================================
-
-  async update(projectId: string, dto: any) {
-    const scope = await this.scopeModel.findOne({
-      where: {
-        project_id: projectId,
-      },
-    });
-
-    if (!scope) {
-      throw new NotFoundException('Scope of Work not found');
-    }
-
-    await scope.update(dto);
-
-    return this.findByProject(projectId);
-  }
-
-  // ======================================================
   // DELETE SCOPE
   // ======================================================
 
@@ -185,10 +210,7 @@ export class ScopeOfWorkService {
 
     await scope.destroy();
 
-    return {
-      success: true,
-      message: 'Scope of Work deleted successfully',
-    };
+    return { success: true, message: 'Scope of Work deleted successfully' };
   }
 
   // ======================================================
@@ -197,12 +219,9 @@ export class ScopeOfWorkService {
 
   async markApproved(projectId: string) {
     const scope = await this.findByProject(projectId);
-
     const project = await this.projectModel.findByPk(projectId);
 
-    if (!project) {
-      throw new NotFoundException('Project not found');
-    }
+    if (!project) throw new NotFoundException('Project not found');
 
     await project.update({
       current_stage: 'Scope Approved',
@@ -218,20 +237,14 @@ export class ScopeOfWorkService {
 
   async markRejected(projectId: string, reason?: string) {
     const scope = await this.findByProject(projectId);
-
     const project = await this.projectModel.findByPk(projectId);
 
-    if (!project) {
-      throw new NotFoundException('Project not found');
-    }
+    if (!project) throw new NotFoundException('Project not found');
 
     await project.update({
       current_stage: 'Scope Revisions Required',
     });
 
-    return {
-      scope,
-      rejection_reason: reason || null,
-    };
+    return { scope, rejection_reason: reason || null };
   }
 }

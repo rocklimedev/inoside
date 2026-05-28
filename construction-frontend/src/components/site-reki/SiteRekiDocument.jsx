@@ -6,8 +6,7 @@ import { ArrowLeft, Edit3, Download } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { useGetRekiQuery } from "@/api/projectsApi";
-
+import { useGetRekiQuery } from "@/api/projects/rekiApi";
 const BACKEND = process.env.NEXT_PUBLIC_BACKEND_URL || "";
 
 /* ======================== STATUS MAP ======================== */

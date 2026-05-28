@@ -35,6 +35,16 @@ const project_drawings_model_1 = require("./models/project-drawings.model");
 const drawing_approval_logs_model_1 = require("./models/drawing_approval_logs.model");
 const pitch_comment_model_1 = require("./models/pitch-comment.model");
 const address_model_1 = require("../address/models/address.model");
+const briefs_controller_1 = require("./controllers/briefs.controller");
+const scopes_controller_1 = require("./controllers/scopes.controller");
+const pitches_controller_1 = require("./controllers/pitches.controller");
+const pitch_comments_controller_1 = require("./controllers/pitch-comments.controller");
+const reki_controller_1 = require("./controllers/reki.controller");
+const pitch_references_controller_1 = require("./controllers/pitch-references.controller");
+const reki_photos_controller_1 = require("./controllers/reki-photos.controller");
+const cost_estimates_controller_1 = require("./controllers/cost-estimates.controller");
+const drawing_logs_controller_1 = require("./controllers/drawing-logs.controller");
+const drawings_controller_1 = require("./controllers/drawings.controller");
 let ProjectsModule = class ProjectsModule {
 };
 exports.ProjectsModule = ProjectsModule;
@@ -59,7 +69,19 @@ exports.ProjectsModule = ProjectsModule = __decorate([
                 drawing_approval_logs_model_1.DrawingApprovalLog,
             ]),
         ],
-        controllers: [projects_controller_1.ProjectsController],
+        controllers: [
+            projects_controller_1.ProjectsController,
+            briefs_controller_1.BriefsController,
+            scopes_controller_1.ScopesController,
+            pitches_controller_1.PitchesController,
+            pitch_comments_controller_1.PitchCommentsController,
+            pitch_references_controller_1.PitchReferencesController,
+            reki_controller_1.RekiController,
+            reki_photos_controller_1.RekiPhotosController,
+            cost_estimates_controller_1.CostEstimatesController,
+            drawings_controller_1.DrawingsController,
+            drawing_logs_controller_1.DrawingLogsController,
+        ],
         providers: [
             projects_service_1.ProjectsService,
             project_brief_service_1.ProjectBriefService,

@@ -1,12 +1,29 @@
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Button } from "@/components/ui/button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
-export function ListView({ projects, onSelect, selectedIds, onToggleSelect }) {
+import { MoreHorizontal, Eye, Edit3, ArrowRight, Trash2 } from "lucide-react";
+
+export function ListView({
+  projects,
+  onSelect,
+  selectedIds,
+  onToggleSelect,
+  actions,
+}) {
   return (
     <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
       {/* Table Header */}
-      <div className="grid grid-cols-9 gap-2 px-4 py-3 bg-gray-50 text-[10px] font-bold uppercase tracking-wider text-gray-400 border-b">
+      <div className="grid grid-cols-10 gap-2 px-4 py-3 bg-gray-50 text-[10px] font-bold uppercase tracking-wider text-gray-400 border-b">
         <div className="w-8"></div> {/* Checkbox column */}
         <span className="col-span-2">Project</span>
         <span>Client</span>
@@ -15,6 +32,8 @@ export function ListView({ projects, onSelect, selectedIds, onToggleSelect }) {
         <span>Type</span>
         <span>Location</span>
         <span>Status</span>
+        <span className="text-right pr-2">Actions</span>{" "}
+        {/* New Actions Column */}
       </div>
 
       {/* Table Rows */}
@@ -25,7 +44,7 @@ export function ListView({ projects, onSelect, selectedIds, onToggleSelect }) {
           <div
             key={p.id}
             onClick={() => onSelect(p)}
-            className={`grid grid-cols-9 gap-2 px-4 py-3 border-b border-gray-100 hover:bg-orange-50/30 cursor-pointer transition-colors items-center ${
+            className={`grid grid-cols-10 gap-2 px-4 py-3 border-b border-gray-100 hover:bg-orange-50/30 cursor-pointer transition-colors items-center ${
               isSelected ? "bg-orange-50/70" : ""
             }`}
           >
@@ -82,6 +101,46 @@ export function ListView({ projects, onSelect, selectedIds, onToggleSelect }) {
             >
               {p.status}
             </Badge>
+
+            {/* Actions Dropdown */}
+            <div
+              onClick={(e) => e.stopPropagation()}
+              className="flex justify-end"
+            >
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-8 w-8 text-gray-500 hover:text-gray-700"
+                  >
+                    <MoreHorizontal className="w-4 h-4" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-48">
+                  <DropdownMenuItem onClick={() => actions.onView(p)}>
+                    <Eye className="w-4 h-4 mr-2" />
+                    View Details
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => actions.onEdit(p)}>
+                    <Edit3 className="w-4 h-4 mr-2" />
+                    Edit Project
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => actions.onMoveNext(p)}>
+                    <ArrowRight className="w-4 h-4 mr-2" />
+                    Move to Next Stage
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem
+                    className="text-red-600 focus:text-red-600"
+                    onClick={() => actions.onDelete(p.id)}
+                  >
+                    <Trash2 className="w-4 h-4 mr-2" />
+                    Delete Project
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </div>
           </div>
         );
       })}

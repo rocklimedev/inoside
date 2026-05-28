@@ -1,7 +1,8 @@
 "use client";
 
 import React, { useState, useRef, useMemo } from "react";
-import { useGetProjectsQuery, useCreatePitchMutation } from "@/api/projectsApi";
+import { useGetProjectsQuery } from "@/api/projectsApi";
+import { useCreatePitchMutation } from "@/api/projects/pitchesApi";
 import { useUploadFileMutation } from "@/api/cdnApi"; // ← Import from cdnApi
 
 import { Button } from "@/components/ui/button";

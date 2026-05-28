@@ -40,15 +40,13 @@ import SectionFields from "@/components/projects/SectionFields";
 import { CreateProjectModal } from "@/components/projects/CreateProjectModal";
 import ClientForm from "@/components/client/ClientForm";
 
+import { useGetProjectByIdQuery, useGetProjectsQuery } from "@/api/projectsApi";
 import {
   useCreateBriefMutation,
   useUpdateBriefMutation,
-  useSendBriefMutation,
-  useGetProjectByIdQuery,
-  useGetProjectsQuery,
+  useSendBriefToClientMutation,
   useGetBriefQuery,
-} from "@/api/projectsApi";
-
+} from "@/api/projects/briefsApi";
 import { useGetClientsQuery, useCreateClientMutation } from "@/api/clientsApi";
 
 /* =================================================
@@ -305,7 +303,7 @@ export default function BriefForm({ onBack, onGenerated }) {
 
   const [updateBrief, { isLoading: updating }] = useUpdateBriefMutation();
 
-  const [sendBrief, { isLoading: sending }] = useSendBriefMutation();
+  const [sendBrief, { isLoading: sending }] = useSendBriefToClientMutation();
 
   const [createClientMutation] = useCreateClientMutation();
 

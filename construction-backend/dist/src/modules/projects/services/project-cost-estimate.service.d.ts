@@ -8,4 +8,5 @@ export declare class ProjectCostEstimateService {
     findByProject(project_id: string): Promise<ProjectCostEstimate[]>;
     update(id: string, dto: any): Promise<ProjectCostEstimate>;
     delete(id: string): Promise<number>;
+    private validateDto;
 }

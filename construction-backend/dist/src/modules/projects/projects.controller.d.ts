@@ -1,33 +1,9 @@
-import type { Request } from 'express';
 import { ProjectsService } from './projects.service';
-import { ProjectBriefService } from './services/project-brief.service';
-import { PitchReferenceService } from './services/pitch-reference.service';
-import { RekiReportService } from './services/reki-report.service';
-import { RekiPhotoService } from './services/reki-photo.service';
-import { ScopeOfWorkService } from './services/scope-of-work.service';
-import { ProjectCostEstimateService } from './services/project-cost-estimate.service';
-import { ProjectDrawingService } from './services/project-drawing.service';
-import { DrawingApprovalLogService } from './services/drawing-approval-log.service';
-import { ProjectPitchService } from './services/project-pitch.service';
 import { CreateProjectDto } from './dto/create-project.dto';
 import { UpdateProjectDto } from './dto/update-project.dto';
-import { CreateProjectBriefDto } from './dto/create-project-brief.dto';
-import { UpdateProjectBriefDto } from './dto/update-project-brief.dto';
-import { RequestBriefChangesDto } from './dto/request-brief-changes.dto';
-import { CreateProjectPitchDto } from './dto/create-project-pitch.dto';
-import { UpdateProjectPitchDto } from './dto/update-project-pitch.dto';
 export declare class ProjectsController {
     private readonly projectsService;
-    private readonly briefService;
-    private readonly pitchRefService;
-    private readonly rekiService;
-    private readonly rekiPhotoService;
-    private readonly scopeService;
-    private readonly costService;
-    private readonly drawingService;
-    private readonly approvalLogService;
-    private readonly pitchService;
-    constructor(projectsService: ProjectsService, briefService: ProjectBriefService, pitchRefService: PitchReferenceService, rekiService: RekiReportService, rekiPhotoService: RekiPhotoService, scopeService: ScopeOfWorkService, costService: ProjectCostEstimateService, drawingService: ProjectDrawingService, approvalLogService: DrawingApprovalLogService, pitchService: ProjectPitchService);
+    constructor(projectsService: ProjectsService);
     create(dto: CreateProjectDto): Promise<import("./models/project.model").Project>;
     findAll(): Promise<import("./models/project.model").Project[]>;
     findOne(id: string): Promise<import("./models/project.model").Project>;
@@ -37,71 +13,4 @@ export declare class ProjectsController {
         message: string;
     }>;
     updateProgress(id: string, progress: number): Promise<import("./models/project.model").Project>;
-    createBrief(id: string, dto: CreateProjectBriefDto): Promise<import("./models/project_brief.model").ProjectBrief>;
-    getBrief(id: string): Promise<any>;
-    updateBrief(id: string, dto: UpdateProjectBriefDto): Promise<any>;
-    getAllBriefs(): Promise<import("./models/project_brief.model").ProjectBrief[]>;
-    approveBrief(briefId: string, req: Request): Promise<any>;
-    unapproveBrief(briefId: string): Promise<any>;
-    requestBriefChanges(briefId: string, dto: RequestBriefChangesDto, req: Request): Promise<any>;
-    sendBriefToClient(briefId: string): Promise<any>;
-    markBriefAsDraft(briefId: string): Promise<any>;
-    createPitch(projectId: string, dto: CreateProjectPitchDto, req: Request): Promise<import("./models/project_pitch.model").ProjectPitch>;
-    getPitch(projectId: string): Promise<import("./models/project_pitch.model").ProjectPitch>;
-    updatePitch(projectId: string, dto: UpdateProjectPitchDto): Promise<import("./models/project_pitch.model").ProjectPitch>;
-    deletePitch(projectId: string): Promise<{
-        success: boolean;
-        message: string;
-    }>;
-    getAllPitches(): Promise<import("./models/project_pitch.model").ProjectPitch[]>;
-    getPitchById(pitchId: string): Promise<import("./models/project_pitch.model").ProjectPitch>;
-    deletePitchById(pitchId: string): Promise<{
-        success: boolean;
-        message: string;
-    }>;
-    approvePitch(pitchId: string): Promise<import("./models/project_pitch.model").ProjectPitch>;
-    rejectPitch(pitchId: string): Promise<import("./models/project_pitch.model").ProjectPitch>;
-    replacePitchFile(pitchId: string, dto: {
-        pitch_pdf_url?: string;
-        moodboard_pdf_url?: string;
-    }): Promise<import("./models/project_pitch.model").ProjectPitch>;
-    getPitchComments(pitchId: string): Promise<import("./models/pitch-comment.model").PitchComment[]>;
-    addPitchComment(pitchId: string, content: string, req: Request): Promise<import("./models/pitch-comment.model").PitchComment>;
-    updatePitchComment(commentId: string, dto: any): Promise<import("./models/pitch-comment.model").PitchComment | null>;
-    deletePitchComment(commentId: string): Promise<{
-        success: boolean;
-        message: string;
-    }>;
-    addPitchReference(projectId: string, dto: any): Promise<import("./models/pitch_references.model").PitchReference>;
-    getPitchReferences(projectId: string): Promise<import("./models/pitch_references.model").PitchReference[]>;
-    deletePitchReference(refId: string): Promise<number>;
-    getAllRekiReports(): Promise<import("./models/reki_reports.model").RekiReport[]>;
-    getRekiById(id: string): Promise<import("./models/reki_reports.model").RekiReport>;
-    deleteReki(id: string): Promise<{
-        success: boolean;
-        message: string;
-    }>;
-    markRekiAsDone(projectId: string): Promise<import("./models/reki_reports.model").RekiReport>;
-    markRekiAsPending(projectId: string): Promise<import("./models/reki_reports.model").RekiReport>;
-    createReki(projectId: string, dto: any): Promise<import("./models/reki_reports.model").RekiReport>;
-    getReki(projectId: string): Promise<import("./models/reki_reports.model").RekiReport>;
-    updateReki(projectId: string, dto: any): Promise<import("./models/reki_reports.model").RekiReport>;
-    addRekiPhoto(projectId: string, dto: any): Promise<import("./models/reki_photos.model").RekiPhoto>;
-    deleteRekiPhoto(photoId: string): Promise<{
-        success: boolean;
-        message: string;
-    }>;
-    createScope(projectId: string, dto: any): Promise<import("./models/scope_of_work.model").ScopeOfWork>;
-    getScope(projectId: string): Promise<import("./models/scope_of_work.model").ScopeOfWork>;
-    updateScope(id: string, dto: any): Promise<import("./models/scope_of_work.model").ScopeOfWork>;
-    addCostEstimate(projectId: string, dto: any): Promise<import("./models/project_cost_estimates.model").ProjectCostEstimate>;
-    getCostEstimates(projectId: string): Promise<import("./models/project_cost_estimates.model").ProjectCostEstimate[]>;
-    updateCostEstimate(estimateId: string, dto: any): Promise<import("./models/project_cost_estimates.model").ProjectCostEstimate>;
-    deleteCostEstimate(estimateId: string): Promise<number>;
-    uploadDrawing(projectId: string, dto: any): Promise<import("./models/project-drawings.model").ProjectDrawing>;
-    getDrawings(projectId: string): Promise<import("./models/project-drawings.model").ProjectDrawing[]>;
-    approveDrawing(drawingId: string, userId: string): Promise<import("./models/project-drawings.model").ProjectDrawing>;
-    deleteDrawing(drawingId: string): Promise<number>;
-    addApprovalLog(drawingId: string, dto: any): Promise<import("./models/drawing_approval_logs.model").DrawingApprovalLog>;
-    getApprovalLogs(drawingId: string): Promise<import("./models/drawing_approval_logs.model").DrawingApprovalLog[]>;
 }

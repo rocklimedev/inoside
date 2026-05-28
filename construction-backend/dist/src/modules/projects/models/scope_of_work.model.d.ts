@@ -4,12 +4,12 @@ import type { InferAttributes, InferCreationAttributes, CreationOptional, NonAtt
 export declare class ScopeOfWork extends Model<InferAttributes<ScopeOfWork>, InferCreationAttributes<ScopeOfWork>> {
     id: CreationOptional<string>;
     project_id: string;
-    scope_summary: string;
-    civil_works: any;
-    mep_works: any;
-    interior_works: any;
-    finishes: any;
-    area_summary: any;
-    scope_pdf_url: string;
+    scope_summary: string | null;
+    civil_works: any[] | null;
+    mep_works: any[] | null;
+    interior_works: any[] | null;
+    finishes: any[] | null;
+    area_summary: any[] | null;
+    scope_pdf_url: string | null;
     project?: NonAttribute<Project>;
 }

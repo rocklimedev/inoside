@@ -6,8 +6,7 @@ import { useRouter } from "next/navigation";
 import {
   useGetAllPitchesQuery,
   useDeletePitchMutation,
-} from "@/api/projectsApi";
-
+} from "@/api/projects/pitchesApi";
 import { useAuth } from "@/contexts/AuthContext";
 
 import { Card } from "@/components/ui/card";

@@ -25,7 +25,10 @@ let ProjectCostEstimateService = class ProjectCostEstimateService {
         this.projectModel = projectModel;
     }
     async add(dto) {
-        await this.projectModel.findByPk(dto.project_id, { rejectOnEmpty: true });
+        await this.projectModel.findByPk(dto.project_id, {
+            rejectOnEmpty: true,
+        });
+        this.validateDto(dto);
         return this.costModel.create(dto);
     }
     async findByProject(project_id) {
@@ -36,13 +39,26 @@ let ProjectCostEstimateService = class ProjectCostEstimateService {
     }
     async update(id, dto) {
         const estimate = await this.costModel.findByPk(id);
-        if (!estimate)
+        if (!estimate) {
             throw new common_1.NotFoundException('Cost estimate not found');
+        }
+        this.validateDto(dto);
         await estimate.update(dto);
         return estimate;
     }
     async delete(id) {
         return this.costModel.destroy({ where: { id } });
+    }
+    validateDto(dto) {
+        const isValidArray = (arr) => Array.isArray(arr) &&
+            arr.every((i) => typeof i.title === 'string' && typeof i.description === 'string');
+        if (dto.material_labour_estimate &&
+            !isValidArray(dto.material_labour_estimate)) {
+            throw new common_1.BadRequestException('Invalid material_labour_estimate format');
+        }
+        if (dto.payment_plan && !isValidArray(dto.payment_plan)) {
+            throw new common_1.BadRequestException('Invalid payment_plan format');
+        }
     }
 };
 exports.ProjectCostEstimateService = ProjectCostEstimateService;

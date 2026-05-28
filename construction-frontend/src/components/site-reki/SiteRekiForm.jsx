@@ -28,15 +28,13 @@ import {
 } from "@/components/ui/select";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
-
+import { useUploadPitchFileMutation } from "@/api/projects/pitchesApi";
+import { useGetProjectsQuery } from "@/api/projectsApi";
 import {
   useGetRekiQuery,
   useCreateRekiMutation,
   useUpdateRekiMutation,
-  useUploadPitchFileMutation,
-  useGetProjectsQuery,
-} from "@/api/projectsApi";
-
+} from "@/api/projects/rekiApi";
 export default function SiteRekiForm({
   initialProjectId,
   initialRekiId,

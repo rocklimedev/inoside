@@ -22,36 +22,66 @@ __decorate([
 ], ScopeOfWork.prototype, "id", void 0);
 __decorate([
     (0, sequelize_typescript_1.ForeignKey)(() => project_model_1.Project),
-    (0, sequelize_typescript_1.Column)({ type: sequelize_typescript_1.DataType.UUID, allowNull: false, unique: true }),
+    (0, sequelize_typescript_1.Column)({
+        type: sequelize_typescript_1.DataType.UUID,
+        allowNull: false,
+        unique: true,
+    }),
     __metadata("design:type", String)
 ], ScopeOfWork.prototype, "project_id", void 0);
 __decorate([
-    (0, sequelize_typescript_1.Column)(sequelize_typescript_1.DataType.TEXT),
-    __metadata("design:type", String)
+    (0, sequelize_typescript_1.Column)({
+        type: sequelize_typescript_1.DataType.TEXT,
+        allowNull: true,
+    }),
+    __metadata("design:type", Object)
 ], ScopeOfWork.prototype, "scope_summary", void 0);
 __decorate([
-    (0, sequelize_typescript_1.Column)(sequelize_typescript_1.DataType.JSON),
+    (0, sequelize_typescript_1.Column)({
+        type: sequelize_typescript_1.DataType.JSONB,
+        allowNull: true,
+        defaultValue: [],
+    }),
     __metadata("design:type", Object)
 ], ScopeOfWork.prototype, "civil_works", void 0);
 __decorate([
-    (0, sequelize_typescript_1.Column)(sequelize_typescript_1.DataType.JSON),
+    (0, sequelize_typescript_1.Column)({
+        type: sequelize_typescript_1.DataType.JSONB,
+        allowNull: true,
+        defaultValue: [],
+    }),
     __metadata("design:type", Object)
 ], ScopeOfWork.prototype, "mep_works", void 0);
 __decorate([
-    (0, sequelize_typescript_1.Column)(sequelize_typescript_1.DataType.JSON),
+    (0, sequelize_typescript_1.Column)({
+        type: sequelize_typescript_1.DataType.JSONB,
+        allowNull: true,
+        defaultValue: [],
+    }),
     __metadata("design:type", Object)
 ], ScopeOfWork.prototype, "interior_works", void 0);
 __decorate([
-    (0, sequelize_typescript_1.Column)(sequelize_typescript_1.DataType.JSON),
+    (0, sequelize_typescript_1.Column)({
+        type: sequelize_typescript_1.DataType.JSONB,
+        allowNull: true,
+        defaultValue: [],
+    }),
     __metadata("design:type", Object)
 ], ScopeOfWork.prototype, "finishes", void 0);
 __decorate([
-    (0, sequelize_typescript_1.Column)(sequelize_typescript_1.DataType.JSON),
+    (0, sequelize_typescript_1.Column)({
+        type: sequelize_typescript_1.DataType.JSONB,
+        allowNull: true,
+        defaultValue: [],
+    }),
     __metadata("design:type", Object)
 ], ScopeOfWork.prototype, "area_summary", void 0);
 __decorate([
-    (0, sequelize_typescript_1.Column)(sequelize_typescript_1.DataType.STRING),
-    __metadata("design:type", String)
+    (0, sequelize_typescript_1.Column)({
+        type: sequelize_typescript_1.DataType.STRING,
+        allowNull: true,
+    }),
+    __metadata("design:type", Object)
 ], ScopeOfWork.prototype, "scope_pdf_url", void 0);
 __decorate([
     (0, sequelize_typescript_1.BelongsTo)(() => project_model_1.Project),

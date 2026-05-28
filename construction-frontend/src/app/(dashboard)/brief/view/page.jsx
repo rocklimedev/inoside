@@ -7,8 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Plus, FileText, AlertCircle } from "lucide-react";
 
 import BriefDocument from "@/components/projects/BriefDocument";
-import { useGetBriefQuery } from "@/api/projectsApi";
-
+import { useGetBriefQuery } from "@/api/projects/briefsApi";
 export default function BriefPageClient() {
   const router = useRouter();
   const searchParams = useSearchParams();

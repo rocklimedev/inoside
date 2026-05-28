@@ -14,6 +14,7 @@ import type {
   CreationOptional,
   NonAttribute,
 } from 'sequelize';
+
 @Table({
   tableName: 'scope_of_work',
   timestamps: true,
@@ -29,18 +30,59 @@ export class ScopeOfWork extends Model<
   declare id: CreationOptional<string>;
 
   @ForeignKey(() => Project)
-  @Column({ type: DataType.UUID, allowNull: false, unique: true })
+  @Column({
+    type: DataType.UUID,
+    allowNull: false,
+    unique: true,
+  })
   declare project_id: string;
 
-  @Column(DataType.TEXT) declare scope_summary: string;
+  @Column({
+    type: DataType.TEXT,
+    allowNull: true,
+  })
+  declare scope_summary: string | null;
 
-  @Column(DataType.JSON) declare civil_works: any;
-  @Column(DataType.JSON) declare mep_works: any;
-  @Column(DataType.JSON) declare interior_works: any;
-  @Column(DataType.JSON) declare finishes: any;
-  @Column(DataType.JSON) declare area_summary: any;
+  @Column({
+    type: DataType.JSONB, // ← Changed to JSONB (recommended)
+    allowNull: true,
+    defaultValue: [], // ← Very Important
+  })
+  declare civil_works: any[] | null;
 
-  @Column(DataType.STRING) declare scope_pdf_url: string;
+  @Column({
+    type: DataType.JSONB,
+    allowNull: true,
+    defaultValue: [],
+  })
+  declare mep_works: any[] | null;
+
+  @Column({
+    type: DataType.JSONB,
+    allowNull: true,
+    defaultValue: [],
+  })
+  declare interior_works: any[] | null;
+
+  @Column({
+    type: DataType.JSONB,
+    allowNull: true,
+    defaultValue: [],
+  })
+  declare finishes: any[] | null;
+
+  @Column({
+    type: DataType.JSONB,
+    allowNull: true,
+    defaultValue: [],
+  })
+  declare area_summary: any[] | null;
+
+  @Column({
+    type: DataType.STRING,
+    allowNull: true,
+  })
+  declare scope_pdf_url: string | null;
 
   @BelongsTo(() => Project)
   declare project?: NonAttribute<Project>;

@@ -18,7 +18,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 
-import { useGetRekiByIdQuery } from "@/api/projectsApi";
+import { useGetRekiByIdQuery } from "@/api/projects/rekiApi";
 
 const BACKEND = process.env.NEXT_PUBLIC_BACKEND_URL || "";
 

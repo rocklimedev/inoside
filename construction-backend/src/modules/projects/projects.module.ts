@@ -33,6 +33,16 @@ import { ProjectDrawing } from './models/project-drawings.model';
 import { DrawingApprovalLog } from './models/drawing_approval_logs.model';
 import { PitchComment } from './models/pitch-comment.model';
 import { Address } from '../address/models/address.model';
+import { BriefsController } from './controllers/briefs.controller';
+import { ScopesController } from './controllers/scopes.controller';
+import { PitchesController } from './controllers/pitches.controller';
+import { PitchCommentsController } from './controllers/pitch-comments.controller';
+import { RekiController } from './controllers/reki.controller';
+import { PitchReferencesController } from './controllers/pitch-references.controller';
+import { RekiPhotosController } from './controllers/reki-photos.controller';
+import { CostEstimatesController } from './controllers/cost-estimates.controller';
+import { DrawingLogsController } from './controllers/drawing-logs.controller';
+import { DrawingsController } from './controllers/drawings.controller';
 @Module({
   imports: [
     SequelizeModule.forFeature([
@@ -55,7 +65,19 @@ import { Address } from '../address/models/address.model';
       DrawingApprovalLog,
     ]),
   ],
-  controllers: [ProjectsController],
+  controllers: [
+    ProjectsController,
+    BriefsController,
+    ScopesController,
+    PitchesController,
+    PitchCommentsController,
+    PitchReferencesController,
+    RekiController,
+    RekiPhotosController,
+    CostEstimatesController,
+    DrawingsController,
+    DrawingLogsController,
+  ],
   providers: [
     ProjectsService,
     ProjectBriefService,

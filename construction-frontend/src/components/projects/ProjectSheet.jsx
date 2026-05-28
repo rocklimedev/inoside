@@ -188,10 +188,12 @@ export function ProjectSheet({ project, onOpenChange, onDelete }) {
 
           {/* ACTIONS */}
           <div className="space-y-3">
-            <Button className="w-full bg-[#ef7f1b] hover:bg-[#d66e15]">
-              <Eye className="w-4 h-4 mr-2" />
-              View Full Project Dashboard
-            </Button>
+            <Link href={`/projects/view?projectId=${project.id}`}>
+              <Button className="w-full bg-[#ef7f1b] hover:bg-[#d66e15]">
+                <Eye className="w-4 h-4 mr-2" />
+                View Full Project Dashboard
+              </Button>
+            </Link>
 
             <div className="grid grid-cols-2 gap-3">
               <Button variant="outline" className="w-full">

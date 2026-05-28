@@ -5,6 +5,7 @@ import { toast } from "sonner";
 import {
   useGetProjectsQuery,
   useDeleteProjectMutation,
+  useUpdateProjectMutation,
 } from "@/api/projectsApi";
 
 import { Card } from "@/components/ui/card";
@@ -19,6 +20,14 @@ import {
 } from "@/components/ui/select";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 import {
   Search,
@@ -31,6 +40,10 @@ import {
   X,
   Loader2,
   Trash2,
+  Edit3,
+  Eye,
+  ArrowRight,
+  MoreHorizontal,
 } from "lucide-react";
 
 import { CreateProjectModal } from "@/components/projects/CreateProjectModal";
@@ -86,6 +99,7 @@ export default function ProjectsPage() {
 
   const { data: projects = [], isLoading, error } = useGetProjectsQuery();
   const [deleteProject] = useDeleteProjectMutation();
+  const [updateProject] = useUpdateProjectMutation();
 
   // Map API data
   const mappedProjects = useMemo(() => {
@@ -171,6 +185,39 @@ export default function ProjectsPage() {
     }
   };
 
+  // ==================== ACTIONS ====================
+
+  const handleView = (project) => {
+    setSelectedProject(project);
+  };
+
+  const handleEdit = (project) => {
+    setSelectedProject(project);
+    // You can also open a separate edit modal here if needed
+  };
+
+  const handleMoveToNextStage = async (project) => {
+    const currentIndex = STAGES.indexOf(project.stage);
+    if (currentIndex === -1 || currentIndex === STAGES.length - 1) {
+      toast.info("Project is already at the final stage");
+      return;
+    }
+
+    const nextStage = STAGES[currentIndex + 1];
+
+    try {
+      await updateProject({
+        id: project.id,
+        current_stage: nextStage,
+        progress: Math.min(100, Math.floor(project.progress + 8)),
+      }).unwrap();
+
+      toast.success(`Project moved to "${nextStage}"`);
+    } catch (err) {
+      toast.error(err?.data?.message || "Failed to update stage");
+    }
+  };
+
   const handleDelete = async (id) => {
     if (!confirm("Are you sure you want to delete this project?")) return;
     try {
@@ -231,6 +278,13 @@ export default function ProjectsPage() {
       </div>
     );
   }
+
+  const actions = {
+    onView: handleView,
+    onEdit: handleEdit,
+    onDelete: handleDelete,
+    onMoveNext: handleMoveToNextStage,
+  };
 
   return (
     <div className="flex h-full" data-testid="projects-page">
@@ -352,7 +406,11 @@ export default function ProjectsPage() {
                   <button
                     key={mode}
                     onClick={() => setViewMode(mode)}
-                    className={`p-2.5 ${viewMode === mode ? "bg-[#ef7f1b] text-white" : "hover:bg-gray-100"}`}
+                    className={`p-2.5 ${
+                      viewMode === mode
+                        ? "bg-[#ef7f1b] text-white"
+                        : "hover:bg-gray-100"
+                    }`}
                   >
                     <Icon className="w-4 h-4" />
                   </button>
@@ -384,6 +442,7 @@ export default function ProjectsPage() {
                 selectedIds={selectedIds}
                 onToggleSelect={toggleSelect}
                 onToggleSelectAll={toggleSelectAll}
+                actions={actions}
               />
             )}
             {viewMode === "list" && (
@@ -393,12 +452,14 @@ export default function ProjectsPage() {
                 selectedIds={selectedIds}
                 onToggleSelect={toggleSelect}
                 onToggleSelectAll={toggleSelectAll}
+                actions={actions}
               />
             )}
             {viewMode === "timeline" && (
               <TimelineView
                 projects={filteredProjects}
                 onSelect={setSelectedProject}
+                actions={actions}
               />
             )}
           </div>

@@ -14,6 +14,17 @@ import type {
   CreationOptional,
   NonAttribute,
 } from 'sequelize';
+
+export interface EstimateItem {
+  title: string;
+  description: string;
+}
+
+export interface PaymentPlanItem {
+  title: string;
+  description: string;
+}
+
 @Table({
   tableName: 'project_cost_estimates',
   timestamps: true,
@@ -41,11 +52,13 @@ export class ProjectCostEstimate extends Model<
   @Column(DataType.DECIMAL(15, 2))
   declare tentative_total_cost: number;
 
+  // ✅ CHANGED: typed JSON array
   @Column(DataType.JSON)
-  declare material_labour_estimate: any;
+  declare material_labour_estimate: EstimateItem[];
 
+  // ✅ CHANGED: typed JSON array
   @Column(DataType.JSON)
-  declare payment_plan: any;
+  declare payment_plan: PaymentPlanItem[];
 
   @Column(DataType.STRING)
   declare annexure_url: string;

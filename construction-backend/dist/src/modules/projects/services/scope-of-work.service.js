@@ -20,6 +20,7 @@ const project_model_1 = require("../models/project.model");
 const client_model_1 = require("../../clients/models/client.model");
 const site_model_1 = require("../../sites/models/site.model");
 const user_model_1 = require("../../users/models/user.model");
+const address_model_1 = require("../../address/models/address.model");
 let ScopeOfWorkService = class ScopeOfWorkService {
     scopeModel;
     projectModel;
@@ -45,7 +46,32 @@ let ScopeOfWorkService = class ScopeOfWorkService {
                     },
                     {
                         model: site_model_1.Site,
-                        attributes: ['id', 'address', 'city'],
+                        as: 'site',
+                        attributes: [
+                            'id',
+                            'ownership_status',
+                            'access_available',
+                            'existing_structure',
+                        ],
+                        include: [
+                            {
+                                model: address_model_1.Address,
+                                as: 'address',
+                                attributes: [
+                                    'id',
+                                    'line1',
+                                    'line2',
+                                    'landmark',
+                                    'city',
+                                    'state',
+                                    'country',
+                                    'pincode',
+                                    'latitude',
+                                    'longitude',
+                                    'google_map_link',
+                                ],
+                            },
+                        ],
                     },
                     {
                         model: user_model_1.User,
@@ -56,20 +82,33 @@ let ScopeOfWorkService = class ScopeOfWorkService {
             },
         ];
     }
+    sanitizeScopeData(dto) {
+        return {
+            ...dto,
+            scope_summary: dto.scope_summary?.trim() || null,
+            civil_works: Array.isArray(dto.civil_works) ? dto.civil_works : [],
+            mep_works: Array.isArray(dto.mep_works) ? dto.mep_works : [],
+            interior_works: Array.isArray(dto.interior_works)
+                ? dto.interior_works
+                : [],
+            finishes: Array.isArray(dto.finishes) ? dto.finishes : [],
+            area_summary: Array.isArray(dto.area_summary) ? dto.area_summary : [],
+            scope_pdf_url: dto.scope_pdf_url?.trim() || null,
+        };
+    }
     async create(dto) {
         const project = await this.projectModel.findByPk(dto.project_id);
         if (!project) {
             throw new common_1.NotFoundException('Project not found');
         }
         const exists = await this.scopeModel.findOne({
-            where: {
-                project_id: dto.project_id,
-            },
+            where: { project_id: dto.project_id },
         });
         if (exists) {
             throw new common_1.BadRequestException('Scope of Work already exists for this project');
         }
-        const scope = await this.scopeModel.create(dto);
+        const sanitizedData = this.sanitizeScopeData(dto);
+        const scope = await this.scopeModel.create(sanitizedData);
         await project.update({
             status: 'scope_done',
             current_stage: 'Scope of Work Created',
@@ -77,11 +116,20 @@ let ScopeOfWorkService = class ScopeOfWorkService {
         });
         return this.findById(scope.id);
     }
+    async update(projectId, dto) {
+        const scope = await this.scopeModel.findOne({
+            where: { project_id: projectId },
+        });
+        if (!scope) {
+            throw new common_1.NotFoundException('Scope of Work not found');
+        }
+        const sanitizedData = this.sanitizeScopeData(dto);
+        await scope.update(sanitizedData);
+        return this.findByProject(projectId);
+    }
     async findByProject(projectId) {
         const scope = await this.scopeModel.findOne({
-            where: {
-                project_id: projectId,
-            },
+            where: { project_id: projectId },
             include: this.getIncludes(),
         });
         if (!scope) {
@@ -104,35 +152,19 @@ let ScopeOfWorkService = class ScopeOfWorkService {
             order: [['created_at', 'DESC']],
         });
     }
-    async update(projectId, dto) {
-        const scope = await this.scopeModel.findOne({
-            where: {
-                project_id: projectId,
-            },
-        });
-        if (!scope) {
-            throw new common_1.NotFoundException('Scope of Work not found');
-        }
-        await scope.update(dto);
-        return this.findByProject(projectId);
-    }
     async delete(id) {
         const scope = await this.scopeModel.findByPk(id);
         if (!scope) {
             throw new common_1.NotFoundException('Scope of Work not found');
         }
         await scope.destroy();
-        return {
-            success: true,
-            message: 'Scope of Work deleted successfully',
-        };
+        return { success: true, message: 'Scope of Work deleted successfully' };
     }
     async markApproved(projectId) {
         const scope = await this.findByProject(projectId);
         const project = await this.projectModel.findByPk(projectId);
-        if (!project) {
+        if (!project)
             throw new common_1.NotFoundException('Project not found');
-        }
         await project.update({
             current_stage: 'Scope Approved',
             progress_percentage: 45,
@@ -142,16 +174,12 @@ let ScopeOfWorkService = class ScopeOfWorkService {
     async markRejected(projectId, reason) {
         const scope = await this.findByProject(projectId);
         const project = await this.projectModel.findByPk(projectId);
-        if (!project) {
+        if (!project)
             throw new common_1.NotFoundException('Project not found');
-        }
         await project.update({
             current_stage: 'Scope Revisions Required',
         });
-        return {
-            scope,
-            rejection_reason: reason || null,
-        };
+        return { scope, rejection_reason: reason || null };
     }
 };
 exports.ScopeOfWorkService = ScopeOfWorkService;

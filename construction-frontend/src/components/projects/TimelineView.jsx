@@ -1,5 +1,16 @@
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Button } from "@/components/ui/button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+
+import { MoreHorizontal, Eye, Edit3, ArrowRight, Trash2 } from "lucide-react";
 
 const STAGES = [
   "Brief",
@@ -21,6 +32,7 @@ export function TimelineView({
   onSelect,
   selectedIds,
   onToggleSelect,
+  actions,
 }) {
   return (
     <div className="space-y-4">
@@ -50,7 +62,47 @@ export function TimelineView({
               />
             </div>
 
-            <div className="flex justify-between items-start mb-4 pr-8">
+            {/* Actions Menu */}
+            <div
+              className="absolute top-5 left-5 z-10"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-8 w-8 text-gray-400 hover:text-gray-600"
+                  >
+                    <MoreHorizontal className="w-4 h-4" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="start" className="w-48">
+                  <DropdownMenuItem onClick={() => actions.onView(p)}>
+                    <Eye className="w-4 h-4 mr-2" />
+                    View Details
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => actions.onEdit(p)}>
+                    <Edit3 className="w-4 h-4 mr-2" />
+                    Edit Project
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => actions.onMoveNext(p)}>
+                    <ArrowRight className="w-4 h-4 mr-2" />
+                    Move to Next Stage
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem
+                    className="text-red-600 focus:text-red-600"
+                    onClick={() => actions.onDelete(p.id)}
+                  >
+                    <Trash2 className="w-4 h-4 mr-2" />
+                    Delete Project
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </div>
+
+            <div className="flex justify-between items-start mb-4 pr-8 pl-10">
               <div>
                 <h3 className="font-bold text-lg">{p.name}</h3>
                 <p className="text-sm text-gray-500 mt-1">

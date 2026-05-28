@@ -7,8 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Loader2, AlertCircle, RefreshCw } from "lucide-react";
 
 import PitchDetail from "@/components/pitch/PitchDetail";
-import { useGetPitchQuery } from "@/api/projectsApi";
-
+import { useGetPitchByIdQuery } from "@/api/projects/pitchesApi";
 export default function PitchViewPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -21,7 +20,7 @@ export default function PitchViewPage() {
     isLoading,
     error,
     refetch,
-  } = useGetPitchQuery(pitchId, {
+  } = useGetPitchByIdQuery(pitchId, {
     skip: !pitchId, // This is the correct way to skip when no ID
   });
 

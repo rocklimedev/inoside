@@ -11,8 +11,7 @@ import {
   useRequestBriefChangesMutation,
   useSendBriefToClientMutation,
   useMarkBriefAsDraftMutation,
-} from "@/api/projectsApi";
-
+} from "@/api/projects/briefsApi";
 import {
   Table,
   TableBody,

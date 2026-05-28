@@ -11,8 +11,7 @@ import { ArrowLeft, Download, Send, Loader2, Edit3 } from "lucide-react";
 import { toast } from "sonner";
 
 // RTK Query
-import { useSendBriefMutation } from "@/api/projectsApi";
-
+import { useSendBriefToClientMutation } from "@/api/projects/briefsApi";
 const STATUS_MAP = {
   draft: {
     label: "Draft",
@@ -49,7 +48,7 @@ export default function BriefDocument({
 }) {
   const data = brief;
 
-  const [sendBrief, { isLoading: sending }] = useSendBriefMutation();
+  const [sendBrief, { isLoading: sending }] = useSendBriefToClientMutation();
 
   const handleDownload = () => {
     if (data?.document_url) {

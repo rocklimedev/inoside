@@ -33,14 +33,13 @@ import {
   List,
 } from "lucide-react";
 
+import { useGetProjectsQuery } from "@/api/projectsApi";
 import {
-  useGetProjectsQuery,
   useGetAllRekiReportsQuery,
   useDeleteRekiMutation,
   useMarkRekiAsDoneMutation,
   useMarkRekiAsPendingMutation,
-} from "@/api/projectsApi";
-
+} from "@/api/projects/rekiApi";
 export default function SiteRekiPage() {
   const router = useRouter();
   const { user } = useAuth();
