@@ -457,7 +457,10 @@ export default function BriefList() {
 
                           <DropdownMenuContent align="end" className="w-56">
                             <DropdownMenuItem
-                              onClick={() => handleEditBrief(brief.briefId)}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleEditBrief(brief.briefId);
+                              }}
                             >
                               <Edit className="mr-2 h-4 w-4" />
                               Edit Brief
@@ -623,9 +626,10 @@ export default function BriefList() {
 
                                 <DropdownMenuContent align="end">
                                   <DropdownMenuItem
-                                    onClick={() =>
-                                      handleEditBrief(brief.briefId)
-                                    }
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      handleEditBrief(brief.briefId);
+                                    }}
                                   >
                                     <Edit className="mr-2 h-4 w-4" />
                                     Edit

@@ -1,7 +1,9 @@
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
+
 import { DrawingApprovalLog } from '../models/drawing_approval_logs.model';
 import { User } from '@/modules/users/models/user.model';
+
 @Injectable()
 export class DrawingApprovalLogService {
   constructor(
@@ -19,7 +21,7 @@ export class DrawingApprovalLogService {
       order: [['created_at', 'DESC']],
       include: [
         {
-          model: User, // assuming you have User association
+          model: User,
           as: 'approver',
           attributes: ['id', 'name', 'email'],
         },

@@ -5,7 +5,6 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
-  DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
@@ -30,7 +29,7 @@ const STAGES = [
 export function TimelineView({
   projects,
   onSelect,
-  selectedIds,
+  selectedIds = [],
   onToggleSelect,
   actions,
 }) {
@@ -38,99 +37,101 @@ export function TimelineView({
     <div className="space-y-4">
       {projects.map((p) => {
         const stageIdx = STAGES.indexOf(p.stage);
-        const isSelected = (selectedIds ?? []).includes(p.id);
+        const isSelected = selectedIds.includes(p.id);
 
         return (
           <div
             key={p.id}
             onClick={() => onSelect(p)}
-            className={`bg-white rounded-lg border p-5 hover:shadow-md cursor-pointer transition-all relative ${
-              isSelected
-                ? "border-[#ef7f1b] bg-orange-50/50"
-                : "border-gray-200 hover:border-gray-300"
-            }`}
+            className={`
+              relative bg-white border rounded-lg p-4 md:p-5
+              cursor-pointer transition
+              hover:shadow-md
+              ${isSelected ? "border-[#ef7f1b] bg-orange-50/50" : ""}
+            `}
           >
-            {/* Checkbox */}
-            <div
-              className="absolute top-5 right-5 z-10"
-              onClick={(e) => e.stopPropagation()}
-            >
-              <Checkbox
-                checked={isSelected}
-                onCheckedChange={() => onToggleSelect(p.id)}
-                className="bg-white border-gray-300 data-[state=checked]:bg-[#ef7f1b] data-[state=checked]:border-[#ef7f1b]"
-              />
-            </div>
+            {/* ================= HEADER ================= */}
+            <div className="flex justify-between items-start gap-3 pr-8 pl-8 md:pl-10">
+              <div className="min-w-0">
+                <h3 className="font-semibold text-sm md:text-base truncate">
+                  {p.name}
+                </h3>
 
-            {/* Actions Menu */}
-            <div
-              className="absolute top-5 left-5 z-10"
-              onClick={(e) => e.stopPropagation()}
-            >
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="h-8 w-8 text-gray-400 hover:text-gray-600"
-                  >
-                    <MoreHorizontal className="w-4 h-4" />
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="start" className="w-48">
-                  <DropdownMenuItem onClick={() => actions.onView(p)}>
-                    <Eye className="w-4 h-4 mr-2" />
-                    View Details
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => actions.onEdit(p)}>
-                    <Edit3 className="w-4 h-4 mr-2" />
-                    Edit Project
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => actions.onMoveNext(p)}>
-                    <ArrowRight className="w-4 h-4 mr-2" />
-                    Move to Next Stage
-                  </DropdownMenuItem>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem
-                    className="text-red-600 focus:text-red-600"
-                    onClick={() => actions.onDelete(p.id)}
-                  >
-                    <Trash2 className="w-4 h-4 mr-2" />
-                    Delete Project
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
-            </div>
-
-            <div className="flex justify-between items-start mb-4 pr-8 pl-10">
-              <div>
-                <h3 className="font-bold text-lg">{p.name}</h3>
-                <p className="text-sm text-gray-500 mt-1">
+                <p className="text-xs text-gray-500 truncate">
                   {p.client_name} • {p.type}
                 </p>
+
                 {p.location && p.location !== "—" && (
-                  <p className="text-xs text-gray-400 mt-0.5">
+                  <p className="text-[11px] text-gray-400 truncate">
                     📍 {p.location}
                   </p>
                 )}
               </div>
 
-              <Badge className="bg-orange-50 text-[#ef7f1b] border-orange-200">
+              <Badge className="text-[10px] bg-orange-50 text-[#ef7f1b] border-orange-200 shrink-0">
                 {p.stage}
               </Badge>
             </div>
 
-            {/* Progress Timeline */}
-            <div className="flex gap-1.5">
+            {/* ================= CHECKBOX ================= */}
+            <div
+              className="absolute top-4 right-4"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <Checkbox
+                checked={isSelected}
+                onCheckedChange={() => onToggleSelect(p.id)}
+              />
+            </div>
+
+            {/* ================= MENU ================= */}
+            <div
+              className="absolute top-4 left-4"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost" size="icon" className="h-7 w-7">
+                    <MoreHorizontal className="w-4 h-4" />
+                  </Button>
+                </DropdownMenuTrigger>
+
+                <DropdownMenuContent align="start" className="w-44">
+                  <DropdownMenuItem onClick={() => actions.onView(p)}>
+                    <Eye className="w-4 h-4 mr-2" /> View
+                  </DropdownMenuItem>
+
+                  <DropdownMenuItem onClick={() => actions.onEdit(p)}>
+                    <Edit3 className="w-4 h-4 mr-2" /> Edit
+                  </DropdownMenuItem>
+
+                  <DropdownMenuItem onClick={() => actions.onMoveNext(p)}>
+                    <ArrowRight className="w-4 h-4 mr-2" /> Next Stage
+                  </DropdownMenuItem>
+
+                  <DropdownMenuSeparator />
+
+                  <DropdownMenuItem
+                    className="text-red-600"
+                    onClick={() => actions.onDelete(p.id)}
+                  >
+                    <Trash2 className="w-4 h-4 mr-2" /> Delete
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </div>
+
+            {/* ================= DESKTOP TIMELINE ================= */}
+            <div className="hidden md:flex gap-1.5 mt-4">
               {STAGES.map((stage, i) => (
-                <div key={i} className="flex-1 flex flex-col items-center">
+                <div key={stage} className="flex-1 flex flex-col items-center">
                   <div
-                    className={`h-3 w-full rounded-full transition-all ${
+                    className={`h-3 w-full rounded-full transition ${
                       i <= stageIdx ? "bg-[#ef7f1b]" : "bg-gray-100"
                     }`}
                   />
                   <span
-                    className={`text-[10px] mt-1.5 transition-colors ${
+                    className={`text-[10px] mt-1.5 ${
                       i <= stageIdx
                         ? "text-[#ef7f1b] font-medium"
                         : "text-gray-400"
@@ -142,17 +143,34 @@ export function TimelineView({
               ))}
             </div>
 
-            {/* Progress Percentage */}
-            <div className="mt-4 flex items-center justify-between text-xs">
-              <span className="text-gray-500">Overall Progress</span>
-              <span className="font-bold text-[#ef7f1b]">{p.progress}%</span>
+            {/* ================= MOBILE PROGRESS ================= */}
+            <div className="md:hidden mt-4 space-y-2">
+              {/* Simple progress bar */}
+              <div className="h-2 w-full bg-gray-100 rounded-full overflow-hidden">
+                <div
+                  className="h-full bg-[#ef7f1b]"
+                  style={{
+                    width: `${((stageIdx + 1) / STAGES.length) * 100}%`,
+                  }}
+                />
+              </div>
+
+              <div className="flex justify-between text-[11px] text-gray-500">
+                <span>
+                  Stage {stageIdx + 1} / {STAGES.length}
+                </span>
+                <span className="font-semibold text-[#ef7f1b]">
+                  {p.progress}%
+                </span>
+              </div>
             </div>
           </div>
         );
       })}
 
+      {/* EMPTY STATE */}
       {projects.length === 0 && (
-        <div className="text-center py-16 text-gray-500">
+        <div className="text-center py-14 text-gray-500">
           No projects found matching your criteria.
         </div>
       )}

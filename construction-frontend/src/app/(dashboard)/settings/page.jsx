@@ -42,50 +42,65 @@ function SettingsContent() {
   };
 
   return (
-    <div className="min-h-screen bg-muted/30 p-6 animate-fadeIn">
+    <div className="min-h-screen bg-muted/30 p-6">
       {/* HEADER */}
-      <div className="mb-8">
+      <div className="mb-8 max-w-7xl mx-auto">
         <h1 className="text-3xl font-bold tracking-tight">Settings</h1>
-
         <p className="text-sm text-muted-foreground mt-1">
           Manage your account, security, and preferences
         </p>
       </div>
 
       {/* LAYOUT */}
-      <div className="grid grid-cols-1 lg:grid-cols-[280px_1fr] gap-6 max-w-6xl mx-auto">
-        {/* SIDEBAR */}
-        <Card className="p-3 rounded-2xl shadow-soft border border-border/60 bg-background animate-slideInRight">
-          <div className="space-y-1">
-            {menu.map((item) => {
-              const Icon = item.icon;
+      <div className="grid grid-cols-1 lg:grid-cols-[260px_minmax(0,1fr)] gap-8 max-w-7xl mx-auto">
+        {/* ================= SIDEBAR ================= */}
+        <Card className="h-fit lg:sticky lg:top-6 rounded-3xl border bg-background shadow-sm overflow-hidden">
+          {/* Sidebar Header */}
+          <div className="px-5 py-4 border-b bg-muted/20">
+            <h2 className="text-xs font-semibold tracking-widest text-muted-foreground uppercase">
+              Settings Menu
+            </h2>
+          </div>
 
-              const active = tab === item.key;
+          {/* Sidebar Nav */}
+          <div className="p-3">
+            <nav className="space-y-1">
+              {menu.map((item) => {
+                const Icon = item.icon;
+                const active = tab === item.key;
 
-              return (
-                <button
-                  key={item.key}
-                  onClick={() => handleTabChange(item.key)}
-                  className={`
-                    w-full flex items-center gap-3 px-3 py-2 rounded-xl text-sm transition-all
-                    ${
-                      active
-                        ? "bg-brand-orange text-white shadow-glow"
-                        : "hover:bg-muted"
-                    }
-                  `}
-                >
-                  <Icon className="w-4 h-4" />
-                  {item.label}
-                </button>
-              );
-            })}
+                return (
+                  <button
+                    key={item.key}
+                    onClick={() => handleTabChange(item.key)}
+                    className={`
+                      relative flex items-center w-full gap-3
+                      rounded-xl px-4 py-3 text-sm font-medium
+                      transition-all duration-200
+                      ${
+                        active
+                          ? "bg-brand-orange/10 text-brand-orange"
+                          : "text-muted-foreground hover:text-foreground hover:bg-muted/60"
+                      }
+                    `}
+                  >
+                    {/* Active indicator bar */}
+                    {active && (
+                      <span className="absolute left-0 top-2 bottom-2 w-1 rounded-r-full bg-brand-orange" />
+                    )}
+
+                    <Icon className="w-5 h-5 shrink-0" />
+                    <span>{item.label}</span>
+                  </button>
+                );
+              })}
+            </nav>
           </div>
         </Card>
 
-        {/* CONTENT */}
-        <Card className="rounded-2xl shadow-soft border border-border/60 bg-background animate-fadeInUp">
-          <div className="p-6">
+        {/* ================= CONTENT ================= */}
+        <Card className="rounded-3xl border bg-background shadow-sm">
+          <div className="p-8">
             {tab === "profile" && <ProfileTab />}
             {tab === "security" && <SecurityTab />}
             {tab === "notifications" && <NotificationsTab />}

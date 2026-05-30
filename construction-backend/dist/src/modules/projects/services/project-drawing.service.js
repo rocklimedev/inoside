@@ -18,17 +18,22 @@ const sequelize_1 = require("@nestjs/sequelize");
 const project_drawings_model_1 = require("../models/project-drawings.model");
 const project_model_1 = require("../models/project.model");
 const user_model_1 = require("../../users/models/user.model");
+const drawing_approval_log_service_1 = require("./drawing-approval-log.service");
 let ProjectDrawingService = class ProjectDrawingService {
     drawingModel;
     projectModel;
     userModel;
-    constructor(drawingModel, projectModel, userModel) {
+    approvalLogService;
+    constructor(drawingModel, projectModel, userModel, approvalLogService) {
         this.drawingModel = drawingModel;
         this.projectModel = projectModel;
         this.userModel = userModel;
+        this.approvalLogService = approvalLogService;
     }
     async upload(dto) {
-        await this.projectModel.findByPk(dto.project_id, { rejectOnEmpty: true });
+        await this.projectModel.findByPk(dto.project_id, {
+            rejectOnEmpty: true,
+        });
         return this.drawingModel.create(dto);
     }
     async findByProject(project_id) {
@@ -49,10 +54,22 @@ let ProjectDrawingService = class ProjectDrawingService {
             approved_by: user_id,
             approval_date: new Date(),
         });
+        await this.approvalLogService.create({
+            drawing_id: id,
+            user_id,
+            action: 'APPROVED',
+            created_at: new Date(),
+        });
         return drawing;
     }
     async delete(id) {
-        return this.drawingModel.destroy({ where: { id } });
+        const deleted = await this.drawingModel.destroy({
+            where: { id },
+        });
+        if (!deleted) {
+            throw new common_1.NotFoundException('Drawing not found');
+        }
+        return { success: true };
     }
 };
 exports.ProjectDrawingService = ProjectDrawingService;
@@ -61,6 +78,6 @@ exports.ProjectDrawingService = ProjectDrawingService = __decorate([
     __param(0, (0, sequelize_1.InjectModel)(project_drawings_model_1.ProjectDrawing)),
     __param(1, (0, sequelize_1.InjectModel)(project_model_1.Project)),
     __param(2, (0, sequelize_1.InjectModel)(user_model_1.User)),
-    __metadata("design:paramtypes", [Object, Object, Object])
+    __metadata("design:paramtypes", [Object, Object, Object, drawing_approval_log_service_1.DrawingApprovalLogService])
 ], ProjectDrawingService);
 //# sourceMappingURL=project-drawing.service.js.map

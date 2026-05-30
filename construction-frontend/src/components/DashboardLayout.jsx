@@ -99,9 +99,9 @@ export default function DashboardLayout({ children }) {
                   <X className="w-5 h-5 text-gray-400" />
                 </button>
               </div>
-
               <SidebarContent
-                isMobile
+                collapsed={collapsed}
+                onToggleCollapse={toggleSidebar}
                 onMobileClose={() => setMobileMenuOpen(false)}
               />
             </aside>

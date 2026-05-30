@@ -86,7 +86,7 @@ export default function ScopeDocumentPage() {
   };
 
   const handleEdit = () => {
-    router.push(`/scope/add?id=${item.id}&projectId=${item.project_id}`);
+    router.push(`/scopes/add?id=${item.id}&projectId=${item.project_id}`);
   };
 
   const handleBack = () => {

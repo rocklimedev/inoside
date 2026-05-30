@@ -5,5 +5,7 @@ export declare class DrawingsController {
     uploadDrawing(projectId: string, dto: any): Promise<import("../models/project-drawings.model").ProjectDrawing>;
     getDrawings(projectId: string): Promise<import("../models/project-drawings.model").ProjectDrawing[]>;
     approveDrawing(drawingId: string, userId: string): Promise<import("../models/project-drawings.model").ProjectDrawing>;
-    deleteDrawing(drawingId: string): Promise<number>;
+    deleteDrawing(drawingId: string): Promise<{
+        success: boolean;
+    }>;
 }

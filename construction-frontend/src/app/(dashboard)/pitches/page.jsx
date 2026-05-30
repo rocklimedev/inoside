@@ -1,22 +1,30 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useMemo } from "react";
 import { useRouter } from "next/navigation";
 
 import {
   useGetAllPitchesQuery,
   useDeletePitchMutation,
+  useApprovePitchMutation,
+  useRejectPitchMutation,
 } from "@/api/projects/pitchesApi";
+
 import { useAuth } from "@/contexts/AuthContext";
+import { toast } from "sonner";
 
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 
-import { Dialog, DialogContent } from "@/components/ui/dialog";
-import { ScrollArea } from "@/components/ui/scroll-area";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
-import { toast } from "sonner";
+import { ScrollArea } from "@/components/ui/scroll-area";
 
 import {
   Plus,
@@ -25,52 +33,94 @@ import {
   FileText,
   CalendarDays,
   User2,
+  Eye,
+  Download,
+  CheckCircle2,
+  XCircle,
+  MoreHorizontal,
+  LayoutGrid,
+  List,
 } from "lucide-react";
 
 import UploadArea from "@/components/pitch/UploadArea";
+import { Dialog, DialogContent } from "@/components/ui/dialog";
 
 export default function PitchPage() {
   const router = useRouter();
   const { user } = useAuth();
 
   const { data: pitches = [], isLoading, refetch } = useGetAllPitchesQuery();
+
   const [deletePitch] = useDeletePitchMutation();
+  const [approvePitch] = useApprovePitchMutation();
+  const [rejectPitch] = useRejectPitchMutation();
 
   const [showNewDialog, setShowNewDialog] = useState(false);
 
+  const [viewMode, setViewMode] = useState("grid");
+
   // ======================================================
-  // DELETE
+  // MAP DATA (normalize like scope page)
+  // ======================================================
+  const mappedPitches = useMemo(() => {
+    return pitches.map((p) => ({
+      id: p.id,
+      project_id: p.project_id,
+      project_name: p?.project?.name || "Untitled Project",
+      client_name: p?.project?.client?.name || "No Client",
+      file_name: p?.pitch_pdf_url?.split("/").pop() || "Pitch File",
+      file_url: p?.pitch_pdf_url,
+      status: p.status,
+      created_by: p?.createdByUser?.name,
+      created_at: p.created_at,
+      luxury_level: p.luxury_level,
+      color_tone: p.color_tone,
+      raw: p,
+    }));
+  }, [pitches]);
+
+  // ======================================================
+  // ACTIONS
   // ======================================================
   const handleDelete = async (id) => {
-    if (!confirm("Are you sure you want to delete this pitch?")) return;
+    if (!confirm("Delete this pitch?")) return;
 
     try {
       await deletePitch(id).unwrap();
-      toast.success("Pitch deleted successfully");
+      toast.success("Pitch deleted");
       refetch();
-    } catch (err) {
-      console.error(err);
+    } catch {
       toast.error("Failed to delete pitch");
     }
   };
 
-  // ======================================================
-  // NAVIGATE TO DETAIL PAGE
-  // ======================================================
-  const handleViewPitch = (pitch) => {
-    const fileName = pitch.pitch_pdf_url?.split("/").pop() || "Pitch File";
+  const handleApprove = async (id) => {
+    try {
+      await approvePitch(id).unwrap();
+      toast.success("Pitch approved");
+      refetch();
+    } catch {
+      toast.error("Failed to approve pitch");
+    }
+  };
 
-    const enrichedPitch = {
-      ...pitch,
-      filename: fileName,
-      file_url: pitch.pitch_pdf_url,
-      project_name: pitch.project?.name,
-      uploaded_by: pitch.createdByUser?.name,
-      version: pitch.version || "v1.0",
-    };
+  const handleReject = async (id) => {
+    try {
+      await rejectPitch(id).unwrap();
+      toast.success("Pitch rejected");
+      refetch();
+    } catch {
+      toast.error("Failed to reject pitch");
+    }
+  };
 
-    // Navigate to full page view
-    router.push(`/pitches/view?pitchId=${pitch.id}`);
+  const openPDF = (url) => {
+    if (!url) return toast.error("No file found");
+    window.open(url, "_blank");
+  };
+
+  const openView = (item) => {
+    router.push(`/pitches/view?pitchId=${item.id}`);
   };
 
   // ======================================================
@@ -78,7 +128,7 @@ export default function PitchPage() {
   // ======================================================
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center h-full min-h-[60vh]">
+      <div className="flex items-center justify-center h-[60vh]">
         <div className="animate-spin w-8 h-8 border-2 border-[#ef7f1b] border-t-transparent rounded-full" />
       </div>
     );
@@ -87,204 +137,196 @@ export default function PitchPage() {
   return (
     <div className="flex flex-col h-full bg-[#fafafa]">
       {/* HEADER */}
-      <div className="sticky top-0 z-10 bg-white border-b border-gray-200 px-4 md:px-6 py-4">
-        <div className="flex items-center justify-between gap-4">
-          <div className="flex items-center gap-3">
-            <div className="w-11 h-11 rounded-2xl bg-orange-100 flex items-center justify-center">
-              <Presentation className="w-5 h-5 text-[#ef7f1b]" />
-            </div>
-
-            <div>
-              <h1 className="text-2xl font-black text-black">
-                Project Pitches
-              </h1>
-              <p className="text-sm text-gray-500 mt-1">
-                {pitches.length} pitch{pitches.length !== 1 ? "es" : ""}
-              </p>
-            </div>
+      <div className="sticky top-0 z-10 bg-white border-b px-4 py-4">
+        <div className="flex justify-between items-center">
+          <div>
+            <h1 className="text-2xl font-black">Project Pitches</h1>
+            <p className="text-sm text-gray-500">
+              {mappedPitches.length} pitches
+            </p>
           </div>
 
-          {user?.role !== "Client" && (
-            <Button
-              onClick={() => setShowNewDialog(true)}
-              className="bg-[#ef7f1b] hover:bg-[#d66e15] text-white rounded-xl h-11 px-5"
-            >
-              <Plus className="w-4 h-4 mr-2" />
-              Upload Pitch
-            </Button>
-          )}
+          <div className="flex items-center gap-3">
+            {/* VIEW SWITCH */}
+            <div className="flex border rounded-xl overflow-hidden">
+              <button
+                onClick={() => setViewMode("grid")}
+                className={`p-2 ${
+                  viewMode === "grid" ? "bg-[#ef7f1b] text-white" : ""
+                }`}
+              >
+                <LayoutGrid className="w-4 h-4" />
+              </button>
+              <button
+                onClick={() => setViewMode("list")}
+                className={`p-2 ${
+                  viewMode === "list" ? "bg-[#ef7f1b] text-white" : ""
+                }`}
+              >
+                <List className="w-4 h-4" />
+              </button>
+            </div>
+
+            {user?.role !== "Client" && (
+              <Button
+                onClick={() => setShowNewDialog(true)}
+                className="bg-[#ef7f1b] hover:bg-[#d66e15]"
+              >
+                <Plus className="w-4 h-4 mr-2" />
+                Upload
+              </Button>
+            )}
+          </div>
         </div>
       </div>
 
       {/* CONTENT */}
       <ScrollArea className="flex-1">
-        <div className="p-4 md:p-6">
-          {pitches.length === 0 ? (
-            <div className="flex flex-col items-center justify-center py-28 text-center">
-              <div className="w-20 h-20 rounded-full bg-orange-50 flex items-center justify-center mb-5">
-                <Presentation className="w-10 h-10 text-[#ef7f1b]" />
-              </div>
+        <div className="p-6">
+          {mappedPitches.length === 0 ? (
+            <div className="text-center text-gray-400 py-20">
+              No pitches found
+            </div>
+          ) : viewMode === "grid" ? (
+            // ======================================================
+            // GRID VIEW
+            // ======================================================
+            <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-5">
+              {mappedPitches.map((p) => (
+                <Card key={p.id} className="p-5 hover:shadow-xl transition">
+                  {/* HEADER */}
+                  <div className="flex justify-between">
+                    <Presentation className="text-[#ef7f1b]" />
+                    <Badge>{p.status || "Draft"}</Badge>
+                  </div>
 
-              <h2 className="text-xl font-bold text-black">
-                No Pitches Uploaded
-              </h2>
-              <p className="text-sm text-gray-500 mt-2 max-w-md">
-                Upload your first project pitch presentation to begin
-                collaborating.
-              </p>
+                  {/* TITLE */}
+                  <h3
+                    onClick={() => openView(p)}
+                    className="font-bold text-lg mt-3 cursor-pointer"
+                  >
+                    {p.project_name}
+                  </h3>
 
-              {user?.role !== "Client" && (
-                <Button
-                  onClick={() => setShowNewDialog(true)}
-                  className="mt-6 bg-[#ef7f1b] hover:bg-[#d66e15] text-white rounded-xl"
-                >
-                  <Plus className="w-4 h-4 mr-2" />
-                  Upload First Pitch
-                </Button>
-              )}
+                  <p className="text-sm text-gray-500 mt-1">{p.client_name}</p>
+
+                  {/* FILE */}
+                  <div className="flex items-center gap-2 text-xs mt-2 text-gray-500">
+                    <FileText className="w-4 h-4" />
+                    {p.file_name}
+                  </div>
+
+                  {/* META */}
+                  <div className="text-xs text-gray-400 mt-3">
+                    {new Date(p.created_at).toLocaleDateString("en-IN")}
+                  </div>
+
+                  {/* DROPDOWN ACTIONS */}
+                  {user?.role !== "Client" && (
+                    <div className="flex justify-end mt-4">
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button variant="outline" size="icon">
+                            <MoreHorizontal className="w-4 h-4" />
+                          </Button>
+                        </DropdownMenuTrigger>
+
+                        <DropdownMenuContent align="end">
+                          <DropdownMenuItem onClick={() => openView(p)}>
+                            <Eye className="w-4 h-4 mr-2" />
+                            View
+                          </DropdownMenuItem>
+
+                          <DropdownMenuItem onClick={() => openPDF(p.file_url)}>
+                            <Download className="w-4 h-4 mr-2" />
+                            Open PDF
+                          </DropdownMenuItem>
+
+                          <DropdownMenuItem onClick={() => handleApprove(p.id)}>
+                            <CheckCircle2 className="w-4 h-4 mr-2 text-green-600" />
+                            Approve
+                          </DropdownMenuItem>
+
+                          <DropdownMenuItem onClick={() => handleReject(p.id)}>
+                            <XCircle className="w-4 h-4 mr-2 text-red-600" />
+                            Reject
+                          </DropdownMenuItem>
+
+                          <DropdownMenuItem
+                            onClick={() => handleDelete(p.id)}
+                            className="text-red-600"
+                          >
+                            <Trash2 className="w-4 h-4 mr-2" />
+                            Delete
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </div>
+                  )}
+                </Card>
+              ))}
             </div>
           ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-5">
-              {pitches.map((p) => {
-                const fileName =
-                  p.pitch_pdf_url?.split("/").pop() || "Pitch File";
-
-                return (
-                  <Card
-                    key={p.id}
-                    onClick={() => handleViewPitch(p)}
-                    className="
-                      group
-                      relative
-                      overflow-hidden
-                      rounded-3xl
-                      border
-                      border-gray-200
-                      bg-white
-                      p-5
-                      cursor-pointer
-                      transition-all
-                      duration-300
-                      hover:shadow-2xl
-                      hover:-translate-y-1
-                      hover:border-[#ef7f1b]/30
-                    "
-                  >
-                    {/* TOP */}
-                    <div className="flex items-start justify-between">
-                      <div className="w-12 h-12 rounded-2xl bg-orange-50 flex items-center justify-center">
-                        <Presentation className="w-6 h-6 text-[#ef7f1b]" />
-                      </div>
-
-                      <div className="flex items-center gap-2">
-                        <Badge className="bg-blue-50 text-blue-600 border-0 rounded-full">
-                          {p.version || "v1.0"}
-                        </Badge>
-
-                        {user?.role !== "Client" && (
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleDelete(p.id);
-                            }}
-                            className="opacity-0 group-hover:opacity-100 transition-opacity text-red-500 hover:text-red-700"
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </button>
-                        )}
-                      </div>
+            // ======================================================
+            // LIST VIEW
+            // ======================================================
+            <div className="space-y-3">
+              {mappedPitches.map((p) => (
+                <Card key={p.id} className="p-4">
+                  <div className="flex justify-between">
+                    <div className="cursor-pointer" onClick={() => openView(p)}>
+                      <h3 className="font-bold">{p.project_name}</h3>
+                      <p className="text-sm text-gray-500">{p.client_name}</p>
+                      <p className="text-xs text-gray-400">{p.file_name}</p>
                     </div>
 
-                    {/* BODY */}
-                    <div className="mt-5">
-                      <h3 className="text-lg font-bold text-black line-clamp-1">
-                        {p.project?.name || "Untitled Project"}
-                      </h3>
+                    <div className="flex items-center gap-2">
+                      <Badge>{p.status}</Badge>
 
-                      <div className="mt-2 flex items-center gap-2 text-sm text-gray-500">
-                        <FileText className="w-4 h-4 shrink-0" />
-                        <span className="line-clamp-1">{fileName}</span>
-                      </div>
-                    </div>
+                      {user?.role !== "Client" && (
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button variant="outline" size="icon">
+                              <MoreHorizontal className="w-4 h-4" />
+                            </Button>
+                          </DropdownMenuTrigger>
 
-                    {/* STATUS */}
-                    <div className="mt-4 flex items-center gap-2 flex-wrap">
-                      <Badge
-                        className={`
-                          rounded-full border-0
-                          ${
-                            p.status === "Approved"
-                              ? "bg-green-100 text-green-700"
-                              : p.status === "Rejected"
-                                ? "bg-red-100 text-red-700"
-                                : p.status === "Pending Review"
-                                  ? "bg-yellow-100 text-yellow-700"
-                                  : "bg-gray-100 text-gray-700"
-                          }
-                        `}
-                      >
-                        {p.status || "Draft"}
-                      </Badge>
-
-                      {p.luxury_level && (
-                        <Badge variant="outline" className="rounded-full">
-                          {p.luxury_level} Luxury
-                        </Badge>
+                          <DropdownMenuContent align="end">
+                            <DropdownMenuItem onClick={() => openView(p)}>
+                              View
+                            </DropdownMenuItem>
+                            <DropdownMenuItem
+                              onClick={() => openPDF(p.file_url)}
+                            >
+                              Open PDF
+                            </DropdownMenuItem>
+                            <DropdownMenuItem
+                              onClick={() => handleDelete(p.id)}
+                              className="text-red-600"
+                            >
+                              Delete
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
                       )}
                     </div>
-
-                    {/* DETAILS */}
-                    <div className="mt-5 space-y-2">
-                      <div className="flex items-center gap-2 text-xs text-gray-500">
-                        <User2 className="w-3.5 h-3.5" />
-                        <span className="truncate">
-                          {p.createdByUser?.name || "Unknown User"}
-                        </span>
-                      </div>
-
-                      <div className="flex items-center gap-2 text-xs text-gray-500">
-                        <CalendarDays className="w-3.5 h-3.5" />
-                        <span>
-                          {new Date(p.created_at).toLocaleDateString("en-IN")}
-                        </span>
-                      </div>
-                    </div>
-
-                    {/* FOOTER */}
-                    <div className="mt-5 pt-4 border-t border-gray-100 flex items-center justify-between">
-                      <div className="text-xs text-gray-400">
-                        {p.comments?.length || 0} comments
-                      </div>
-
-                      {p.color_tone && (
-                        <div className="text-xs font-medium text-[#ef7f1b]">
-                          {p.color_tone}
-                        </div>
-                      )}
-                    </div>
-
-                    <div className="absolute inset-0 rounded-3xl ring-1 ring-transparent group-hover:ring-[#ef7f1b]/20 pointer-events-none" />
-                  </Card>
-                );
-              })}
+                  </div>
+                </Card>
+              ))}
             </div>
           )}
         </div>
       </ScrollArea>
 
-      {/* UPLOAD DIALOG */}
+      {/* UPLOAD */}
       <Dialog open={showNewDialog} onOpenChange={setShowNewDialog}>
-        <DialogContent className="w-[98vw] max-w-7xl h-[95vh] p-0 overflow-hidden rounded-3xl border-0">
-          <div className="flex flex-col h-full bg-white">
-            <div className="flex-1 overflow-hidden">
-              <UploadArea
-                onUploaded={() => {
-                  setShowNewDialog(false);
-                  refetch();
-                }}
-              />
-            </div>
-          </div>
+        <DialogContent className="w-[98vw] max-w-6xl h-[95vh] p-0">
+          <UploadArea
+            onUploaded={() => {
+              setShowNewDialog(false);
+              refetch();
+            }}
+          />
         </DialogContent>
       </Dialog>
     </div>

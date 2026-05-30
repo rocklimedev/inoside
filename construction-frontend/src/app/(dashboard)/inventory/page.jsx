@@ -16,11 +16,12 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 
 import { toast } from "sonner";
 
-import { Plus, Search, Loader2, Trash2, Package } from "lucide-react";
+import { Plus, Search, Loader2, Trash2, Package, Pencil } from "lucide-react";
 
 import {
   useGetInventoryMasterQuery,
   useCreateInventoryMasterMutation,
+  useUpdateInventoryMasterMutation,
   useDeleteInventoryMasterMutation,
   useGetBrandsQuery,
 } from "@/api/inventoryApi";
@@ -42,9 +43,11 @@ const fmt = (n) => {
 
 export default function InventoryPage() {
   const [search, setSearch] = useState("");
-  const [showAdd, setShowAdd] = useState(false);
+  const [open, setOpen] = useState(false);
+  const [editItem, setEditItem] = useState(null);
 
   const { data: items = [], isLoading } = useGetInventoryMasterQuery();
+
   const [deleteInventory] = useDeleteInventoryMasterMutation();
 
   const handleDelete = async (id) => {
@@ -60,59 +63,69 @@ export default function InventoryPage() {
     search ? i.item_name?.toLowerCase().includes(search.toLowerCase()) : true,
   );
 
+  const openCreate = () => {
+    setEditItem(null);
+    setOpen(true);
+  };
+
+  const openEdit = (item) => {
+    setEditItem(item);
+    setOpen(true);
+  };
+
   return (
-    <div className="flex flex-col h-full p-4 gap-4">
-      {/* HEADER BAR */}
-      <div className="flex items-center justify-between">
+    <div className="p-6 space-y-6 bg-muted/30 min-h-screen">
+      {/* HEADER */}
+      <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
         <div>
-          <h1 className="text-lg font-bold">Inventory Master</h1>
-          <p className="text-xs text-muted-foreground">
-            Manage all inventory items
+          <h1 className="text-2xl font-bold">Inventory Master</h1>
+          <p className="text-sm text-muted-foreground">
+            Manage items, pricing & brands
           </p>
         </div>
 
         <Button
-          onClick={() => setShowAdd(true)}
-          className="bg-orange-500 hover:bg-orange-600 text-white"
+          onClick={openCreate}
+          className="bg-orange-500 hover:bg-orange-600"
         >
-          <Plus className="w-4 h-4 mr-1" />
+          <Plus className="w-4 h-4 mr-2" />
           Add Item
         </Button>
       </div>
 
       {/* SEARCH */}
-      <div className="relative">
-        <Search className="absolute left-3 top-2.5 w-4 h-4 text-muted-foreground" />
+      <div className="max-w-md relative">
+        <Search className="w-4 h-4 absolute left-3 top-2.5 text-muted-foreground" />
         <Input
           className="pl-10"
-          placeholder="Search inventory items..."
+          placeholder="Search inventory..."
           value={search}
           onChange={(e) => setSearch(e.target.value)}
         />
       </div>
 
-      {/* TABLE CARD */}
-      <Card className="flex-1 overflow-hidden">
-        <ScrollArea className="h-[60vh]">
+      {/* TABLE */}
+      <Card className="rounded-2xl overflow-hidden">
+        <ScrollArea className="h-[65vh]">
           {isLoading ? (
-            <div className="flex items-center justify-center h-40">
-              <Loader2 className="w-5 h-5 animate-spin text-muted-foreground" />
+            <div className="flex items-center justify-center h-60">
+              <Loader2 className="w-5 h-5 animate-spin" />
             </div>
           ) : filtered.length === 0 ? (
-            <div className="flex flex-col items-center justify-center py-16 text-muted-foreground">
-              <Package className="w-10 h-10 mb-2 opacity-40" />
-              <p className="text-sm">No items found</p>
+            <div className="flex flex-col items-center py-20 text-muted-foreground">
+              <Package className="w-10 h-10 mb-3 opacity-40" />
+              No items found
             </div>
           ) : (
             <table className="w-full text-sm">
-              <thead className="sticky top-0 bg-muted/40 backdrop-blur">
-                <tr className="text-xs text-muted-foreground border-b">
-                  <th className="text-left p-3">Code</th>
+              <thead className="sticky top-0 bg-muted/20 border-b">
+                <tr className="text-xs text-muted-foreground">
+                  <th className="p-4 text-left">Code</th>
                   <th className="text-left">Item</th>
                   <th className="text-left">Brand</th>
                   <th className="text-left">Rate</th>
                   <th className="text-left">Status</th>
-                  <th className="text-right pr-3">Action</th>
+                  <th className="text-right pr-4">Actions</th>
                 </tr>
               </thead>
 
@@ -120,14 +133,10 @@ export default function InventoryPage() {
                 {filtered.map((item) => (
                   <tr
                     key={item.id}
-                    className="
-                      border-b
-                      hover:bg-muted/40
-                      transition
-                    "
+                    className="border-b hover:bg-muted/40 group"
                   >
-                    <td className="p-3 text-muted-foreground">
-                      {item.item_code}
+                    <td className="p-4 text-muted-foreground">
+                      {item.item_code || "—"}
                     </td>
 
                     <td className="font-medium">{item.item_name}</td>
@@ -150,14 +159,20 @@ export default function InventoryPage() {
                       </Badge>
                     </td>
 
-                    <td className="text-right pr-3">
+                    {/* ACTIONS */}
+                    <td className="text-right pr-4 space-x-2">
+                      {/* EDIT */}
+                      <button
+                        onClick={() => openEdit(item)}
+                        className="opacity-0 group-hover:opacity-100 text-blue-500 hover:text-blue-700"
+                      >
+                        <Pencil className="w-4 h-4" />
+                      </button>
+
+                      {/* DELETE */}
                       <button
                         onClick={() => handleDelete(item.id)}
-                        className="
-                          text-muted-foreground
-                          hover:text-red-500
-                          transition
-                        "
+                        className="opacity-0 group-hover:opacity-100 text-muted-foreground hover:text-red-500"
                       >
                         <Trash2 className="w-4 h-4" />
                       </button>
@@ -170,54 +185,74 @@ export default function InventoryPage() {
         </ScrollArea>
       </Card>
 
-      {/* ADD MODAL */}
-      <Dialog open={showAdd} onOpenChange={setShowAdd}>
+      {/* MODAL */}
+      <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
-            <DialogTitle>Add Inventory Item</DialogTitle>
+            <DialogTitle>{editItem ? "Edit Item" : "Add Item"}</DialogTitle>
           </DialogHeader>
 
-          <AddInventoryForm onClose={() => setShowAdd(false)} />
+          <InventoryForm editItem={editItem} onClose={() => setOpen(false)} />
         </DialogContent>
       </Dialog>
     </div>
   );
 }
 
-/* ---------------- FORM ---------------- */
+/* ---------------- FORM (CREATE + UPDATE) ---------------- */
 
-function AddInventoryForm({ onClose }) {
+function InventoryForm({ editItem, onClose }) {
+  const isEdit = !!editItem;
+
   const [form, setForm] = useState({
-    item_code: "",
-    item_name: "",
-    description: "",
-    specification: "",
-    default_rate: "",
-    brand_id: "",
+    item_code: editItem?.item_code || "",
+    item_name: editItem?.item_name || "",
+    description: editItem?.description || "",
+    specification: editItem?.specification || "",
+    default_rate: editItem?.default_rate || "",
+    brand_id: editItem?.brand_id || "",
   });
 
   const { data: brands = [] } = useGetBrandsQuery();
-  const [createInventory, { isLoading }] = useCreateInventoryMasterMutation();
+
+  const [createInventory, { isLoading: creating }] =
+    useCreateInventoryMasterMutation();
+
+  const [updateInventory, { isLoading: updating }] =
+    useUpdateInventoryMasterMutation();
+
+  const loading = creating || updating;
 
   const update = (k, v) => setForm((p) => ({ ...p, [k]: v }));
 
   const handleSubmit = async () => {
-    if (!form.item_name) {
-      toast.error("Item name required");
-      return;
-    }
-
     try {
-      await createInventory({
+      if (!form.item_name) {
+        toast.error("Item name required");
+        return;
+      }
+
+      const payload = {
         ...form,
         default_rate: Number(form.default_rate || 0),
         brand_id: form.brand_id || null,
-      }).unwrap();
+      };
 
-      toast.success("Item created");
+      if (isEdit) {
+        await updateInventory({
+          id: editItem.id,
+          ...payload,
+        }).unwrap();
+
+        toast.success("Item updated");
+      } else {
+        await createInventory(payload).unwrap();
+        toast.success("Item created");
+      }
+
       onClose();
     } catch {
-      toast.error("Create failed");
+      toast.error("Operation failed");
     }
   };
 
@@ -269,10 +304,16 @@ function AddInventoryForm({ onClose }) {
 
       <Button
         onClick={handleSubmit}
-        disabled={isLoading}
+        disabled={loading}
         className="w-full bg-orange-500 hover:bg-orange-600"
       >
-        {isLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : "Save Item"}
+        {loading ? (
+          <Loader2 className="w-4 h-4 animate-spin" />
+        ) : isEdit ? (
+          "Update Item"
+        ) : (
+          "Save Item"
+        )}
       </Button>
     </div>
   );

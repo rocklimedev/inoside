@@ -29,6 +29,7 @@ import {
   SheetContent,
   SheetHeader,
   SheetTitle,
+  SheetTrigger,
 } from "@/components/ui/sheet";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -59,16 +60,9 @@ import {
   LayoutGrid,
   List,
   Plus,
-  Eye,
-  Edit,
-  Trash2,
   MoreHorizontal,
-  Calendar,
-  DollarSign,
-  TrendingUp,
-  FileText,
-  X,
   Loader2,
+  X,
 } from "lucide-react";
 
 const BOQ_STATUSES = ["draft", "submitted", "approved", "rejected", "revised"];
@@ -78,17 +72,16 @@ export default function BoqsPage() {
 
   const [viewMode, setViewMode] = useState("grid");
   const [search, setSearch] = useState("");
-  const [showFilters, setShowFilters] = useState(false);
+  const [sortBy, setSortBy] = useState("total");
 
   const [filters, setFilters] = useState({
     statuses: [],
     projects: [],
   });
 
-  const [sortBy, setSortBy] = useState("total");
-
   const [selectedBoqId, setSelectedBoqId] = useState(null);
   const [boqToDelete, setBoqToDelete] = useState(null);
+  const [isFilterOpen, setIsFilterOpen] = useState(false);
 
   const { data: boqs = [], isLoading, error } = useGetBoqsQuery();
   const { data: projects = [] } = useGetProjectsQuery();
@@ -122,11 +115,9 @@ export default function BoqsPage() {
       if (sortBy === "name") {
         return (a.title || "").localeCompare(b.title || "");
       }
-
       if (sortBy === "total") {
         return Number(b.grand_total || 0) - Number(a.grand_total || 0);
       }
-
       return (
         new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
       );
@@ -148,7 +139,6 @@ export default function BoqsPage() {
 
   const handleDelete = async () => {
     if (!boqToDelete) return;
-
     try {
       await deleteBoq(boqToDelete).unwrap();
       toast.success("BOQ deleted");
@@ -176,55 +166,13 @@ export default function BoqsPage() {
 
   return (
     <div className="flex h-full bg-gray-50">
-      {/* FILTER SIDEBAR */}
-      {showFilters && (
-        <aside className="w-72 bg-white border-r p-5">
-          <div className="flex justify-between items-center mb-6">
-            <h2 className="text-xs uppercase tracking-widest text-gray-500">
-              Filters
-            </h2>
-            <button onClick={() => setShowFilters(false)}>
-              <X className="w-4 h-4 text-gray-400" />
-            </button>
-          </div>
-
-          <div className="space-y-6">
-            <FilterSection
-              title="Status"
-              items={BOQ_STATUSES}
-              selected={filters.statuses}
-              onToggle={(v) => toggleFilter("statuses", v)}
-            />
-
-            <Separator />
-
-            <FilterSection
-              title="Projects"
-              items={projects.map((p) => p.id)}
-              getLabel={(id) => projectMap.get(id) || id}
-              selected={filters.projects}
-              onToggle={(v) => toggleFilter("projects", v)}
-            />
-          </div>
-
-          {(filters.statuses.length || filters.projects.length) > 0 && (
-            <button
-              onClick={clearFilters}
-              className="mt-6 text-sm text-gray-900 font-medium"
-            >
-              Clear filters
-            </button>
-          )}
-        </aside>
-      )}
-
-      {/* MAIN */}
+      {/* MAIN CONTENT */}
       <div className="flex-1 flex flex-col overflow-hidden">
         {/* HEADER */}
-        <div className="bg-white border-b px-6 py-4">
-          <div className="flex flex-col lg:flex-row gap-4 lg:items-center lg:justify-between">
+        <div className="bg-white border-b px-4 py-4 md:px-6">
+          <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
             <div>
-              <h1 className="text-lg font-semibold text-gray-900">
+              <h1 className="text-xl font-semibold text-gray-900">
                 BOQ Management
               </h1>
               <p className="text-sm text-gray-500">
@@ -232,31 +180,53 @@ export default function BoqsPage() {
               </p>
             </div>
 
-            {/* SEARCH */}
-            <div className="flex-1 max-w-md">
-              <div className="flex items-center gap-2 bg-gray-50 border rounded-lg px-3 py-2">
-                <Search className="w-4 h-4 text-gray-400" />
+            {/* Search */}
+            <div className="w-full md:max-w-md">
+              <div className="flex items-center gap-2 bg-gray-50 border rounded-xl px-4 py-2.5">
+                <Search className="w-5 h-5 text-gray-400" />
                 <Input
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
                   placeholder="Search BOQs..."
-                  className="border-0 bg-transparent focus:ring-0"
+                  className="border-0 bg-transparent focus:ring-0 text-base"
                 />
               </div>
             </div>
 
-            {/* ACTIONS */}
-            <div className="flex items-center gap-2">
+            {/* Actions */}
+            <div className="flex items-center gap-2 flex-wrap">
+              <Sheet open={isFilterOpen} onOpenChange={setIsFilterOpen}>
+                <SheetTrigger asChild>
+                  <Button variant="outline" className="md:hidden">
+                    <Filter className="w-4 h-4 mr-2" />
+                    Filter
+                  </Button>
+                </SheetTrigger>
+                <SheetContent side="left" className="w-80">
+                  <SheetHeader>
+                    <SheetTitle>Filters</SheetTitle>
+                  </SheetHeader>
+                  <FilterContent
+                    filters={filters}
+                    projects={projects}
+                    projectMap={projectMap}
+                    toggleFilter={toggleFilter}
+                    clearFilters={clearFilters}
+                  />
+                </SheetContent>
+              </Sheet>
+
               <Button
                 variant="outline"
-                onClick={() => setShowFilters(!showFilters)}
+                onClick={() => setIsFilterOpen(true)}
+                className="hidden md:flex"
               >
                 <Filter className="w-4 h-4 mr-2" />
                 Filters
               </Button>
 
               <Select value={sortBy} onValueChange={setSortBy}>
-                <SelectTrigger className="w-40">
+                <SelectTrigger className="w-36 md:w-40">
                   <ArrowUpDown className="w-4 h-4 mr-2" />
                   <SelectValue />
                 </SelectTrigger>
@@ -270,18 +240,13 @@ export default function BoqsPage() {
               <div className="flex border rounded-lg overflow-hidden">
                 <button
                   onClick={() => setViewMode("grid")}
-                  className={`px-3 py-2 ${
-                    viewMode === "grid" ? "bg-gray-900 text-white" : "bg-white"
-                  }`}
+                  className={`px-3 py-2 ${viewMode === "grid" ? "bg-gray-900 text-white" : "bg-white"}`}
                 >
                   <LayoutGrid className="w-4 h-4" />
                 </button>
-
                 <button
                   onClick={() => setViewMode("list")}
-                  className={`px-3 py-2 ${
-                    viewMode === "list" ? "bg-gray-900 text-white" : "bg-white"
-                  }`}
+                  className={`px-3 py-2 ${viewMode === "list" ? "bg-gray-900 text-white" : "bg-white"}`}
                 >
                   <List className="w-4 h-4" />
                 </button>
@@ -292,15 +257,15 @@ export default function BoqsPage() {
                 className="bg-gray-900 text-white"
               >
                 <Plus className="w-4 h-4 mr-2" />
-                New BOQ
+                <span className="hidden sm:inline">New BOQ</span>
               </Button>
             </div>
           </div>
         </div>
 
-        {/* CONTENT */}
+        {/* CONTENT AREA */}
         <ScrollArea className="flex-1">
-          <div className="p-6">
+          <div className="p-4 md:p-6">
             {viewMode === "grid" ? (
               <GridView
                 boqs={filteredBoqs}
@@ -336,7 +301,6 @@ export default function BoqsPage() {
               This action cannot be undone.
             </AlertDialogDescription>
           </AlertDialogHeader>
-
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
             <AlertDialogAction
@@ -353,8 +317,43 @@ export default function BoqsPage() {
   );
 }
 
-/* ================= FILTER ================= */
+/* ================= FILTER CONTENT ================= */
+function FilterContent({
+  filters,
+  projects,
+  projectMap,
+  toggleFilter,
+  clearFilters,
+}) {
+  return (
+    <div className="space-y-6 mt-6">
+      <FilterSection
+        title="Status"
+        items={BOQ_STATUSES}
+        selected={filters.statuses}
+        onToggle={(v) => toggleFilter("statuses", v)}
+      />
 
+      <Separator />
+
+      <FilterSection
+        title="Projects"
+        items={projects.map((p) => p.id)}
+        getLabel={(id) => projectMap.get(id) || id}
+        selected={filters.projects}
+        onToggle={(v) => toggleFilter("projects", v)}
+      />
+
+      {(filters.statuses.length || filters.projects.length) > 0 && (
+        <Button variant="outline" onClick={clearFilters} className="w-full">
+          Clear All Filters
+        </Button>
+      )}
+    </div>
+  );
+}
+
+/* ================= FILTER SECTION ================= */
 function FilterSection({
   title,
   items,
@@ -364,11 +363,15 @@ function FilterSection({
 }) {
   return (
     <div>
-      <p className="text-xs uppercase text-gray-500 mb-3">{title}</p>
-
-      <div className="space-y-2">
+      <p className="text-xs uppercase text-gray-500 mb-3 font-medium">
+        {title}
+      </p>
+      <div className="space-y-3">
         {items.map((item) => (
-          <label key={item} className="flex items-center gap-2 text-sm">
+          <label
+            key={item}
+            className="flex items-center gap-3 text-sm cursor-pointer"
+          >
             <Checkbox
               checked={selected.includes(item)}
               onCheckedChange={() => onToggle(item)}
@@ -381,50 +384,53 @@ function FilterSection({
   );
 }
 
-/* ================= GRID ================= */
-
+/* ================= GRID VIEW ================= */
 function GridView({ boqs, projectMap, onQuickView, onView, onEdit, onDelete }) {
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
+    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
       {boqs.map((b) => (
-        <Card key={b.id} className="p-5 bg-white border hover:shadow-sm">
-          <div className="flex justify-between">
-            <div>
-              <h3 className="font-semibold text-gray-900">{b.title}</h3>
-              <p className="text-xs text-gray-500">
+        <Card key={b.id} className="p-5 hover:shadow-md transition-shadow">
+          <div className="flex justify-between items-start">
+            <div className="flex-1 min-w-0">
+              <h3 className="font-semibold text-gray-900 truncate">
+                {b.title}
+              </h3>
+              <p className="text-sm text-gray-500 mt-1">
                 {projectMap.get(b.project_id)}
               </p>
             </div>
 
             <DropdownMenu>
               <DropdownMenuTrigger>
-                <MoreHorizontal className="w-4 h-4 text-gray-500" />
+                <MoreHorizontal className="w-5 h-5 text-gray-500" />
               </DropdownMenuTrigger>
-
-              <DropdownMenuContent>
+              <DropdownMenuContent align="end">
                 <DropdownMenuItem onClick={() => onQuickView(b.id)}>
                   Quick View
                 </DropdownMenuItem>
                 <DropdownMenuItem onClick={() => onView(b.id)}>
-                  View
+                  View Details
                 </DropdownMenuItem>
                 <DropdownMenuItem onClick={() => onEdit(b.id)}>
                   Edit
                 </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => onDelete(b.id)}>
+                <DropdownMenuItem
+                  onClick={() => onDelete(b.id)}
+                  className="text-red-600"
+                >
                   Delete
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
           </div>
 
-          <div className="flex gap-2 mt-3">
+          <div className="flex gap-2 mt-4">
             <Badge>{b.status}</Badge>
             <Badge variant="secondary">Rev {b.revision_no}</Badge>
           </div>
 
-          <div className="mt-4 text-lg font-semibold text-gray-900">
-            ₹{Number(b.grand_total || 0).toLocaleString()}
+          <div className="mt-6 text-2xl font-semibold text-gray-900">
+            ₹{Number(b.grand_total || 0).toLocaleString("en-IN")}
           </div>
         </Card>
       ))}
@@ -432,12 +438,11 @@ function GridView({ boqs, projectMap, onQuickView, onView, onEdit, onDelete }) {
   );
 }
 
-/* ================= LIST ================= */
-
-function ListView({ boqs, projectMap, onQuickView, onView, onEdit, onDelete }) {
+/* ================= LIST VIEW ================= */
+function ListView({ boqs, projectMap, onView, onEdit, onDelete }) {
   return (
-    <div className="bg-white border rounded-lg overflow-hidden">
-      <div className="grid grid-cols-12 text-xs uppercase text-gray-500 bg-gray-50 p-3">
+    <div className="bg-white border rounded-xl overflow-hidden">
+      <div className="hidden md:grid grid-cols-12 text-xs uppercase text-gray-500 bg-gray-50 p-4 border-b">
         <div className="col-span-5">Title</div>
         <div className="col-span-3">Project</div>
         <div className="col-span-2">Status</div>
@@ -448,38 +453,46 @@ function ListView({ boqs, projectMap, onQuickView, onView, onEdit, onDelete }) {
       {boqs.map((b) => (
         <div
           key={b.id}
-          className="grid grid-cols-12 p-4 border-t hover:bg-gray-50"
+          className="grid grid-cols-1 md:grid-cols-12 p-4 border-b hover:bg-gray-50 items-center gap-3 md:gap-0"
         >
-          <div className="col-span-5">
-            <p className="font-medium">{b.title}</p>
-            <p className="text-xs text-gray-500">{b.revision_no}</p>
+          <div className="md:col-span-5">
+            <p className="font-medium text-gray-900">{b.title}</p>
+            <p className="text-xs text-gray-500 md:hidden">
+              Rev {b.revision_no}
+            </p>
           </div>
 
-          <div className="col-span-3 text-sm">
+          <div className="md:col-span-3 text-sm text-gray-600">
             {projectMap.get(b.project_id)}
           </div>
 
-          <div className="col-span-2">
+          <div className="md:col-span-2 flex items-center gap-2">
             <Badge>{b.status}</Badge>
+            <span className="hidden md:inline text-xs text-gray-500">
+              Rev {b.revision_no}
+            </span>
           </div>
 
-          <div className="col-span-1 text-right font-medium">
-            ₹{Number(b.grand_total || 0).toLocaleString()}
+          <div className="md:col-span-1 text-right font-semibold text-lg">
+            ₹{Number(b.grand_total || 0).toLocaleString("en-IN")}
           </div>
 
-          <div className="col-span-1 flex justify-end">
+          <div className="md:col-span-1 flex justify-end md:justify-center">
             <DropdownMenu>
               <DropdownMenuTrigger>
-                <MoreHorizontal className="w-4 h-4" />
+                <MoreHorizontal className="w-5 h-5" />
               </DropdownMenuTrigger>
-              <DropdownMenuContent>
+              <DropdownMenuContent align="end">
                 <DropdownMenuItem onClick={() => onView(b.id)}>
                   View
                 </DropdownMenuItem>
                 <DropdownMenuItem onClick={() => onEdit(b.id)}>
                   Edit
                 </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => onDelete(b.id)}>
+                <DropdownMenuItem
+                  onClick={() => onDelete(b.id)}
+                  className="text-red-600"
+                >
                   Delete
                 </DropdownMenuItem>
               </DropdownMenuContent>

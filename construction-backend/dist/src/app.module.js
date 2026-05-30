@@ -30,6 +30,7 @@ const client_module_1 = require("./modules/clients/client.module");
 const sites_module_1 = require("./modules/sites/sites.module");
 const cdn_module_1 = require("./modules/cdn/cdn.module");
 const notifications_module_1 = require("./modules/notifications/notifications.module");
+const task_module_1 = require("./modules/tasks/task.module");
 let AppModule = class AppModule {
 };
 exports.AppModule = AppModule;
@@ -63,6 +64,7 @@ exports.AppModule = AppModule = __decorate([
             sites_module_1.SitesModule,
             cdn_module_1.CdnModule,
             notifications_module_1.NotificationsModule,
+            task_module_1.TaskModule,
         ],
         controllers: [app_controller_1.AppController],
         providers: [

@@ -8,8 +8,6 @@ import {
   useUpdateProjectMutation,
 } from "@/api/projectsApi";
 
-import { Card } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
   Select,
@@ -20,14 +18,6 @@ import {
 } from "@/components/ui/select";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
 
 import {
   Search,
@@ -40,15 +30,9 @@ import {
   X,
   Loader2,
   Trash2,
-  Edit3,
-  Eye,
-  ArrowRight,
-  MoreHorizontal,
 } from "lucide-react";
 
 import { CreateProjectModal } from "@/components/projects/CreateProjectModal";
-
-// Extracted Components
 import { FilterSection } from "@/components/projects/FilterSection";
 import { GridView } from "@/components/projects/GridView";
 import { ListView } from "@/components/projects/ListView";
@@ -85,23 +69,22 @@ export default function ProjectsPage() {
   const [viewMode, setViewMode] = useState("grid");
   const [search, setSearch] = useState("");
   const [showFilters, setShowFilters] = useState(false);
+
   const [filters, setFilters] = useState({
     stages: [],
     types: [],
     statuses: [],
   });
+
   const [sortBy, setSortBy] = useState("stage");
   const [selectedProject, setSelectedProject] = useState(null);
   const [showCreateModal, setShowCreateModal] = useState(false);
-
-  // Bulk selection
   const [selectedIds, setSelectedIds] = useState([]);
 
   const { data: projects = [], isLoading, error } = useGetProjectsQuery();
   const [deleteProject] = useDeleteProjectMutation();
   const [updateProject] = useUpdateProjectMutation();
 
-  // Map API data
   const mappedProjects = useMemo(() => {
     return projects.map((p) => ({
       id: p.id,
@@ -118,50 +101,45 @@ export default function ProjectsPage() {
     }));
   }, [projects]);
 
-  // Filter + Search + Sort
   const filteredProjects = useMemo(() => {
     let result = [...mappedProjects];
 
-    // Search
     if (search.trim()) {
       const term = search.toLowerCase();
       result = result.filter((p) =>
-        [p.name, p.client_name, p.type, p.stage, p.location].some((field) =>
-          field?.toLowerCase().includes(term),
+        [p.name, p.client_name, p.type, p.stage, p.location].some((f) =>
+          f?.toLowerCase().includes(term),
         ),
       );
     }
 
-    // Filters
-    if (filters.stages.length > 0) {
+    if (filters.stages.length)
       result = result.filter((p) => filters.stages.includes(p.stage));
-    }
-    if (filters.types.length > 0) {
-      result = result.filter((p) => filters.types.includes(p.type));
-    }
-    if (filters.statuses.length > 0) {
-      result = result.filter((p) => filters.statuses.includes(p.status));
-    }
 
-    // Sorting
+    if (filters.types.length)
+      result = result.filter((p) => filters.types.includes(p.type));
+
+    if (filters.statuses.length)
+      result = result.filter((p) => filters.statuses.includes(p.status));
+
     result.sort((a, b) => {
       if (sortBy === "name") return a.name.localeCompare(b.name);
       if (sortBy === "completion") return b.progress - a.progress;
-      if (sortBy === "stage") {
+      if (sortBy === "stage")
         return STAGES.indexOf(a.stage) - STAGES.indexOf(b.stage);
-      }
       return 0;
     });
 
     return result;
   }, [mappedProjects, search, filters, sortBy]);
 
-  // Bulk selection helpers
   const toggleSelect = (id) => {
     setSelectedIds((prev) =>
       prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id],
     );
   };
+
+  const clearSelection = () => setSelectedIds([]);
 
   const toggleSelectAll = () => {
     if (selectedIds.length === filteredProjects.length) {
@@ -171,102 +149,70 @@ export default function ProjectsPage() {
     }
   };
 
-  const clearSelection = () => setSelectedIds([]);
-
   const handleBulkDelete = async () => {
     if (!confirm(`Delete ${selectedIds.length} projects?`)) return;
 
     try {
       await Promise.all(selectedIds.map((id) => deleteProject(id).unwrap()));
-      toast.success(`${selectedIds.length} projects deleted successfully`);
+      toast.success("Projects deleted");
       clearSelection();
-    } catch (err) {
-      toast.error(err?.data?.message || "Failed to delete projects");
+    } catch {
+      toast.error("Failed to delete");
     }
-  };
-
-  // ==================== ACTIONS ====================
-
-  const handleView = (project) => {
-    setSelectedProject(project);
-  };
-
-  const handleEdit = (project) => {
-    setSelectedProject(project);
-    // You can also open a separate edit modal here if needed
   };
 
   const handleMoveToNextStage = async (project) => {
-    const currentIndex = STAGES.indexOf(project.stage);
-    if (currentIndex === -1 || currentIndex === STAGES.length - 1) {
-      toast.info("Project is already at the final stage");
-      return;
-    }
+    const i = STAGES.indexOf(project.stage);
+    if (i === -1 || i === STAGES.length - 1) return;
 
-    const nextStage = STAGES[currentIndex + 1];
+    const next = STAGES[i + 1];
 
     try {
       await updateProject({
         id: project.id,
-        current_stage: nextStage,
-        progress: Math.min(100, Math.floor(project.progress + 8)),
+        current_stage: next,
+        progress: Math.min(100, project.progress + 8),
       }).unwrap();
 
-      toast.success(`Project moved to "${nextStage}"`);
-    } catch (err) {
-      toast.error(err?.data?.message || "Failed to update stage");
+      toast.success(`Moved to ${next}`);
+    } catch {
+      toast.error("Update failed");
     }
   };
 
   const handleDelete = async (id) => {
-    if (!confirm("Are you sure you want to delete this project?")) return;
-    try {
-      await deleteProject(id).unwrap();
-      setSelectedProject(null);
-      toast.success("Project deleted successfully");
-    } catch (err) {
-      toast.error(err?.data?.message || "Failed to delete project");
-    }
+    if (!confirm("Delete project?")) return;
+    await deleteProject(id);
+    setSelectedProject(null);
+    toast.success("Deleted");
   };
 
-  const toggleFilter = (key, value) => {
-    setFilters((prev) => ({
-      ...prev,
-      [key]: prev[key].includes(value)
-        ? prev[key].filter((v) => v !== value)
-        : [...prev[key], value],
-    }));
+  const actions = {
+    onView: setSelectedProject,
+    onEdit: setSelectedProject,
+    onDelete: handleDelete,
+    onMoveNext: handleMoveToNextStage,
   };
 
-  const clearFilters = () => {
-    setFilters({ stages: [], types: [], statuses: [] });
-  };
-
-  // Keyboard shortcuts
   useEffect(() => {
-    const handleKeyDown = (e) => {
+    const handler = (e) => {
       if (e.key === "/" && !showCreateModal) {
         e.preventDefault();
-        const searchInput = document.querySelector(
-          'input[placeholder="Search projects..."]',
-        );
-        searchInput?.focus();
+        document.querySelector("input")?.focus();
       }
-
-      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "n") {
-        e.preventDefault();
+      if ((e.ctrlKey || e.metaKey) && e.key === "n") {
         setShowCreateModal(true);
       }
     };
 
-    window.addEventListener("keydown", handleKeyDown);
-    return () => window.removeEventListener("keydown", handleKeyDown);
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
   }, [showCreateModal]);
 
   if (isLoading) {
     return (
       <div className="flex items-center justify-center h-screen">
-        <Loader2 className="w-8 h-8 animate-spin text-[#ef7f1b]" />
+        <Loader2 className="animate-spin w-8 h-8 text-orange-500" />
       </div>
     );
   }
@@ -274,119 +220,103 @@ export default function ProjectsPage() {
   if (error) {
     return (
       <div className="flex items-center justify-center h-screen text-red-600">
-        Failed to load projects. Please try again.
+        Failed to load projects
       </div>
     );
   }
 
-  const actions = {
-    onView: handleView,
-    onEdit: handleEdit,
-    onDelete: handleDelete,
-    onMoveNext: handleMoveToNextStage,
-  };
-
   return (
-    <div className="flex h-full" data-testid="projects-page">
-      {/* Filter Sidebar */}
+    <div className="flex flex-col md:flex-row h-full w-full">
+      {/* FILTER DRAWER */}
       {showFilters && (
-        <div className="w-72 border-r border-gray-200 bg-white p-6 shrink-0 overflow-auto">
-          <div className="flex items-center justify-between mb-6">
-            <h3 className="text-sm font-bold uppercase tracking-wider">
-              Filters
-            </h3>
-            <button
-              onClick={() => setShowFilters(false)}
-              className="text-gray-400 hover:text-gray-600"
-            >
-              <X className="w-5 h-5" />
-            </button>
-          </div>
+        <div className="fixed md:static inset-0 z-50 flex">
+          <div
+            className="absolute inset-0 bg-black/40 md:hidden"
+            onClick={() => setShowFilters(false)}
+          />
+          <div className="relative w-72 bg-white border-r p-6 overflow-auto">
+            <div className="flex justify-between mb-6">
+              <h2 className="font-bold">Filters</h2>
+              <button onClick={() => setShowFilters(false)}>
+                <X />
+              </button>
+            </div>
 
-          <div className="space-y-8">
             <FilterSection
-              title="Project Stage"
+              title="Stage"
               items={STAGES}
               selected={filters.stages}
-              onToggle={(v) => toggleFilter("stages", v)}
+              onToggle={(v) =>
+                setFilters((p) => ({
+                  ...p,
+                  stages: p.stages.includes(v)
+                    ? p.stages.filter((x) => x !== v)
+                    : [...p.stages, v],
+                }))
+              }
             />
-            <Separator />
+
+            <Separator className="my-4" />
+
             <FilterSection
-              title="Project Type"
+              title="Type"
               items={TYPES}
               selected={filters.types}
-              onToggle={(v) => toggleFilter("types", v)}
+              onToggle={(v) =>
+                setFilters((p) => ({
+                  ...p,
+                  types: p.types.includes(v)
+                    ? p.types.filter((x) => x !== v)
+                    : [...p.types, v],
+                }))
+              }
             />
-            <Separator />
+
+            <Separator className="my-4" />
+
             <FilterSection
               title="Status"
               items={STATUSES}
               selected={filters.statuses}
-              onToggle={(v) => toggleFilter("statuses", v)}
+              onToggle={(v) =>
+                setFilters((p) => ({
+                  ...p,
+                  statuses: p.statuses.includes(v)
+                    ? p.statuses.filter((x) => x !== v)
+                    : [...p.statuses, v],
+                }))
+              }
             />
           </div>
-
-          {(filters.stages.length > 0 ||
-            filters.types.length > 0 ||
-            filters.statuses.length > 0) && (
-            <button
-              onClick={clearFilters}
-              className="mt-6 text-sm text-[#ef7f1b] hover:underline"
-            >
-              Clear all filters
-            </button>
-          )}
         </div>
       )}
 
+      {/* MAIN */}
       <div className="flex-1 flex flex-col overflow-hidden">
-        {/* Header */}
-        <div className="p-6 border-b border-gray-200 bg-white">
-          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-            <h1 className="text-3xl font-black">Projects</h1>
+        {/* HEADER */}
+        <div className="p-3 md:p-6 border-b bg-white">
+          <div className="flex flex-col md:flex-row gap-3 md:items-center justify-between">
+            <h1 className="text-2xl md:text-3xl font-bold">Projects</h1>
 
-            <div className="flex-1 max-w-md">
-              <div className="flex items-center gap-2 bg-gray-50 rounded-xl px-4 py-2.5 border focus-within:border-[#ef7f1b]">
+            <div className="flex-1 md:max-w-md">
+              <div className="flex items-center gap-2 bg-gray-50 px-3 py-2 rounded-lg">
                 <Search className="w-4 h-4 text-gray-400" />
                 <input
-                  type="text"
-                  placeholder="Search projects... (Press /)"
+                  className="w-full bg-transparent outline-none text-sm"
+                  placeholder="Search..."
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
-                  className="bg-transparent text-sm outline-none w-full"
                 />
               </div>
             </div>
 
-            <div className="flex items-center gap-3">
-              {selectedIds.length > 0 && (
-                <div className="flex items-center gap-2 bg-white border rounded-xl px-4 py-1.5">
-                  <span className="text-sm font-medium text-gray-700">
-                    {selectedIds.length} selected
-                  </span>
-                  <Button
-                    variant="destructive"
-                    size="sm"
-                    onClick={handleBulkDelete}
-                  >
-                    <Trash2 className="w-4 h-4 mr-1" />
-                    Delete
-                  </Button>
-                  <Button variant="outline" size="sm" onClick={clearSelection}>
-                    Cancel
-                  </Button>
-                </div>
-              )}
-
-              <Button
-                variant="outline"
-                onClick={() => setShowFilters(!showFilters)}
-              >
-                <Filter className="w-4 h-4 mr-2" /> Filter
+            <div className="flex flex-wrap items-center gap-2">
+              <Button variant="outline" onClick={() => setShowFilters(true)}>
+                <Filter className="w-4 h-4 mr-1" /> Filters
               </Button>
 
-              <Select value={sortBy} onValueChange={(v) => setSortBy(v)}>
-                <SelectTrigger className="w-40">
+              <Select value={sortBy} onValueChange={setSortBy}>
+                <SelectTrigger className="w-32 md:w-40">
                   <ArrowUpDown className="w-4 h-4 mr-2" />
                   <SelectValue />
                 </SelectTrigger>
@@ -397,19 +327,17 @@ export default function ProjectsPage() {
                 </SelectContent>
               </Select>
 
-              <div className="flex border rounded-xl overflow-hidden">
+              <div className="flex border rounded-lg overflow-hidden">
                 {[
-                  { mode: "grid", icon: LayoutGrid },
-                  { mode: "list", icon: List },
-                  { mode: "timeline", icon: GanttChart },
-                ].map(({ mode, icon: Icon }) => (
+                  { m: "grid", i: LayoutGrid },
+                  { m: "list", i: List },
+                  { m: "timeline", i: GanttChart },
+                ].map(({ m, i: Icon }) => (
                   <button
-                    key={mode}
-                    onClick={() => setViewMode(mode)}
-                    className={`p-2.5 ${
-                      viewMode === mode
-                        ? "bg-[#ef7f1b] text-white"
-                        : "hover:bg-gray-100"
+                    key={m}
+                    onClick={() => setViewMode(m)}
+                    className={`p-2 ${
+                      viewMode === m ? "bg-orange-500 text-white" : ""
                     }`}
                   >
                     <Icon className="w-4 h-4" />
@@ -418,55 +346,50 @@ export default function ProjectsPage() {
               </div>
 
               <Button
+                className="bg-orange-500"
                 onClick={() => setShowCreateModal(true)}
-                className="bg-[#ef7f1b] hover:bg-[#d66e15]"
               >
-                <Plus className="w-4 h-4 mr-2" /> New Project
+                <Plus className="w-4 h-4 mr-1" /> New
               </Button>
             </div>
           </div>
 
           <p className="text-sm text-gray-500 mt-2">
-            {filteredProjects.length} project
-            {filteredProjects.length !== 1 ? "s" : ""}
+            {filteredProjects.length} projects
           </p>
         </div>
 
-        {/* Content Area */}
+        {/* CONTENT */}
         <ScrollArea className="flex-1">
-          <div className="p-6">
+          <div className="p-3 md:p-6">
             {viewMode === "grid" && (
               <GridView
                 projects={filteredProjects}
-                onSelect={setSelectedProject}
+                actions={actions}
                 selectedIds={selectedIds}
                 onToggleSelect={toggleSelect}
                 onToggleSelectAll={toggleSelectAll}
-                actions={actions}
               />
             )}
+
             {viewMode === "list" && (
               <ListView
                 projects={filteredProjects}
-                onSelect={setSelectedProject}
+                actions={actions}
                 selectedIds={selectedIds}
                 onToggleSelect={toggleSelect}
                 onToggleSelectAll={toggleSelectAll}
-                actions={actions}
               />
             )}
+
             {viewMode === "timeline" && (
-              <TimelineView
-                projects={filteredProjects}
-                onSelect={setSelectedProject}
-                actions={actions}
-              />
+              <TimelineView projects={filteredProjects} actions={actions} />
             )}
           </div>
         </ScrollArea>
       </div>
 
-      {/* Modals & Sheets */}
+      {/* MODALS */}
       <CreateProjectModal
         open={showCreateModal}
         onClose={() => setShowCreateModal(false)}

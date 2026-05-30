@@ -10,7 +10,6 @@ import {
 } from '@nestjs/common';
 
 import { JwtAuthGuard } from '@/common/guards/jwt-auth.guard';
-
 import { ProjectDrawingService } from '../services/project-drawing.service';
 
 @Controller('projects')
