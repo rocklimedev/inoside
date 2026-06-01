@@ -69,7 +69,25 @@ export const AuthProvider = ({ children }) => {
   // ====================================================
   const [loginMutation] = useLoginMutation();
   const [registerMutation] = useRegisterMutation();
+  // inside AuthProvider (above return)
 
+  const roleRoutes = useMemo(
+    () => ({
+      architect: "/dashboard/architect",
+      client: "/dashboard/client",
+      builder: "/dashboard/builder",
+      site_supervisor: "/dashboard/site-supervisor",
+      team_member: "/dashboard/team",
+      admin: "/dashboard/admin",
+      super_admin: "/dashboard/admin",
+    }),
+    [],
+  );
+
+  const getDefaultRoute = useCallback(() => {
+    const roleKey = user?.role?.toLowerCase?.();
+    return roleRoutes[roleKey] || "/dashboard/architect";
+  }, [user, roleRoutes]);
   // ====================================================
   // BOOTSTRAP TOKEN FROM LOCALSTORAGE
   // ====================================================
@@ -230,7 +248,6 @@ export const AuthProvider = ({ children }) => {
   const value = {
     token,
     user,
-    userMeta: user,
     login,
     register,
     logout,
@@ -244,6 +261,8 @@ export const AuthProvider = ({ children }) => {
     isEmailVerified,
     hasRole: (roleName) =>
       user?.role?.toLowerCase() === roleName?.toLowerCase(),
+
+    getDefaultRoute, // 👈 add this
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
