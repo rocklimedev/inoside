@@ -19,38 +19,28 @@ function FullScreenLoader() {
 
 export default function DashboardGroupLayout({ children }) {
   const router = useRouter();
-  const {
-    authInitialized,
-    authResolved,
-    isAuthenticated,
-    profileFetching,
-    user,
-  } = useAuth();
+
+  const { authInitialized, authResolved, isAuthenticated, profileFetching } =
+    useAuth();
+
+  const isLoading = !authInitialized || !authResolved || profileFetching;
 
   useEffect(() => {
-    if (!authInitialized || !authResolved || profileFetching) return;
+    if (isLoading) return;
 
     if (!isAuthenticated) {
       router.replace("/login");
-      return;
     }
-  }, [
-    authInitialized,
-    authResolved,
-    isAuthenticated,
-    profileFetching,
-    user,
-    router,
-  ]);
+  }, [isLoading, isAuthenticated, router]);
 
-  // Strict loader - never render children until everything is rock solid
-  if (
-    !authInitialized ||
-    !authResolved ||
-    profileFetching ||
-    !isAuthenticated
-  ) {
+  // 🔵 Block UI until auth is fully stable
+  if (isLoading) {
     return <FullScreenLoader />;
+  }
+
+  // 🔴 Prevent flash of protected layout
+  if (!isAuthenticated) {
+    return null;
   }
 
   return <DashboardLayout>{children}</DashboardLayout>;

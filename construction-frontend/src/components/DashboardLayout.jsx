@@ -41,7 +41,9 @@ export default function DashboardLayout({ children }) {
   const router = useRouter();
   const { user, logout } = useAuth();
 
-  // GLOBAL CMD + K Shortcut
+  // =========================
+  // GLOBAL SHORTCUTS
+  // =========================
   useEffect(() => {
     const handleKeyDown = (e) => {
       if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "k") {
@@ -65,6 +67,11 @@ export default function DashboardLayout({ children }) {
   };
 
   const toggleSidebar = () => setCollapsed((prev) => !prev);
+
+  const userRoleLabel =
+    user?.role?.replaceAll("_", " ")?.toUpperCase?.() || "DASHBOARD";
+
+  const userInitial = user?.name?.charAt(0)?.toUpperCase() || "U";
 
   return (
     <TooltipProvider delayDuration={0}>
@@ -99,22 +106,18 @@ export default function DashboardLayout({ children }) {
                   <X className="w-5 h-5 text-gray-400" />
                 </button>
               </div>
-              <SidebarContent
-                collapsed={collapsed}
-                onToggleCollapse={toggleSidebar}
-                onMobileClose={() => setMobileMenuOpen(false)}
-              />
+
+              <SidebarContent onMobileClose={() => setMobileMenuOpen(false)} />
             </aside>
           </div>
         )}
 
-        {/* MAIN CONTENT AREA */}
+        {/* MAIN AREA */}
         <div className="flex-1 flex flex-col overflow-hidden min-w-0">
           {/* HEADER */}
           <header className="h-16 bg-white border-b border-gray-200 flex items-center justify-between px-4 md:px-6 shrink-0">
-            {/* LEFT SECTION */}
+            {/* LEFT */}
             <div className="flex items-center gap-3">
-              {/* Mobile Menu Button */}
               <button
                 className="md:hidden text-gray-500 hover:text-gray-800 p-2"
                 onClick={() => setMobileMenuOpen(true)}
@@ -122,7 +125,6 @@ export default function DashboardLayout({ children }) {
                 <Menu className="w-5 h-5" />
               </button>
 
-              {/* Desktop Collapse Button */}
               <button
                 onClick={toggleSidebar}
                 className="hidden md:flex text-gray-500 hover:text-gray-800 p-2 rounded-xl hover:bg-gray-100"
@@ -136,7 +138,7 @@ export default function DashboardLayout({ children }) {
 
               <div>
                 <h1 className="text-base font-bold text-black leading-tight">
-                  {user?.role ? user.role.replace("_", " ") : "Dashboard"}
+                  {userRoleLabel}
                 </h1>
                 <p className="text-[11px] text-gray-400">
                   Welcome back, {user?.name || "User"}
@@ -144,21 +146,12 @@ export default function DashboardLayout({ children }) {
               </div>
             </div>
 
-            {/* RIGHT SECTION */}
+            {/* RIGHT */}
             <div className="flex items-center gap-2">
-              {/* Search Trigger */}
+              {/* SEARCH */}
               <button
                 onClick={() => setSearchOpen(true)}
-                className="
-                  hidden lg:flex items-center gap-3
-                  h-9 w-[260px]
-                  px-3
-                  rounded-xl
-                  border border-gray-200
-                  bg-gray-50
-                  hover:bg-white hover:border-[#ef7f1b]/40
-                  transition
-                "
+                className="hidden lg:flex items-center gap-3 h-9 w-[260px] px-3 rounded-xl border border-gray-200 bg-gray-50 hover:bg-white hover:border-[#ef7f1b]/40 transition"
               >
                 <Search className="w-4 h-4 text-gray-400" />
                 <span className="text-sm text-gray-400 flex-1 text-left">
@@ -169,19 +162,10 @@ export default function DashboardLayout({ children }) {
                 </span>
               </button>
 
-              {/* Quick Add */}
+              {/* QUICK ACTION */}
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <button
-                    className="
-                      w-9 h-9 rounded-xl
-                      bg-[#ef7f1b]
-                      text-white
-                      flex items-center justify-center
-                      hover:bg-[#d66e15]
-                      transition
-                    "
-                  >
+                  <button className="w-9 h-9 rounded-xl bg-[#ef7f1b] text-white flex items-center justify-center hover:bg-[#d66e15] transition">
                     <Plus className="w-4 h-4" />
                   </button>
                 </DropdownMenuTrigger>
@@ -201,45 +185,22 @@ export default function DashboardLayout({ children }) {
                 </DropdownMenuContent>
               </DropdownMenu>
 
-              {/* Notifications */}
+              {/* NOTIFICATIONS */}
               <NotificationsDropdown />
 
-              {/* Profile Dropdown */}
+              {/* PROFILE */}
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <button
-                    className="
-        w-9 h-9 rounded-full
-        bg-[#ef7f1b]
-        text-white
-        flex items-center justify-center
-        overflow-hidden
-        hover:bg-[#d66e15]
-        transition
-      "
-                  >
+                  <button className="w-9 h-9 rounded-full bg-[#ef7f1b] text-white flex items-center justify-center overflow-hidden hover:bg-[#d66e15] transition">
                     {user?.avatar_thumbnail ? (
                       <img
                         src={user.avatar_thumbnail}
                         alt="avatar"
                         className="w-full h-full object-cover"
-                        onError={(e) => {
-                          // fallback to initials if image fails
-                          const target = e.currentTarget;
-                          target.style.display = "none";
-                        }}
                       />
-                    ) : null}
-
-                    {/* Fallback UI (always present) */}
-                    <span
-                      className={`
-          text-xs font-bold
-          ${user?.avatar_thumbnail ? "hidden" : "block"}
-        `}
-                    >
-                      {user?.name?.charAt(0)?.toUpperCase() || "U"}
-                    </span>
+                    ) : (
+                      <span className="text-xs font-bold">{userInitial}</span>
+                    )}
                   </button>
                 </DropdownMenuTrigger>
 
@@ -273,12 +234,12 @@ export default function DashboardLayout({ children }) {
             </div>
           </header>
 
-          {/* MAIN CONTENT */}
+          {/* CONTENT */}
           <main className="flex-1 overflow-auto">{children}</main>
         </div>
       </div>
 
-      {/* GLOBAL SEARCH MODAL */}
+      {/* GLOBAL SEARCH */}
       <GlobalSearchModal open={searchOpen} onOpenChange={setSearchOpen} />
     </TooltipProvider>
   );

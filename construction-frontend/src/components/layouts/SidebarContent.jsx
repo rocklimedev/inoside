@@ -1,4 +1,3 @@
-// components/layout/SidebarContent.tsx
 "use client";
 
 import { usePathname, useRouter } from "next/navigation";
@@ -9,7 +8,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-import { ChevronLeft, ChevronRight, X } from "lucide-react";
+import { ChevronLeft, ChevronRight } from "lucide-react";
 import { navSections } from "@/lib/defaults";
 import { useAuth } from "@/contexts/AuthContext";
 
@@ -20,23 +19,12 @@ export default function SidebarContent({
 }) {
   const pathname = usePathname();
   const router = useRouter();
-  const { user } = useAuth();
 
-  // Updated role mapping to match actual DB values (lowercase)
-  const roleRoutes = {
-    architect: "/dashboard/architect",
-    client: "/dashboard/client",
-    builder: "/dashboard/builder",
-    site_supervisor: "/dashboard/site-supervisor",
-    team_member: "/dashboard/team",
-    admin: "/dashboard/admin",
-    super_admin: "/dashboard/admin",
-  };
+  const { user, getDefaultRoute } = useAuth();
 
   const handleNavClick = (path) => {
     if (path === "/dashboard") {
-      const roleKey = user?.role?.toLowerCase?.();
-      const targetRoute = roleRoutes[roleKey] || "/dashboard/architect";
+      const targetRoute = getDefaultRoute?.() || "/dashboard/architect";
       router.push(targetRoute);
     } else {
       router.push(path);
@@ -45,6 +33,13 @@ export default function SidebarContent({
     if (isMobile && onMobileClose) {
       onMobileClose();
     }
+  };
+
+  const isActive = (itemPath) => {
+    return (
+      pathname === itemPath ||
+      (itemPath === "/dashboard" && pathname.startsWith("/dashboard"))
+    );
   };
 
   return (
@@ -81,20 +76,17 @@ export default function SidebarContent({
 
             {section.items.map((item, ii) => {
               const Icon = item.icon;
-              const isActive =
-                pathname === item.path ||
-                (item.path === "/dashboard" &&
-                  pathname.startsWith("/dashboard"));
+              const active = isActive(item.path);
 
-              const buttonContent = (
+              const button = (
                 <button
                   onClick={() => handleNavClick(item.path)}
-                  className={`flex items-center gap-3 w-full ${
+                  className={`flex items-center gap-3 w-full transition-colors ${
                     collapsed && !isMobile
                       ? "justify-center px-2 py-2.5"
                       : "px-6 py-2"
-                  } text-sm transition-colors ${
-                    isActive
+                  } text-sm ${
+                    active
                       ? "bg-orange-50 text-[#ef7f1b] font-medium"
                       : "text-gray-500 hover:bg-gray-50 hover:text-gray-800"
                   }`}
@@ -106,10 +98,10 @@ export default function SidebarContent({
                 </button>
               );
 
-              if (collapsed && !isMobile) {
-                return (
-                  <Tooltip key={`${si}-${ii}`} provider={TooltipProvider}>
-                    <TooltipTrigger asChild>{buttonContent}</TooltipTrigger>
+              return collapsed && !isMobile ? (
+                <TooltipProvider key={`${si}-${ii}`}>
+                  <Tooltip>
+                    <TooltipTrigger asChild>{button}</TooltipTrigger>
                     <TooltipContent
                       side="right"
                       className="bg-gray-900 text-white text-xs px-2 py-1"
@@ -117,10 +109,10 @@ export default function SidebarContent({
                       {item.label}
                     </TooltipContent>
                   </Tooltip>
-                );
-              }
-
-              return <div key={`${si}-${ii}`}>{buttonContent}</div>;
+                </TooltipProvider>
+              ) : (
+                <div key={`${si}-${ii}`}>{button}</div>
+              );
             })}
           </div>
         ))}
@@ -129,9 +121,7 @@ export default function SidebarContent({
       {/* Collapse Toggle (Desktop Only) */}
       {!isMobile && (
         <button
-          onClick={() => {
-            /* Handled in parent component */
-          }}
+          onClick={() => {}}
           className="flex items-center justify-center h-12 border-t border-gray-100 text-gray-400 hover:text-gray-600 hover:bg-gray-50 transition-colors shrink-0"
         >
           {collapsed ? (

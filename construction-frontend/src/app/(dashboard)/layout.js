@@ -4,6 +4,7 @@ import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/contexts/AuthContext";
 import DashboardLayout from "@/components/DashboardLayout";
+
 function FullScreenLoader() {
   return (
     <div className="min-h-screen flex items-center justify-center">
@@ -17,32 +18,26 @@ function FullScreenLoader() {
 
 export default function DashboardGroupLayout({ children }) {
   const router = useRouter();
-  const { authInitialized, authResolved, isAuthenticated, profileFetching } =
-    useAuth();
+  const { isAuthenticated, isLoading } = useAuth();
 
   useEffect(() => {
-    // 🔴 WAIT for auth to fully resolve before checking
-    if (!authInitialized || !authResolved) return;
+    if (isLoading) return;
 
-    // 🔴 WAIT for profile to finish fetching (CRITICAL for nested routes!)
-    if (profileFetching) return;
-
-    // Now it's safe to check
     if (!isAuthenticated) {
       router.replace("/login");
     }
-  }, [authInitialized, authResolved, isAuthenticated, profileFetching, router]);
+  }, [isLoading, isAuthenticated, router]);
 
-  // Show loader while auth is resolving OR profile is fetching
-  if (!authInitialized || !authResolved || profileFetching) {
+  // 🔵 Show loader while auth is resolving
+  if (isLoading) {
     return <FullScreenLoader />;
   }
 
-  // Not authenticated - return null (don't render content)
+  // 🔴 Prevent rendering protected UI before redirect
   if (!isAuthenticated) {
     return null;
   }
 
-  // ✅ Auth is valid and stable - render protected content
+  // 🟢 Auth OK → render dashboard layout
   return <DashboardLayout>{children}</DashboardLayout>;
 }
