@@ -8,8 +8,8 @@ import {
   useGetBoqsQuery,
   useDeleteBoqMutation,
   useGetBoqByIdQuery,
+  useUpdateBoqStatusMutation,
 } from "@/api/boqApi";
-
 import { useGetProjectsQuery } from "@/api/projectsApi";
 
 import { Card } from "@/components/ui/card";
@@ -24,17 +24,8 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 
-import {
-  Sheet,
-  SheetContent,
-  SheetHeader,
-  SheetTitle,
-  SheetTrigger,
-} from "@/components/ui/sheet";
+import { Sheet, SheetContent } from "@/components/ui/sheet";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Checkbox } from "@/components/ui/checkbox";
-import { Separator } from "@/components/ui/separator";
-
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -56,13 +47,15 @@ import {
 import {
   Search,
   Filter,
-  ArrowUpDown,
-  LayoutGrid,
+  Grid3X3,
   List,
   Plus,
-  MoreHorizontal,
+  MoreVertical,
   Loader2,
-  X,
+  Edit,
+  Eye,
+  Trash2,
+  IndianRupee,
 } from "lucide-react";
 
 const BOQ_STATUSES = ["draft", "submitted", "approved", "rejected", "revised"];
@@ -73,15 +66,11 @@ export default function BoqsPage() {
   const [viewMode, setViewMode] = useState("grid");
   const [search, setSearch] = useState("");
   const [sortBy, setSortBy] = useState("total");
-
-  const [filters, setFilters] = useState({
-    statuses: [],
-    projects: [],
-  });
+  const [filterStatus, setFilterStatus] = useState("all");
+  const [filterProject, setFilterProject] = useState("all");
 
   const [selectedBoqId, setSelectedBoqId] = useState(null);
   const [boqToDelete, setBoqToDelete] = useState(null);
-  const [isFilterOpen, setIsFilterOpen] = useState(false);
 
   const { data: boqs = [], isLoading, error } = useGetBoqsQuery();
   const { data: projects = [] } = useGetProjectsQuery();
@@ -90,7 +79,8 @@ export default function BoqsPage() {
   const { data: selectedBoq } = useGetBoqByIdQuery(selectedBoqId, {
     skip: !selectedBoqId,
   });
-
+  const [updateBoqStatus, { isLoading: isUpdatingStatus }] =
+    useUpdateBoqStatusMutation();
   const projectMap = useMemo(() => {
     return new Map(projects.map((p) => [p.id, p.name]));
   }, [projects]);
@@ -98,19 +88,23 @@ export default function BoqsPage() {
   const filteredBoqs = useMemo(() => {
     let result = [...boqs];
 
+    // Search
     if (search.trim()) {
       const term = search.toLowerCase();
       result = result.filter((b) => b.title?.toLowerCase().includes(term));
     }
 
-    if (filters.statuses.length) {
-      result = result.filter((b) => filters.statuses.includes(b.status));
+    // Status Filter
+    if (filterStatus !== "all") {
+      result = result.filter((b) => b.status === filterStatus);
     }
 
-    if (filters.projects.length) {
-      result = result.filter((b) => filters.projects.includes(b.project_id));
+    // Project Filter
+    if (filterProject !== "all") {
+      result = result.filter((b) => b.project_id === filterProject);
     }
 
+    // Sorting
     result.sort((a, b) => {
       if (sortBy === "name") {
         return (a.title || "").localeCompare(b.title || "");
@@ -124,24 +118,24 @@ export default function BoqsPage() {
     });
 
     return result;
-  }, [boqs, search, filters, sortBy]);
+  }, [boqs, search, filterStatus, filterProject, sortBy]);
+  const handleStatusChange = async (boqId, status) => {
+    try {
+      await updateBoqStatus({
+        id: boqId,
+        status,
+      }).unwrap();
 
-  const toggleFilter = (key, value) => {
-    setFilters((prev) => ({
-      ...prev,
-      [key]: prev[key].includes(value)
-        ? prev[key].filter((v) => v !== value)
-        : [...prev[key], value],
-    }));
+      toast.success(`BOQ ${status} successfully`);
+    } catch (err) {
+      toast.error(err?.data?.message || "Status update failed");
+    }
   };
-
-  const clearFilters = () => setFilters({ statuses: [], projects: [] });
-
   const handleDelete = async () => {
     if (!boqToDelete) return;
     try {
       await deleteBoq(boqToDelete).unwrap();
-      toast.success("BOQ deleted");
+      toast.success("BOQ deleted successfully");
       setBoqToDelete(null);
     } catch (err) {
       toast.error(err?.data?.message || "Delete failed");
@@ -150,146 +144,368 @@ export default function BoqsPage() {
 
   if (isLoading) {
     return (
-      <div className="h-screen flex items-center justify-center bg-gray-50">
-        <Loader2 className="w-6 h-6 animate-spin text-gray-500" />
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 p-6 bg-[#fafafa]">
+        {[...Array(6)].map((_, i) => (
+          <div key={i} className="h-64 animate-pulse rounded-2xl bg-gray-100" />
+        ))}
       </div>
     );
   }
 
   if (error) {
     return (
-      <div className="h-screen flex items-center justify-center text-red-500">
-        Failed to load BOQs
+      <div className="flex h-screen items-center justify-center bg-[#fafafa]">
+        <p className="text-red-500">Failed to load BOQs</p>
       </div>
     );
   }
 
   return (
-    <div className="flex h-full bg-gray-50">
-      {/* MAIN CONTENT */}
-      <div className="flex-1 flex flex-col overflow-hidden">
-        {/* HEADER */}
-        <div className="bg-white border-b px-4 py-4 md:px-6">
-          <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-            <div>
-              <h1 className="text-xl font-semibold text-gray-900">
-                BOQ Management
-              </h1>
-              <p className="text-sm text-gray-500">
-                {filteredBoqs.length} records
-              </p>
-            </div>
+    <div className="flex h-full flex-col bg-[#fafafa]">
+      {/* HEADER */}
+      <div className="border-b bg-white px-4 py-4 md:px-6">
+        <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+          <div>
+            <h1 className="text-2xl font-black">BOQs</h1>
+            <p className="mt-1 text-xs text-gray-400">
+              {filteredBoqs.length} records found
+            </p>
+          </div>
 
-            {/* Search */}
-            <div className="w-full md:max-w-md">
-              <div className="flex items-center gap-2 bg-gray-50 border rounded-xl px-4 py-2.5">
-                <Search className="w-5 h-5 text-gray-400" />
-                <Input
-                  value={search}
-                  onChange={(e) => setSearch(e.target.value)}
-                  placeholder="Search BOQs..."
-                  className="border-0 bg-transparent focus:ring-0 text-base"
-                />
-              </div>
-            </div>
-
-            {/* Actions */}
-            <div className="flex items-center gap-2 flex-wrap">
-              <Sheet open={isFilterOpen} onOpenChange={setIsFilterOpen}>
-                <SheetTrigger asChild>
-                  <Button variant="outline" className="md:hidden">
-                    <Filter className="w-4 h-4 mr-2" />
-                    Filter
-                  </Button>
-                </SheetTrigger>
-                <SheetContent side="left" className="w-80">
-                  <SheetHeader>
-                    <SheetTitle>Filters</SheetTitle>
-                  </SheetHeader>
-                  <FilterContent
-                    filters={filters}
-                    projects={projects}
-                    projectMap={projectMap}
-                    toggleFilter={toggleFilter}
-                    clearFilters={clearFilters}
-                  />
-                </SheetContent>
-              </Sheet>
-
-              <Button
-                variant="outline"
-                onClick={() => setIsFilterOpen(true)}
-                className="hidden md:flex"
+          <div className="flex items-center gap-2">
+            <div className="flex rounded-lg border overflow-hidden">
+              <button
+                onClick={() => setViewMode("grid")}
+                className={`p-2 ${viewMode === "grid" ? "bg-[#ef7f1b] text-white" : "text-gray-500"}`}
               >
-                <Filter className="w-4 h-4 mr-2" />
-                Filters
-              </Button>
-
-              <Select value={sortBy} onValueChange={setSortBy}>
-                <SelectTrigger className="w-36 md:w-40">
-                  <ArrowUpDown className="w-4 h-4 mr-2" />
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="date">Newest</SelectItem>
-                  <SelectItem value="name">Name</SelectItem>
-                  <SelectItem value="total">Amount</SelectItem>
-                </SelectContent>
-              </Select>
-
-              <div className="flex border rounded-lg overflow-hidden">
-                <button
-                  onClick={() => setViewMode("grid")}
-                  className={`px-3 py-2 ${viewMode === "grid" ? "bg-gray-900 text-white" : "bg-white"}`}
-                >
-                  <LayoutGrid className="w-4 h-4" />
-                </button>
-                <button
-                  onClick={() => setViewMode("list")}
-                  className={`px-3 py-2 ${viewMode === "list" ? "bg-gray-900 text-white" : "bg-white"}`}
-                >
-                  <List className="w-4 h-4" />
-                </button>
-              </div>
-
-              <Button
-                onClick={() => router.push("/boq/add")}
-                className="bg-gray-900 text-white"
+                <Grid3X3 className="h-4 w-4" />
+              </button>
+              <button
+                onClick={() => setViewMode("list")}
+                className={`p-2 ${viewMode === "list" ? "bg-[#ef7f1b] text-white" : "text-gray-500"}`}
               >
-                <Plus className="w-4 h-4 mr-2" />
-                <span className="hidden sm:inline">New BOQ</span>
-              </Button>
+                <List className="h-4 w-4" />
+              </button>
             </div>
+
+            <Button
+              onClick={() => router.push("/boq/add")}
+              className="bg-[#ef7f1b] hover:bg-[#d96f18]"
+              size="sm"
+            >
+              <Plus className="h-4 w-4 mr-1" />
+              New BOQ
+            </Button>
           </div>
         </div>
 
-        {/* CONTENT AREA */}
-        <ScrollArea className="flex-1">
-          <div className="p-4 md:p-6">
-            {viewMode === "grid" ? (
-              <GridView
-                boqs={filteredBoqs}
-                projectMap={projectMap}
-                onQuickView={setSelectedBoqId}
-                onView={(id) => router.push(`/boq/view?boqId=${id}`)}
-                onEdit={(id) => router.push(`/boq/add?boqId=${id}`)}
-                onDelete={setBoqToDelete}
-              />
-            ) : (
-              <ListView
-                boqs={filteredBoqs}
-                projectMap={projectMap}
-                onQuickView={setSelectedBoqId}
-                onView={(id) => router.push(`/boq/view?boqId=${id}`)}
-                onEdit={(id) => router.push(`/boq/add?boqId=${id}`)}
-                onDelete={setBoqToDelete}
-              />
-            )}
+        {/* Search + Filters */}
+        <div className="mt-4 flex flex-col gap-3 md:flex-row">
+          <div className="relative flex-1">
+            <Search className="absolute left-3 top-2.5 h-4 w-4 text-gray-400" />
+            <Input
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Search BOQs..."
+              className="pl-10"
+            />
           </div>
-        </ScrollArea>
+
+          <Select value={filterStatus} onValueChange={setFilterStatus}>
+            <SelectTrigger className="w-full md:w-44">
+              <Filter className="h-3 w-3 mr-1" />
+              <SelectValue placeholder="Status" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Status</SelectItem>
+              {BOQ_STATUSES.map((status) => (
+                <SelectItem key={status} value={status}>
+                  {status}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+
+          <Select value={filterProject} onValueChange={setFilterProject}>
+            <SelectTrigger className="w-full md:w-52">
+              <SelectValue placeholder="All Projects" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Projects</SelectItem>
+              {projects.map((p) => (
+                <SelectItem key={p.id} value={p.id}>
+                  {p.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+
+          <Select value={sortBy} onValueChange={setSortBy}>
+            <SelectTrigger className="w-full md:w-40">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="total">Highest Amount</SelectItem>
+              <SelectItem value="date">Newest First</SelectItem>
+              <SelectItem value="name">Name A-Z</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
       </div>
 
-      {/* DELETE DIALOG */}
+      {/* CONTENT */}
+      <ScrollArea className="flex-1">
+        <div className="p-4 md:p-6">
+          {filteredBoqs.length === 0 ? (
+            <div className="text-center py-20 text-gray-500">
+              No BOQs found matching your criteria.
+            </div>
+          ) : viewMode === "grid" ? (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3 2xl:grid-cols-4 gap-4">
+              {filteredBoqs.map((boq) => (
+                <Card
+                  key={boq.id}
+                  className="cursor-pointer rounded-2xl border bg-white p-5 transition hover:-translate-y-1 hover:shadow-lg group"
+                  onClick={() => router.push(`/boq/view?boqId=${boq.id}`)}
+                >
+                  <div className="flex items-start justify-between mb-4">
+                    <div className="h-12 w-12 rounded-2xl bg-orange-50 flex items-center justify-center font-bold text-2xl text-[#ef7f1b]">
+                      ₹
+                    </div>
+
+                    <Badge
+                      className={`capitalize ${
+                        boq.status === "approved"
+                          ? "bg-emerald-100 text-emerald-700"
+                          : boq.status === "rejected"
+                            ? "bg-red-100 text-red-700"
+                            : "bg-amber-100 text-amber-700"
+                      }`}
+                    >
+                      {boq.status}
+                    </Badge>
+                  </div>
+
+                  <h3 className="font-bold text-lg truncate">{boq.title}</h3>
+                  <p className="text-sm text-gray-500 mt-1 truncate">
+                    {projectMap.get(boq.project_id)}
+                  </p>
+
+                  <div className="mt-6 flex items-baseline gap-1">
+                    <span className="text-3xl font-semibold">
+                      ₹{Number(boq.grand_total || 0).toLocaleString("en-IN")}
+                    </span>
+                  </div>
+
+                  <div className="mt-4 text-xs text-gray-400">
+                    Rev {boq.revision_no} •{" "}
+                    {new Date(boq.created_at).toLocaleDateString()}
+                  </div>
+
+                  <div className="mt-5 flex justify-end opacity-0 group-hover:opacity-100 transition">
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={(e) => e.stopPropagation()}
+                        >
+                          <MoreVertical className="h-4 w-4" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end">
+                        <DropdownMenuItem
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            router.push(`/boq/view?boqId=${boq.id}`);
+                          }}
+                        >
+                          <Eye className="mr-2 h-4 w-4" /> View
+                        </DropdownMenuItem>
+                        {boq.status !== "submitted" && (
+                          <DropdownMenuItem
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleStatusChange(boq.id, "submitted");
+                            }}
+                          >
+                            Submit
+                          </DropdownMenuItem>
+                        )}
+
+                        {boq.status !== "approved" && (
+                          <DropdownMenuItem
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleStatusChange(boq.id, "approved");
+                            }}
+                          >
+                            Approve
+                          </DropdownMenuItem>
+                        )}
+
+                        {boq.status !== "rejected" && (
+                          <DropdownMenuItem
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleStatusChange(boq.id, "rejected");
+                            }}
+                            className="text-red-600"
+                          >
+                            Reject
+                          </DropdownMenuItem>
+                        )}
+
+                        {boq.status !== "revised" && (
+                          <DropdownMenuItem
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleStatusChange(boq.id, "revised");
+                            }}
+                          >
+                            Mark Revised
+                          </DropdownMenuItem>
+                        )}
+                        <DropdownMenuItem
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            router.push(`/boq/add?boqId=${boq.id}`);
+                          }}
+                        >
+                          <Edit className="mr-2 h-4 w-4" /> Edit
+                        </DropdownMenuItem>
+                        <DropdownMenuItem
+                          className="text-red-600"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setBoqToDelete(boq.id);
+                          }}
+                        >
+                          <Trash2 className="mr-2 h-4 w-4" /> Delete
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  </div>
+                </Card>
+              ))}
+            </div>
+          ) : (
+            /* LIST VIEW */
+            <div className="space-y-3">
+              {filteredBoqs.map((boq) => (
+                <Card
+                  key={boq.id}
+                  className="flex items-center gap-4 p-4 cursor-pointer hover:shadow-md transition"
+                  onClick={() => router.push(`/boq/view?boqId=${boq.id}`)}
+                >
+                  <div className="h-12 w-12 rounded-2xl bg-orange-50 flex items-center justify-center font-bold text-3xl text-[#ef7f1b]">
+                    ₹
+                  </div>
+
+                  <div className="flex-1 min-w-0">
+                    <p className="font-bold truncate">{boq.title}</p>
+                    <p className="text-sm text-gray-500 truncate">
+                      {projectMap.get(boq.project_id)} • Rev {boq.revision_no}
+                    </p>
+                  </div>
+
+                  <div className="text-right">
+                    <p className="font-semibold text-lg">
+                      ₹{Number(boq.grand_total || 0).toLocaleString("en-IN")}
+                    </p>
+                    <Badge className="capitalize text-xs">{boq.status}</Badge>
+                  </div>
+
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        <MoreVertical className="h-4 w-4" />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end">
+                      <DropdownMenuItem
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          router.push(`/boq/view?boqId=${boq.id}`);
+                        }}
+                      >
+                        View Details
+                      </DropdownMenuItem>
+                      {boq.status !== "submitted" && (
+                        <DropdownMenuItem
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleStatusChange(boq.id, "submitted");
+                          }}
+                        >
+                          Submit
+                        </DropdownMenuItem>
+                      )}
+
+                      {boq.status !== "approved" && (
+                        <DropdownMenuItem
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleStatusChange(boq.id, "approved");
+                          }}
+                        >
+                          Approve
+                        </DropdownMenuItem>
+                      )}
+
+                      {boq.status !== "rejected" && (
+                        <DropdownMenuItem
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleStatusChange(boq.id, "rejected");
+                          }}
+                          className="text-red-600"
+                        >
+                          Reject
+                        </DropdownMenuItem>
+                      )}
+
+                      {boq.status !== "revised" && (
+                        <DropdownMenuItem
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleStatusChange(boq.id, "revised");
+                          }}
+                        >
+                          Mark Revised
+                        </DropdownMenuItem>
+                      )}
+                      <DropdownMenuItem
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          router.push(`/boq/add?boqId=${boq.id}`);
+                        }}
+                      >
+                        Edit
+                      </DropdownMenuItem>
+                      <DropdownMenuItem
+                        className="text-red-600"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setBoqToDelete(boq.id);
+                        }}
+                      >
+                        Delete
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                </Card>
+              ))}
+            </div>
+          )}
+        </div>
+      </ScrollArea>
+
+      {/* DELETE CONFIRMATION */}
       <AlertDialog
         open={!!boqToDelete}
         onOpenChange={() => setBoqToDelete(null)}
@@ -304,202 +520,15 @@ export default function BoqsPage() {
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
             <AlertDialogAction
-              disabled={isDeleting}
               onClick={handleDelete}
-              className="bg-red-600"
+              disabled={isDeleting}
+              className="bg-red-600 hover:bg-red-700"
             >
               Delete
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-    </div>
-  );
-}
-
-/* ================= FILTER CONTENT ================= */
-function FilterContent({
-  filters,
-  projects,
-  projectMap,
-  toggleFilter,
-  clearFilters,
-}) {
-  return (
-    <div className="space-y-6 mt-6">
-      <FilterSection
-        title="Status"
-        items={BOQ_STATUSES}
-        selected={filters.statuses}
-        onToggle={(v) => toggleFilter("statuses", v)}
-      />
-
-      <Separator />
-
-      <FilterSection
-        title="Projects"
-        items={projects.map((p) => p.id)}
-        getLabel={(id) => projectMap.get(id) || id}
-        selected={filters.projects}
-        onToggle={(v) => toggleFilter("projects", v)}
-      />
-
-      {(filters.statuses.length || filters.projects.length) > 0 && (
-        <Button variant="outline" onClick={clearFilters} className="w-full">
-          Clear All Filters
-        </Button>
-      )}
-    </div>
-  );
-}
-
-/* ================= FILTER SECTION ================= */
-function FilterSection({
-  title,
-  items,
-  selected,
-  onToggle,
-  getLabel = (v) => v,
-}) {
-  return (
-    <div>
-      <p className="text-xs uppercase text-gray-500 mb-3 font-medium">
-        {title}
-      </p>
-      <div className="space-y-3">
-        {items.map((item) => (
-          <label
-            key={item}
-            className="flex items-center gap-3 text-sm cursor-pointer"
-          >
-            <Checkbox
-              checked={selected.includes(item)}
-              onCheckedChange={() => onToggle(item)}
-            />
-            {getLabel(item)}
-          </label>
-        ))}
-      </div>
-    </div>
-  );
-}
-
-/* ================= GRID VIEW ================= */
-function GridView({ boqs, projectMap, onQuickView, onView, onEdit, onDelete }) {
-  return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-      {boqs.map((b) => (
-        <Card key={b.id} className="p-5 hover:shadow-md transition-shadow">
-          <div className="flex justify-between items-start">
-            <div className="flex-1 min-w-0">
-              <h3 className="font-semibold text-gray-900 truncate">
-                {b.title}
-              </h3>
-              <p className="text-sm text-gray-500 mt-1">
-                {projectMap.get(b.project_id)}
-              </p>
-            </div>
-
-            <DropdownMenu>
-              <DropdownMenuTrigger>
-                <MoreHorizontal className="w-5 h-5 text-gray-500" />
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
-                <DropdownMenuItem onClick={() => onQuickView(b.id)}>
-                  Quick View
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => onView(b.id)}>
-                  View Details
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => onEdit(b.id)}>
-                  Edit
-                </DropdownMenuItem>
-                <DropdownMenuItem
-                  onClick={() => onDelete(b.id)}
-                  className="text-red-600"
-                >
-                  Delete
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-          </div>
-
-          <div className="flex gap-2 mt-4">
-            <Badge>{b.status}</Badge>
-            <Badge variant="secondary">Rev {b.revision_no}</Badge>
-          </div>
-
-          <div className="mt-6 text-2xl font-semibold text-gray-900">
-            ₹{Number(b.grand_total || 0).toLocaleString("en-IN")}
-          </div>
-        </Card>
-      ))}
-    </div>
-  );
-}
-
-/* ================= LIST VIEW ================= */
-function ListView({ boqs, projectMap, onView, onEdit, onDelete }) {
-  return (
-    <div className="bg-white border rounded-xl overflow-hidden">
-      <div className="hidden md:grid grid-cols-12 text-xs uppercase text-gray-500 bg-gray-50 p-4 border-b">
-        <div className="col-span-5">Title</div>
-        <div className="col-span-3">Project</div>
-        <div className="col-span-2">Status</div>
-        <div className="col-span-1 text-right">Total</div>
-        <div className="col-span-1"></div>
-      </div>
-
-      {boqs.map((b) => (
-        <div
-          key={b.id}
-          className="grid grid-cols-1 md:grid-cols-12 p-4 border-b hover:bg-gray-50 items-center gap-3 md:gap-0"
-        >
-          <div className="md:col-span-5">
-            <p className="font-medium text-gray-900">{b.title}</p>
-            <p className="text-xs text-gray-500 md:hidden">
-              Rev {b.revision_no}
-            </p>
-          </div>
-
-          <div className="md:col-span-3 text-sm text-gray-600">
-            {projectMap.get(b.project_id)}
-          </div>
-
-          <div className="md:col-span-2 flex items-center gap-2">
-            <Badge>{b.status}</Badge>
-            <span className="hidden md:inline text-xs text-gray-500">
-              Rev {b.revision_no}
-            </span>
-          </div>
-
-          <div className="md:col-span-1 text-right font-semibold text-lg">
-            ₹{Number(b.grand_total || 0).toLocaleString("en-IN")}
-          </div>
-
-          <div className="md:col-span-1 flex justify-end md:justify-center">
-            <DropdownMenu>
-              <DropdownMenuTrigger>
-                <MoreHorizontal className="w-5 h-5" />
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
-                <DropdownMenuItem onClick={() => onView(b.id)}>
-                  View
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => onEdit(b.id)}>
-                  Edit
-                </DropdownMenuItem>
-                <DropdownMenuItem
-                  onClick={() => onDelete(b.id)}
-                  className="text-red-600"
-                >
-                  Delete
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-          </div>
-        </div>
-      ))}
     </div>
   );
 }

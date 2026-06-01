@@ -17,7 +17,7 @@ import { CreateBoqSectionDto } from './dto/create-boq-section.dto';
 import { CreateBoqItemDto } from './dto/create-boq-item.dto';
 import { CreateBoqSubHeadingDto } from './dto/create-boq-subheading.dto';
 import { CreateBoqCategoryDto } from './dto/create-boq-category.dto';
-
+import { UpdateBoqStatusDto } from './dto/update-boq-status.dto';
 import { JwtAuthGuard } from '@/common/guards/jwt-auth.guard';
 
 @Controller('boq')
@@ -60,7 +60,14 @@ export class BoqController {
   ) {
     return this.boqService.findAllBoqs(projectId, clientId);
   }
+  // =========================================================
+  // STATUS
+  // =========================================================
 
+  @Patch(':id/status')
+  updateStatus(@Param('id') id: string, @Body() dto: UpdateBoqStatusDto) {
+    return this.boqService.updateBoqStatus(id, dto);
+  }
   @Get('client/:clientId')
   getBoqsByClient(@Param('clientId') clientId: string) {
     return this.boqService.getBoqsByClient(clientId);

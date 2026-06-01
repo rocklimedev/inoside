@@ -53,7 +53,21 @@ export const boqApi = baseApi.injectEndpoints({
       query: (id) => `/boq/${id}`,
       providesTags: ["Boq"],
     }),
+    // =====================================================
+    // STATUS
+    // =====================================================
 
+    updateBoqStatus: builder.mutation({
+      query: ({ id, status, approved_by }) => ({
+        url: `/boq/${id}/status`,
+        method: "PATCH",
+        body: {
+          status,
+          approved_by,
+        },
+      }),
+      invalidatesTags: ["Boq"],
+    }),
     updateBoq: builder.mutation({
       query: ({ id, ...body }) => ({
         url: `/boq/${id}`,
@@ -194,19 +208,20 @@ export const {
   useGetBoqsByClientQuery,
   useGetBoqByIdQuery,
   useUpdateBoqMutation,
+  useUpdateBoqStatusMutation,
   useDeleteBoqMutation,
   useCalculateBoqTotalMutation,
 
   // Sections
   useCreateSectionMutation,
-  useUpdateSectionMutation, // ← New
-  useDeleteSectionMutation, // ← New
+  useUpdateSectionMutation,
+  useDeleteSectionMutation,
   useGetSectionsByBoqQuery,
 
   // Subheadings
   useCreateSubHeadingMutation,
-  useUpdateSubHeadingMutation, // ← New
-  useDeleteSubHeadingMutation, // ← New
+  useUpdateSubHeadingMutation,
+  useDeleteSubHeadingMutation,
   useGetSubHeadingsBySectionQuery,
 
   // Items

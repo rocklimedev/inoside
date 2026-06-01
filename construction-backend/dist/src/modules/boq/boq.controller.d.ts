@@ -4,6 +4,7 @@ import { CreateBoqSectionDto } from './dto/create-boq-section.dto';
 import { CreateBoqItemDto } from './dto/create-boq-item.dto';
 import { CreateBoqSubHeadingDto } from './dto/create-boq-subheading.dto';
 import { CreateBoqCategoryDto } from './dto/create-boq-category.dto';
+import { UpdateBoqStatusDto } from './dto/update-boq-status.dto';
 export declare class BoqController {
     private readonly boqService;
     constructor(boqService: BoqService);
@@ -12,6 +13,7 @@ export declare class BoqController {
     createBoq(dto: CreateBoqDto): Promise<import("./models/boq.model").Boq>;
     updateBoq(id: string, dto: Partial<CreateBoqDto>): Promise<import("./models/boq.model").Boq>;
     findAllBoqs(projectId?: string, clientId?: string): Promise<import("./models/boq.model").Boq[]>;
+    updateStatus(id: string, dto: UpdateBoqStatusDto): Promise<import("./models/boq.model").Boq>;
     getBoqsByClient(clientId: string): Promise<import("./models/boq.model").Boq[]>;
     createSection(dto: CreateBoqSectionDto): Promise<import("./models/boq-section.model").BoqSection>;
     updateSection(id: string, dto: Partial<CreateBoqSectionDto>): Promise<import("./models/boq-section.model").BoqSection>;

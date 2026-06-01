@@ -24,6 +24,10 @@ export declare class BoqService {
     createBoq(dto: CreateBoqDto): Promise<Boq>;
     updateBoq(id: string, dto: Partial<CreateBoqDto>): Promise<Boq>;
     findAllBoqs(projectId?: string, clientId?: string): Promise<Boq[]>;
+    updateBoqStatus(id: string, data: {
+        status: 'draft' | 'submitted' | 'approved' | 'rejected' | 'revised';
+        approved_by?: string;
+    }): Promise<Boq>;
     getBoqWithDetails(id: string): Promise<Boq>;
     getBoqsByClient(clientId: string): Promise<Boq[]>;
     createSection(dto: CreateBoqSectionDto): Promise<BoqSection>;

@@ -20,6 +20,7 @@ const create_boq_section_dto_1 = require("./dto/create-boq-section.dto");
 const create_boq_item_dto_1 = require("./dto/create-boq-item.dto");
 const create_boq_subheading_dto_1 = require("./dto/create-boq-subheading.dto");
 const create_boq_category_dto_1 = require("./dto/create-boq-category.dto");
+const update_boq_status_dto_1 = require("./dto/update-boq-status.dto");
 const jwt_auth_guard_1 = require("../../common/guards/jwt-auth.guard");
 let BoqController = class BoqController {
     boqService;
@@ -40,6 +41,9 @@ let BoqController = class BoqController {
     }
     findAllBoqs(projectId, clientId) {
         return this.boqService.findAllBoqs(projectId, clientId);
+    }
+    updateStatus(id, dto) {
+        return this.boqService.updateBoqStatus(id, dto);
     }
     getBoqsByClient(clientId) {
         return this.boqService.getBoqsByClient(clientId);
@@ -122,6 +126,14 @@ __decorate([
     __metadata("design:paramtypes", [String, String]),
     __metadata("design:returntype", void 0)
 ], BoqController.prototype, "findAllBoqs", null);
+__decorate([
+    (0, common_1.Patch)(':id/status'),
+    __param(0, (0, common_1.Param)('id')),
+    __param(1, (0, common_1.Body)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String, update_boq_status_dto_1.UpdateBoqStatusDto]),
+    __metadata("design:returntype", void 0)
+], BoqController.prototype, "updateStatus", null);
 __decorate([
     (0, common_1.Get)('client/:clientId'),
     __param(0, (0, common_1.Param)('clientId')),

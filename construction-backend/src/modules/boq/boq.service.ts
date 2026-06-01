@@ -197,7 +197,31 @@ export class BoqService {
       order: [['created_at', 'DESC']],
     });
   }
+  // ====================== UPDATE BOQ STATUS ======================
 
+  async updateBoqStatus(
+    id: string,
+    data: {
+      status: 'draft' | 'submitted' | 'approved' | 'rejected' | 'revised';
+      approved_by?: string;
+    },
+  ) {
+    const boq = await this.boqModel.findByPk(id);
+
+    if (!boq) {
+      throw new NotFoundException('BOQ not found');
+    }
+
+    await boq.update({
+      status: data.status,
+      approved_by:
+        data.status === 'approved'
+          ? (data.approved_by ?? boq.approved_by)
+          : boq.approved_by,
+    });
+
+    return this.getBoqWithDetails(id);
+  }
   async getBoqWithDetails(id: string) {
     const boq = await this.boqModel.findByPk(id, {
       include: [
@@ -452,41 +476,25 @@ export class BoqService {
 
   async createItem(dto: CreateBoqItemDto) {
     const boq = await this.boqModel.findByPk(dto.boq_id);
-
-    if (!boq) {
-      throw new NotFoundException('BOQ not found');
-    }
+    if (!boq) throw new NotFoundException('BOQ not found');
 
     const section = await this.boqSectionModel.findByPk(dto.section_id);
-
-    if (!section) {
-      throw new NotFoundException('Section not found');
-    }
+    if (!section) throw new NotFoundException('Section not found');
 
     if (dto.subheading_id) {
       const subheading = await this.boqSubHeadingModel.findByPk(
         dto.subheading_id,
       );
-
-      if (!subheading) {
-        throw new NotFoundException('Subheading not found');
-      }
+      if (!subheading) throw new NotFoundException('Subheading not found');
     }
 
     const finalUnitId = await this.resolveUnitId(dto.unit_id);
 
     let inventoryMasterId: string;
 
-    // ================= AUTO CREATE INVENTORY ITEM =================
-
     if (!dto.inventory_master_id) {
       let master = await this.inventoryMasterModel.findOne({
-        where: {
-          item_name: dto.item_name.trim(),
-          ...(dto.item_code && {
-            item_code: dto.item_code,
-          }),
-        },
+        where: { item_name: dto.item_name.trim() },
       });
 
       if (!master) {
@@ -502,87 +510,75 @@ export class BoqService {
           is_active: true,
         } as any);
       }
-
       inventoryMasterId = master.id;
     } else {
       const existingMaster = await this.inventoryMasterModel.findByPk(
         dto.inventory_master_id,
       );
-
-      if (!existingMaster) {
+      if (!existingMaster)
         throw new NotFoundException('Inventory master item not found');
-      }
-
       inventoryMasterId = existingMaster.id;
     }
 
-    // ================= CREATE BOQ ITEM =================
-
+    // ✅ FORCE ZERO TAX
     const item = await this.boqItemModel.create({
       boq_id: dto.boq_id,
       section_id: dto.section_id,
       subheading_id: dto.subheading_id || null,
       inventory_master_id: inventoryMasterId,
-      sno: dto.sno || null,
       item_name: dto.item_name.trim(),
-      item_code: dto.item_code || null,
-      description: dto.description || null,
       specification: dto.specification || null,
-      brand: dto.brand || null,
       unit_id: finalUnitId,
       qty: dto.qty ?? 0,
       rate: dto.rate ?? 0,
+      tax_percent: 0, // ← FORCED TO 0
+      discount_percent: 0, // Optional: also force 0
       wastage_percent: dto.wastage_percent ?? 0,
-      discount_percent: dto.discount_percent ?? 0,
-      tax_percent: dto.tax_percent ?? 18,
       remarks: dto.remarks || null,
       sort_order: dto.sort_order ?? 0,
     });
+
     await this.calculateBoqTotal(dto.boq_id);
 
     return this.boqItemModel.findByPk(item.id, {
-      include: [
-        Unit,
-        {
-          model: InventoryMaster,
-          include: [Brand],
-        },
-      ],
+      include: [Unit, { model: InventoryMaster, include: [Brand] }],
     });
   }
 
   // ====================== UPDATE ITEM ======================
 
+  // ====================== UPDATE ITEM ======================
+
   async updateItem(id: string, updateData: Partial<CreateBoqItemDto>) {
     const item = await this.boqItemModel.findByPk(id);
-
     if (!item) {
       throw new NotFoundException('Item not found');
     }
 
-    if (updateData.unit_id !== undefined) {
-      const resolvedUnitId = await this.resolveUnitId(
-        updateData.unit_id as string,
-      );
+    const dataToUpdate: any = { ...updateData };
 
-      (updateData as any).unit_id = resolvedUnitId;
+    // ✅ FORCE NO GST
+    dataToUpdate.tax_percent = 0;
+
+    // Handle unit_id safely (null → undefined)
+    if (updateData.unit_id !== undefined) {
+      const resolvedUnitId = await this.resolveUnitId(updateData.unit_id);
+      dataToUpdate.unit_id = resolvedUnitId ?? undefined; // null becomes undefined
     }
 
-    await item.update(updateData);
+    // Optional: Also clean other fields
+    if (dataToUpdate.discount_percent === null)
+      dataToUpdate.discount_percent = 0;
+    if (dataToUpdate.wastage_percent === null) dataToUpdate.wastage_percent = 0;
+
+    await item.update(dataToUpdate);
 
     await this.calculateBoqTotal(item.boq_id);
 
     return this.boqItemModel.findByPk(id, {
-      include: [
-        Unit,
-        {
-          model: InventoryMaster,
-          include: [Brand],
-        },
-      ],
+      include: [Unit, { model: InventoryMaster, include: [Brand] }],
     });
   }
-
   // ====================== DELETE ITEM ======================
 
   async deleteItem(id: string) {
@@ -639,25 +635,20 @@ export class BoqService {
     });
 
     const subtotal = items.reduce((sum, item) => {
-      return sum + Number(item.final_amount || item.base_amount || 0);
+      const baseAmount = Number(item.qty || 0) * Number(item.rate || 0);
+      return sum + baseAmount;
     }, 0);
 
     await this.boqModel.update(
       {
         subtotal,
-        grand_total: subtotal,
+        grand_total: subtotal, // No tax
       },
-      {
-        where: { id: boqId },
-      },
+      { where: { id: boqId } },
     );
 
-    return {
-      subtotal,
-      grand_total: subtotal,
-    };
+    return { subtotal, grand_total: subtotal };
   }
-
   // ====================== VALIDATE BOQ ======================
 
   async validateBoqExists(id: string) {

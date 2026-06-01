@@ -99,7 +99,7 @@ export default function CreateBOQPage() {
   const [inventorySearch, setInventorySearch] = useState("");
 
   const [deletedRows, setDeletedRows] = useState([]);
-
+  const [isSaving, setIsSaving] = useState(false);
   // ================= API =================
 
   const { data: clients = [] } = useGetClientsQuery();
@@ -538,173 +538,145 @@ export default function CreateBOQPage() {
 
   // ================= SAVE =================
 
+  // ================= SAVE =================
   const saveFullBoq = async () => {
+    if (isSaving) return; // ← Prevents double save
+    if (!boqTitle.trim()) {
+      alert("BOQ Title is required");
+      return;
+    }
+
     try {
+      setIsSaving(true);
+
       let currentBoqId = boqId;
 
-      // ================= CREATE / UPDATE BOQ =================
-
+      // Create or Update BOQ Header
       if (!currentBoqId) {
         const result = await createBoq({
           title: boqTitle,
-
           client_id: selectedClientId,
-
           boq_category_id: categoryId,
         }).unwrap();
 
         currentBoqId = result.id;
-
         setBoqId(currentBoqId);
       } else {
         await updateBoq({
           id: currentBoqId,
-
           title: boqTitle,
-
           client_id: selectedClientId,
-
           boq_category_id: categoryId,
         }).unwrap();
       }
 
-      // ================= DELETE =================
-
+      // Handle Deleted Rows
       for (const row of deletedRows) {
         try {
           if (row.dbType === "item" && !row.id.startsWith("temp-")) {
             await deleteItem(row.id).unwrap();
-          }
-
-          if (row.dbType === "subheading" && !row.id.startsWith("temp-")) {
+          } else if (
+            row.dbType === "subheading" &&
+            !row.id.startsWith("temp-")
+          ) {
             await deleteSubHeading(row.id).unwrap();
-          }
-
-          if (row.dbType === "section" && !row.id.startsWith("temp-")) {
+          } else if (row.dbType === "section" && !row.id.startsWith("temp-")) {
             await deleteSection(row.id).unwrap();
           }
         } catch (err) {
-          console.error(err);
+          console.error("Delete error:", err);
         }
       }
 
-      // ================= SAVE HIERARCHY =================
-
+      // ================= SAVE / UPDATE HIERARCHY (No Full Delete) =================
       let currentSectionId = null;
-
       let currentSubheadingId = null;
 
       for (let i = 0; i < rowData.length; i++) {
         const row = rowData[i];
 
-        // ================= SECTION =================
-
         if (row.type === "Heading") {
           const payload = {
             boq_id: currentBoqId,
-
-            title: row.description,
-
+            title: row.description?.trim() || "Untitled Heading",
             sort_order: i,
           };
 
           let savedSection;
-
-          if (row.isNew) {
+          if (row.isNew || row.id.startsWith("temp-")) {
             savedSection = await createSection(payload).unwrap();
           } else {
             savedSection = await updateSection({
               id: row.id,
-
               ...payload,
             }).unwrap();
           }
 
           currentSectionId = savedSection.id;
-
           currentSubheadingId = null;
-
           continue;
         }
 
-        // ================= SUBHEADING =================
-
         if (row.type === "Subheading") {
+          if (!currentSectionId) continue; // safety
+
           const payload = {
             boq_id: currentBoqId,
-
             section_id: currentSectionId,
-
-            title: row.description,
-
+            title: row.description?.trim() || "Untitled Subheading",
             sort_order: i,
           };
 
-          let savedSubheading;
-
-          if (row.isNew) {
-            savedSubheading = await createSubHeading(payload).unwrap();
+          let savedSub;
+          if (row.isNew || row.id.startsWith("temp-")) {
+            savedSub = await createSubHeading(payload).unwrap();
           } else {
-            savedSubheading = await updateSubHeading({
+            savedSub = await updateSubHeading({
               id: row.id,
-
               ...payload,
             }).unwrap();
           }
 
-          currentSubheadingId = savedSubheading.id;
-
+          currentSubheadingId = savedSub.id;
           continue;
         }
 
-        // ================= ITEM =================
-
+        // Item
         if (row.type === "Item") {
+          if (!currentSectionId) continue;
+
           const payload = {
             boq_id: currentBoqId,
-
             section_id: currentSectionId,
-
-            subheading_id: currentSubheadingId,
-
-            item_name: row.description,
-
-            specification: row.scope,
-
+            subheading_id: currentSubheadingId || null,
+            item_name: row.description?.trim() || "",
+            specification: row.scope || "",
             qty: Number(row.quantity || 0),
-
             rate: Number(row.rate || 0),
-
             remarks: row.remarks || "",
-
             inventory_master_id: row.inventory_master_id || null,
-
             unit_id: row.unit_id || null,
-
             sort_order: i,
           };
 
-          if (row.isNew) {
+          if (row.isNew || row.id.startsWith("temp-")) {
             await createItem(payload).unwrap();
           } else {
-            await updateItem({
-              id: row.id,
-
-              ...payload,
-            }).unwrap();
+            await updateItem({ id: row.id, ...payload }).unwrap();
           }
         }
       }
 
       setDeletedRows([]);
-
-      alert(isEditMode ? "BOQ updated successfully" : "BOQ saved successfully");
-
+      alert(
+        isEditMode ? "BOQ updated successfully!" : "BOQ saved successfully!",
+      );
       router.push(`/boq/view?boqId=${currentBoqId}`);
     } catch (err) {
-      console.error(err);
-
-      alert("Failed to save BOQ");
+      console.error("Save Error:", err);
+      alert("Failed to save BOQ. Check console for details.");
+    } finally {
+      setIsSaving(false);
     }
   };
 
@@ -728,10 +700,11 @@ export default function CreateBOQPage() {
 
           <Button
             onClick={saveFullBoq}
+            disabled={isSaving || !boqTitle.trim()}
             className="bg-zinc-900 hover:bg-black text-white"
           >
             <Save className="mr-2 h-4 w-4" />
-            {isEditMode ? "Update BOQ" : "Save BOQ"}
+            {isSaving ? "Saving..." : isEditMode ? "Update BOQ" : "Save BOQ"}
           </Button>
         </div>
       </div>

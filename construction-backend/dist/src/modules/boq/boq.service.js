@@ -150,6 +150,19 @@ let BoqService = class BoqService {
             order: [['created_at', 'DESC']],
         });
     }
+    async updateBoqStatus(id, data) {
+        const boq = await this.boqModel.findByPk(id);
+        if (!boq) {
+            throw new common_1.NotFoundException('BOQ not found');
+        }
+        await boq.update({
+            status: data.status,
+            approved_by: data.status === 'approved'
+                ? (data.approved_by ?? boq.approved_by)
+                : boq.approved_by,
+        });
+        return this.getBoqWithDetails(id);
+    }
     async getBoqWithDetails(id) {
         const boq = await this.boqModel.findByPk(id, {
             include: [
@@ -358,29 +371,21 @@ let BoqService = class BoqService {
     }
     async createItem(dto) {
         const boq = await this.boqModel.findByPk(dto.boq_id);
-        if (!boq) {
+        if (!boq)
             throw new common_1.NotFoundException('BOQ not found');
-        }
         const section = await this.boqSectionModel.findByPk(dto.section_id);
-        if (!section) {
+        if (!section)
             throw new common_1.NotFoundException('Section not found');
-        }
         if (dto.subheading_id) {
             const subheading = await this.boqSubHeadingModel.findByPk(dto.subheading_id);
-            if (!subheading) {
+            if (!subheading)
                 throw new common_1.NotFoundException('Subheading not found');
-            }
         }
         const finalUnitId = await this.resolveUnitId(dto.unit_id);
         let inventoryMasterId;
         if (!dto.inventory_master_id) {
             let master = await this.inventoryMasterModel.findOne({
-                where: {
-                    item_name: dto.item_name.trim(),
-                    ...(dto.item_code && {
-                        item_code: dto.item_code,
-                    }),
-                },
+                where: { item_name: dto.item_name.trim() },
             });
             if (!master) {
                 master = await this.inventoryMasterModel.create({
@@ -399,9 +404,8 @@ let BoqService = class BoqService {
         }
         else {
             const existingMaster = await this.inventoryMasterModel.findByPk(dto.inventory_master_id);
-            if (!existingMaster) {
+            if (!existingMaster)
                 throw new common_1.NotFoundException('Inventory master item not found');
-            }
             inventoryMasterId = existingMaster.id;
         }
         const item = await this.boqItemModel.create({
@@ -409,30 +413,20 @@ let BoqService = class BoqService {
             section_id: dto.section_id,
             subheading_id: dto.subheading_id || null,
             inventory_master_id: inventoryMasterId,
-            sno: dto.sno || null,
             item_name: dto.item_name.trim(),
-            item_code: dto.item_code || null,
-            description: dto.description || null,
             specification: dto.specification || null,
-            brand: dto.brand || null,
             unit_id: finalUnitId,
             qty: dto.qty ?? 0,
             rate: dto.rate ?? 0,
+            tax_percent: 0,
+            discount_percent: 0,
             wastage_percent: dto.wastage_percent ?? 0,
-            discount_percent: dto.discount_percent ?? 0,
-            tax_percent: dto.tax_percent ?? 18,
             remarks: dto.remarks || null,
             sort_order: dto.sort_order ?? 0,
         });
         await this.calculateBoqTotal(dto.boq_id);
         return this.boqItemModel.findByPk(item.id, {
-            include: [
-                unit_model_1.Unit,
-                {
-                    model: inventory_master_model_1.InventoryMaster,
-                    include: [brand_model_1.Brand],
-                },
-            ],
+            include: [unit_model_1.Unit, { model: inventory_master_model_1.InventoryMaster, include: [brand_model_1.Brand] }],
         });
     }
     async updateItem(id, updateData) {
@@ -440,20 +434,20 @@ let BoqService = class BoqService {
         if (!item) {
             throw new common_1.NotFoundException('Item not found');
         }
+        const dataToUpdate = { ...updateData };
+        dataToUpdate.tax_percent = 0;
         if (updateData.unit_id !== undefined) {
             const resolvedUnitId = await this.resolveUnitId(updateData.unit_id);
-            updateData.unit_id = resolvedUnitId;
+            dataToUpdate.unit_id = resolvedUnitId ?? undefined;
         }
-        await item.update(updateData);
+        if (dataToUpdate.discount_percent === null)
+            dataToUpdate.discount_percent = 0;
+        if (dataToUpdate.wastage_percent === null)
+            dataToUpdate.wastage_percent = 0;
+        await item.update(dataToUpdate);
         await this.calculateBoqTotal(item.boq_id);
         return this.boqItemModel.findByPk(id, {
-            include: [
-                unit_model_1.Unit,
-                {
-                    model: inventory_master_model_1.InventoryMaster,
-                    include: [brand_model_1.Brand],
-                },
-            ],
+            include: [unit_model_1.Unit, { model: inventory_master_model_1.InventoryMaster, include: [brand_model_1.Brand] }],
         });
     }
     async deleteItem(id) {
@@ -492,18 +486,14 @@ let BoqService = class BoqService {
             where: { boq_id: boqId },
         });
         const subtotal = items.reduce((sum, item) => {
-            return sum + Number(item.final_amount || item.base_amount || 0);
+            const baseAmount = Number(item.qty || 0) * Number(item.rate || 0);
+            return sum + baseAmount;
         }, 0);
         await this.boqModel.update({
             subtotal,
             grand_total: subtotal,
-        }, {
-            where: { id: boqId },
-        });
-        return {
-            subtotal,
-            grand_total: subtotal,
-        };
+        }, { where: { id: boqId } });
+        return { subtotal, grand_total: subtotal };
     }
     async validateBoqExists(id) {
         const boq = await this.boqModel.findByPk(id);
