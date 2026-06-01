@@ -9,6 +9,7 @@ export declare class ProjectDrawingService {
     private readonly approvalLogService;
     constructor(drawingModel: typeof ProjectDrawing, projectModel: typeof Project, userModel: typeof User, approvalLogService: DrawingApprovalLogService);
     upload(dto: any): Promise<ProjectDrawing>;
+    findAll(): Promise<ProjectDrawing[]>;
     findByProject(project_id: string): Promise<ProjectDrawing[]>;
     approve(id: string, user_id: string): Promise<ProjectDrawing>;
     delete(id: string): Promise<{

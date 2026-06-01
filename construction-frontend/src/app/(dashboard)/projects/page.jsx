@@ -365,6 +365,7 @@ export default function ProjectsPage() {
             {viewMode === "grid" && (
               <GridView
                 projects={filteredProjects}
+                onSelect={setSelectedProject}
                 actions={actions}
                 selectedIds={selectedIds}
                 onToggleSelect={toggleSelect}

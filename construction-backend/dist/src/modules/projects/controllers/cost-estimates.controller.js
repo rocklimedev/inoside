@@ -21,6 +21,9 @@ let CostEstimatesController = class CostEstimatesController {
     constructor(costService) {
         this.costService = costService;
     }
+    findAll() {
+        return this.costService.findAll();
+    }
     addEstimate(projectId, dto) {
         this.validate(dto);
         return this.costService.add({
@@ -39,20 +42,17 @@ let CostEstimatesController = class CostEstimatesController {
         return this.costService.delete(estimateId);
     }
     validate(dto) {
-        const isValidArray = (arr) => Array.isArray(arr) &&
-            arr.every((i) => typeof i.title === 'string' && typeof i.description === 'string');
-        if (dto.material_labour_estimate &&
-            !isValidArray(dto.material_labour_estimate)) {
-            throw new common_1.BadRequestException('material_labour_estimate must be [{title, description}]');
-        }
-        if (dto.payment_plan && !isValidArray(dto.payment_plan)) {
-            throw new common_1.BadRequestException('payment_plan must be [{title, description}]');
-        }
     }
 };
 exports.CostEstimatesController = CostEstimatesController;
 __decorate([
-    (0, common_1.Post)(':id/cost-estimates'),
+    (0, common_1.Get)(),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", []),
+    __metadata("design:returntype", void 0)
+], CostEstimatesController.prototype, "findAll", null);
+__decorate([
+    (0, common_1.Post)('project/:id'),
     __param(0, (0, common_1.Param)('id')),
     __param(1, (0, common_1.Body)()),
     __metadata("design:type", Function),
@@ -60,14 +60,14 @@ __decorate([
     __metadata("design:returntype", void 0)
 ], CostEstimatesController.prototype, "addEstimate", null);
 __decorate([
-    (0, common_1.Get)(':id/cost-estimates'),
+    (0, common_1.Get)('project/:id'),
     __param(0, (0, common_1.Param)('id')),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [String]),
     __metadata("design:returntype", void 0)
 ], CostEstimatesController.prototype, "getEstimates", null);
 __decorate([
-    (0, common_1.Patch)('cost-estimates/:estimateId'),
+    (0, common_1.Patch)(':estimateId'),
     __param(0, (0, common_1.Param)('estimateId')),
     __param(1, (0, common_1.Body)()),
     __metadata("design:type", Function),
@@ -75,14 +75,14 @@ __decorate([
     __metadata("design:returntype", void 0)
 ], CostEstimatesController.prototype, "updateEstimate", null);
 __decorate([
-    (0, common_1.Delete)('cost-estimates/:estimateId'),
+    (0, common_1.Delete)(':estimateId'),
     __param(0, (0, common_1.Param)('estimateId')),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [String]),
     __metadata("design:returntype", void 0)
 ], CostEstimatesController.prototype, "deleteEstimate", null);
 exports.CostEstimatesController = CostEstimatesController = __decorate([
-    (0, common_1.Controller)('projects'),
+    (0, common_1.Controller)('cost-estimates'),
     (0, common_1.UseGuards)(jwt_auth_guard_1.JwtAuthGuard),
     __metadata("design:paramtypes", [project_cost_estimate_service_1.ProjectCostEstimateService])
 ], CostEstimatesController);

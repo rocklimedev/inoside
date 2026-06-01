@@ -4,7 +4,7 @@ export const drawingsApi = baseApi.injectEndpoints({
   endpoints: (builder) => ({
     uploadDrawing: builder.mutation({
       query: ({ projectId, body }) => ({
-        url: `/projects/${projectId}/drawings`,
+        url: `/${projectId}/drawings`,
         method: "POST",
         body, // FormData
         // Important: Let the browser set the correct Content-Type for FormData
@@ -14,22 +14,26 @@ export const drawingsApi = baseApi.injectEndpoints({
     }),
 
     getDrawings: builder.query({
-      query: (projectId) => `/projects/${projectId}/drawings`,
+      query: (projectId) => `/drawings/project/${projectId}`,
       providesTags: ["Drawings"],
     }),
 
     approveDrawing: builder.mutation({
       query: ({ drawingId, user_id }) => ({
-        url: `/projects/drawings/${drawingId}/approve`,
+        url: `/drawings/${drawingId}/approve`,
         method: "PATCH",
         body: { user_id },
       }),
       invalidatesTags: ["Drawings"],
     }),
-
+    // NEW: Get all drawings (with optional project filter)
+    getAllDrawings: builder.query({
+      query: () => "/drawings",
+      providesTags: ["Drawings"],
+    }),
     deleteDrawing: builder.mutation({
       query: (drawingId) => ({
-        url: `/projects/drawings/${drawingId}`,
+        url: `/drawings/${drawingId}`,
         method: "DELETE",
       }),
       invalidatesTags: ["Drawings"],
@@ -84,6 +88,7 @@ export const drawingsApi = baseApi.injectEndpoints({
 
 export const {
   useUploadDrawingMutation,
+  useGetAllDrawingsQuery,
   useGetDrawingsQuery,
   useApproveDrawingMutation,
   useDeleteDrawingMutation,

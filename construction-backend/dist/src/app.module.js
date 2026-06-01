@@ -31,6 +31,8 @@ const sites_module_1 = require("./modules/sites/sites.module");
 const cdn_module_1 = require("./modules/cdn/cdn.module");
 const notifications_module_1 = require("./modules/notifications/notifications.module");
 const task_module_1 = require("./modules/tasks/task.module");
+const cost_estimate_module_1 = require("./modules/projects/cost-estimate.module");
+const drawing_module_1 = require("./modules/projects/drawing.module");
 let AppModule = class AppModule {
 };
 exports.AppModule = AppModule;
@@ -65,6 +67,8 @@ exports.AppModule = AppModule = __decorate([
             cdn_module_1.CdnModule,
             notifications_module_1.NotificationsModule,
             task_module_1.TaskModule,
+            cost_estimate_module_1.CostEstimatesModule,
+            drawing_module_1.DrawingsModule,
         ],
         controllers: [app_controller_1.AppController],
         providers: [

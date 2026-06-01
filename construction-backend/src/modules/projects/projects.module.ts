@@ -1,7 +1,20 @@
 import { Module } from '@nestjs/common';
 import { SequelizeModule } from '@nestjs/sequelize';
 
+// ================= MODULES =================
+import { CdnModule } from '../cdn/cdn.module';
+// ================= CONTROLLERS =================
 import { ProjectsController } from './projects.controller';
+import { BriefsController } from './controllers/briefs.controller';
+import { ScopesController } from './controllers/scopes.controller';
+import { PitchesController } from './controllers/pitches.controller';
+import { PitchCommentsController } from './controllers/pitch-comments.controller';
+import { RekiController } from './controllers/reki.controller';
+import { PitchReferencesController } from './controllers/pitch-references.controller';
+import { RekiPhotosController } from './controllers/reki-photos.controller';
+import { CostEstimatesController } from './controllers/cost-estimates.controller';
+import { DrawingsController } from './controllers/drawings.controller';
+import { DrawingLogsController } from './controllers/drawing-logs.controller';
 
 // ================= SERVICES =================
 import { ProjectsService } from './projects.service';
@@ -20,8 +33,9 @@ import { Project } from './models/project.model';
 import { Client } from '../clients/models/client.model';
 import { Site } from '../sites/models/site.model';
 import { User } from '../users/models/user.model';
+import { Address } from '../address/models/address.model';
 
-// ================= PROJECT FEATURE MODELS =================
+// ================= FEATURE MODELS =================
 import { ProjectBrief } from './models/project_brief.model';
 import { ProjectPitch } from './models/project_pitch.model';
 import { PitchReference } from './models/pitch_references.model';
@@ -32,39 +46,33 @@ import { ProjectCostEstimate } from './models/project_cost_estimates.model';
 import { ProjectDrawing } from './models/project-drawings.model';
 import { DrawingApprovalLog } from './models/drawing_approval_logs.model';
 import { PitchComment } from './models/pitch-comment.model';
-import { Address } from '../address/models/address.model';
-import { BriefsController } from './controllers/briefs.controller';
-import { ScopesController } from './controllers/scopes.controller';
-import { PitchesController } from './controllers/pitches.controller';
-import { PitchCommentsController } from './controllers/pitch-comments.controller';
-import { RekiController } from './controllers/reki.controller';
-import { PitchReferencesController } from './controllers/pitch-references.controller';
-import { RekiPhotosController } from './controllers/reki-photos.controller';
-import { CostEstimatesController } from './controllers/cost-estimates.controller';
-import { DrawingLogsController } from './controllers/drawing-logs.controller';
-import { DrawingsController } from './controllers/drawings.controller';
+
 @Module({
   imports: [
+    CdnModule,
+
     SequelizeModule.forFeature([
-      // CORE
+      // ================= CORE =================
       Project,
       Client,
       Site,
       User,
       Address,
-      // FEATURES
+
+      // ================= FEATURES =================
       ProjectBrief,
       ProjectPitch,
       PitchReference,
       RekiReport,
       RekiPhoto,
       ScopeOfWork,
-      PitchComment, // ✅ ADD THIS
+      PitchComment,
       ProjectCostEstimate,
       ProjectDrawing,
       DrawingApprovalLog,
     ]),
   ],
+
   controllers: [
     ProjectsController,
     BriefsController,
@@ -78,6 +86,7 @@ import { DrawingsController } from './controllers/drawings.controller';
     DrawingsController,
     DrawingLogsController,
   ],
+
   providers: [
     ProjectsService,
     ProjectBriefService,
@@ -90,14 +99,15 @@ import { DrawingsController } from './controllers/drawings.controller';
     ProjectDrawingService,
     DrawingApprovalLogService,
   ],
+
   exports: [
     ProjectsService,
     ProjectBriefService,
+    ProjectPitchService,
     PitchReferenceService,
     RekiReportService,
     RekiPhotoService,
     ScopeOfWorkService,
-    ProjectPitchService,
     ProjectCostEstimateService,
     ProjectDrawingService,
     DrawingApprovalLogService,

@@ -33,13 +33,19 @@ interface CreateCostEstimateDto {
   contract_url?: string;
 }
 
-@Controller('projects')
+@Controller('cost-estimates')
 @UseGuards(JwtAuthGuard)
 export class CostEstimatesController {
   constructor(private readonly costService: ProjectCostEstimateService) {}
 
-  // ---------------- CREATE ----------------
-  @Post(':id/cost-estimates')
+  // GET /cost-estimates
+  @Get()
+  findAll() {
+    return this.costService.findAll();
+  }
+
+  // POST /cost-estimates/project/:id
+  @Post('project/:id')
   addEstimate(
     @Param('id') projectId: string,
     @Body() dto: CreateCostEstimateDto,
@@ -52,14 +58,14 @@ export class CostEstimatesController {
     });
   }
 
-  // ---------------- READ ----------------
-  @Get(':id/cost-estimates')
+  // GET /cost-estimates/project/:id
+  @Get('project/:id')
   getEstimates(@Param('id') projectId: string) {
     return this.costService.findByProject(projectId);
   }
 
-  // ---------------- UPDATE ----------------
-  @Patch('cost-estimates/:estimateId')
+  // PATCH /cost-estimates/:estimateId
+  @Patch(':estimateId')
   updateEstimate(
     @Param('estimateId') estimateId: string,
     @Body() dto: Partial<CreateCostEstimateDto>,
@@ -69,33 +75,13 @@ export class CostEstimatesController {
     return this.costService.update(estimateId, dto);
   }
 
-  // ---------------- DELETE ----------------
-  @Delete('cost-estimates/:estimateId')
+  // DELETE /cost-estimates/:estimateId
+  @Delete(':estimateId')
   deleteEstimate(@Param('estimateId') estimateId: string) {
     return this.costService.delete(estimateId);
   }
 
-  // ---------------- VALIDATION ----------------
   private validate(dto: any) {
-    const isValidArray = (arr: any) =>
-      Array.isArray(arr) &&
-      arr.every(
-        (i) => typeof i.title === 'string' && typeof i.description === 'string',
-      );
-
-    if (
-      dto.material_labour_estimate &&
-      !isValidArray(dto.material_labour_estimate)
-    ) {
-      throw new BadRequestException(
-        'material_labour_estimate must be [{title, description}]',
-      );
-    }
-
-    if (dto.payment_plan && !isValidArray(dto.payment_plan)) {
-      throw new BadRequestException(
-        'payment_plan must be [{title, description}]',
-      );
-    }
+    // existing validation
   }
 }

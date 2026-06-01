@@ -36,6 +36,18 @@ let ProjectDrawingService = class ProjectDrawingService {
         });
         return this.drawingModel.create(dto);
     }
+    async findAll() {
+        return this.drawingModel.findAll({
+            include: [
+                {
+                    model: this.projectModel,
+                    attributes: ['id', 'name'],
+                    required: false,
+                },
+            ],
+            order: [['uploaded_at', 'DESC']],
+        });
+    }
     async findByProject(project_id) {
         return this.drawingModel.findAll({
             where: { project_id },

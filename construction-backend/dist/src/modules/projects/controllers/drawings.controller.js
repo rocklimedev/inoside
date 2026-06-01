@@ -14,18 +14,36 @@ var __param = (this && this.__param) || function (paramIndex, decorator) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.DrawingsController = void 0;
 const common_1 = require("@nestjs/common");
+const platform_express_1 = require("@nestjs/platform-express");
 const jwt_auth_guard_1 = require("../../../common/guards/jwt-auth.guard");
 const project_drawing_service_1 = require("../services/project-drawing.service");
+const cdn_service_1 = require("../../cdn/services/cdn.service");
 let DrawingsController = class DrawingsController {
     drawingService;
-    constructor(drawingService) {
+    cdnService;
+    constructor(drawingService, cdnService) {
         this.drawingService = drawingService;
+        this.cdnService = cdnService;
     }
-    uploadDrawing(projectId, dto) {
+    async uploadDrawing(projectId, file, body) {
+        if (!projectId) {
+            throw new common_1.BadRequestException('Project ID is required');
+        }
+        if (!file) {
+            throw new common_1.BadRequestException('PDF file is required');
+        }
+        const uploaded = await this.cdnService.uploadFile(file);
         return this.drawingService.upload({
-            ...dto,
             project_id: projectId,
+            drawing_type: body.drawing_type,
+            version: Number(body.version),
+            area_floor: body.area_floor,
+            file_url: uploaded.url,
+            approved: false,
         });
+    }
+    getAllDrawings() {
+        return this.drawingService.findAll();
     }
     getDrawings(projectId) {
         return this.drawingService.findByProject(projectId);
@@ -39,22 +57,30 @@ let DrawingsController = class DrawingsController {
 };
 exports.DrawingsController = DrawingsController;
 __decorate([
-    (0, common_1.Post)(':id/drawings'),
-    __param(0, (0, common_1.Param)('id')),
-    __param(1, (0, common_1.Body)()),
+    (0, common_1.Post)(':projectId'),
+    (0, common_1.UseInterceptors)((0, platform_express_1.FileInterceptor)('file')),
+    __param(0, (0, common_1.Param)('projectId')),
+    __param(1, (0, common_1.UploadedFile)()),
+    __param(2, (0, common_1.Body)()),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [String, Object]),
-    __metadata("design:returntype", void 0)
+    __metadata("design:paramtypes", [String, Object, Object]),
+    __metadata("design:returntype", Promise)
 ], DrawingsController.prototype, "uploadDrawing", null);
 __decorate([
-    (0, common_1.Get)(':id/drawings'),
-    __param(0, (0, common_1.Param)('id')),
+    (0, common_1.Get)(),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", []),
+    __metadata("design:returntype", void 0)
+], DrawingsController.prototype, "getAllDrawings", null);
+__decorate([
+    (0, common_1.Get)('project/:projectId'),
+    __param(0, (0, common_1.Param)('projectId')),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [String]),
     __metadata("design:returntype", void 0)
 ], DrawingsController.prototype, "getDrawings", null);
 __decorate([
-    (0, common_1.Patch)('drawings/:drawingId/approve'),
+    (0, common_1.Patch)(':drawingId/approve'),
     __param(0, (0, common_1.Param)('drawingId')),
     __param(1, (0, common_1.Body)('user_id')),
     __metadata("design:type", Function),
@@ -62,15 +88,16 @@ __decorate([
     __metadata("design:returntype", void 0)
 ], DrawingsController.prototype, "approveDrawing", null);
 __decorate([
-    (0, common_1.Delete)('drawings/:drawingId'),
+    (0, common_1.Delete)(':drawingId'),
     __param(0, (0, common_1.Param)('drawingId')),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [String]),
     __metadata("design:returntype", void 0)
 ], DrawingsController.prototype, "deleteDrawing", null);
 exports.DrawingsController = DrawingsController = __decorate([
-    (0, common_1.Controller)('projects'),
+    (0, common_1.Controller)('drawings'),
     (0, common_1.UseGuards)(jwt_auth_guard_1.JwtAuthGuard),
-    __metadata("design:paramtypes", [project_drawing_service_1.ProjectDrawingService])
+    __metadata("design:paramtypes", [project_drawing_service_1.ProjectDrawingService,
+        cdn_service_1.CdnService])
 ], DrawingsController);
 //# sourceMappingURL=drawings.controller.js.map

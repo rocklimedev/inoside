@@ -12,6 +12,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Eye, Upload, Trash2 } from "lucide-react";
 import { InfoRow } from "./InfoRow";
 import Link from "next/link";
+
 const STAGE_ROUTE_MAP = {
   Brief: "brief",
   Pitch: "pitch",
@@ -26,6 +27,7 @@ const STAGE_ROUTE_MAP = {
   Quality: "quality",
   Handover: "handover",
 };
+
 export function ProjectSheet({ project, onOpenChange, onDelete }) {
   if (!project) return null;
 
@@ -47,8 +49,9 @@ export function ProjectSheet({ project, onOpenChange, onDelete }) {
   const getStageRoute = (stageName) => {
     const slug = STAGE_ROUTE_MAP[stageName];
     if (!slug) return "#";
-    return `/projects/${project.id}/${slug}`;
+    return `/projects/${slug}?project_id=${project.id}`;
   };
+
   const stageInfo = {
     Brief: {
       covered:
@@ -91,6 +94,26 @@ export function ProjectSheet({ project, onOpenChange, onDelete }) {
     Execution: {
       covered: "On-site construction and execution",
       happening: "Site work ongoing",
+      status: "Pending",
+    },
+    Vendor: {
+      covered: "Vendor onboarding, material suppliers, contractors",
+      happening: "Vendor selection and negotiations",
+      status: "Pending",
+    },
+    Inventory: {
+      covered: "Material tracking, stock, procurement status",
+      happening: "Inventory setup and tracking system",
+      status: "Pending",
+    },
+    Quality: {
+      covered: "Quality checks, compliance, inspections",
+      happening: "Site quality inspection process",
+      status: "Pending",
+    },
+    Handover: {
+      covered: "Final delivery, documentation, client sign-off",
+      happening: "Final punch list and handover preparation",
       status: "Pending",
     },
   };
@@ -170,18 +193,45 @@ export function ProjectSheet({ project, onOpenChange, onDelete }) {
                     )}
                   </div>
 
-                  {/* COVERED */}
-                  <div>
-                    <Link
-                      href={getStageRoute(stageName)}
-                      className="text-sm text-blue-600 hover:underline"
-                    >
-                      Open {stageName} Details →
-                    </Link>
-                  </div>
+                  <Link
+                    href={getStageRoute(stageName)}
+                    className="text-sm text-blue-600 hover:underline"
+                  >
+                    Open {stageName} Details →
+                  </Link>
                 </TabsContent>
               ))}
             </Tabs>
+          </div>
+
+          <Separator />
+
+          {/* DOCUMENTS HUB (NOT A STAGE) */}
+          <div>
+            <p className="text-xs font-bold uppercase tracking-wider text-gray-500 mb-3">
+              PROJECT DOCUMENTS
+            </p>
+
+            <div className="grid grid-cols-2 gap-3">
+              <Link href={`/projects/documents?project_id=${project.id}`}>
+                <Button variant="outline" className="w-full">
+                  <Eye className="w-4 h-4 mr-2" />
+                  View Documents
+                </Button>
+              </Link>
+
+              <Link href={`/projects/${project.id}/documents/upload`}>
+                <Button variant="outline" className="w-full">
+                  <Upload className="w-4 h-4 mr-2" />
+                  Upload File
+                </Button>
+              </Link>
+            </div>
+
+            <p className="text-xs text-gray-500 mt-3">
+              Central repository for briefs, drawings, BOQ, site photos,
+              invoices, approvals, and handover files.
+            </p>
           </div>
 
           <Separator />

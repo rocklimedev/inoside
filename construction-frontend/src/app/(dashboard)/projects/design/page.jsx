@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -23,9 +23,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { toast } from "sonner";
 
 import {
-  Plus,
   Upload,
-  Download,
   Eye,
   ArrowLeft,
   Search,
@@ -40,12 +38,14 @@ import {
 import DesignDetail from "@/components/designs/DesignDetail";
 import UploadDesignForm from "@/components/designs/UploadDesignForm";
 
-// RTK Query Hooks
 import {
   useGetDrawingsQuery,
   useDeleteDrawingMutation,
-} from "@/api/projects/drawingsApi"; // Adjust path as needed
+} from "@/api/projects/drawingsApi";
+
 import { useGetProjectsQuery } from "@/api/projectsApi";
+import { useRouter, useSearchParams } from "next/navigation";
+
 const CATEGORIES = [
   "All",
   "Interior",
@@ -80,8 +80,11 @@ const STATUS_BADGE = {
 
 export default function DesignPage() {
   const { user } = useAuth();
+  const router = useRouter();
+  const searchParams = useSearchParams();
 
-  const [selectedProject, setSelectedProject] = useState(null);
+  const projectId = searchParams.get("project_id");
+
   const [search, setSearch] = useState("");
   const [activeCategory, setActiveCategory] = useState("All");
   const [viewMode, setViewMode] = useState("grid");
@@ -89,24 +92,29 @@ export default function DesignPage() {
   const [activeDesign, setActiveDesign] = useState(null);
   const [filterStatus, setFilterStatus] = useState("all");
 
-  // RTK Query
-  const { data: projects = [], isLoading: projectsLoading } =
-    useGetProjectsQuery();
+  // Projects
+  const { data: projects = [] } = useGetProjectsQuery();
 
+  const selectedProject = projects.find((p) => p.id === projectId);
+
+  // Drawings (NOW driven by URL)
   const {
     data: designs = [],
     isLoading: designsLoading,
     refetch,
-  } = useGetDrawingsQuery(selectedProject?.id, { skip: !selectedProject?.id });
+  } = useGetDrawingsQuery(projectId, {
+    skip: !projectId,
+  });
 
-  const [deleteDrawing, { isLoading: deleting }] = useDeleteDrawingMutation();
+  const [deleteDrawing] = useDeleteDrawingMutation();
 
-  // Filter Designs
   const filteredDesigns = designs.filter((d) => {
     const matchesCategory =
       activeCategory === "All" || d.category === activeCategory;
+
     const matchesStatus =
       filterStatus === "all" || d.approval_status === filterStatus;
+
     const matchesSearch =
       !search || d.title.toLowerCase().includes(search.toLowerCase());
 
@@ -119,12 +127,12 @@ export default function DesignPage() {
     try {
       await deleteDrawing(id).unwrap();
       toast.success("Design deleted successfully");
-    } catch (err) {
+    } catch {
       toast.error("Failed to delete design");
     }
   };
 
-  // Show Design Detail
+  // Detail view
   if (activeDesign) {
     return (
       <DesignDetail
@@ -132,53 +140,40 @@ export default function DesignPage() {
         user={user}
         onBack={() => {
           setActiveDesign(null);
-          refetch(); // Refresh list after returning
+          refetch();
         }}
       />
     );
   }
 
-  // Project Selection Screen
-  if (!selectedProject) {
+  // NO PROJECT SELECTED (based on URL now)
+  if (!projectId) {
     return (
-      <div className="flex flex-col h-full" data-testid="design-page">
-        <div className="p-4 md:p-6 border-b border-gray-200 bg-white">
-          <h1 className="text-xl font-black text-black">Designs</h1>
-          <p className="text-xs text-gray-400 mt-1">
-            Select a project to manage drawings
-          </p>
-        </div>
-
-        <div className="p-4 md:p-6">
-          <div className="relative mb-6">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-            <Input
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              placeholder="Search projects..."
-              className="pl-10"
-            />
-          </div>
-        </div>
+      <div className="p-6 text-sm text-gray-500">
+        No project selected. Please open with a project_id in URL.
       </div>
     );
   }
 
-  // Main Design Library
   return (
-    <div className="flex flex-col h-full" data-testid="design-library">
+    <div className="flex flex-col h-full">
       {/* Header */}
-      <div className="p-4 md:px-6 border-b border-gray-200 bg-white">
+      <div className="p-4 md:px-6 border-b bg-white">
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-3">
             <button
-              onClick={() => setSelectedProject(null)}
+              onClick={
+                () => router.push("/projects/") // remove query param
+              }
               className="text-gray-400 hover:text-black"
             >
               <ArrowLeft className="w-5 h-5" />
             </button>
+
             <div>
-              <h1 className="text-base font-bold">{selectedProject.name}</h1>
+              <h1 className="text-base font-bold">
+                {selectedProject?.name || "Project"}
+              </h1>
               <p className="text-[11px] text-gray-400">
                 {designs.length} drawings
               </p>
@@ -201,7 +196,7 @@ export default function DesignPage() {
               </SelectContent>
             </Select>
 
-            <div className="flex border border-gray-200 rounded-md overflow-hidden">
+            <div className="flex border rounded-md overflow-hidden">
               <button
                 onClick={() => setViewMode("grid")}
                 className={`p-2 ${viewMode === "grid" ? "bg-gray-100" : ""}`}
@@ -229,16 +224,27 @@ export default function DesignPage() {
           </div>
         </div>
 
-        {/* Category Tabs */}
-        <div className="flex gap-1 overflow-x-auto pb-2 -mx-1 px-1">
+        {/* Search */}
+        <div className="relative mb-4">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+          <Input
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="Search drawings..."
+            className="pl-10"
+          />
+        </div>
+
+        {/* Categories */}
+        <div className="flex gap-1 overflow-x-auto pb-2">
           {CATEGORIES.map((cat) => (
             <button
               key={cat}
               onClick={() => setActiveCategory(cat)}
-              className={`px-4 py-1.5 text-xs font-medium rounded-full whitespace-nowrap transition-all ${
+              className={`px-4 py-1.5 text-xs rounded-full whitespace-nowrap ${
                 activeCategory === cat
                   ? "bg-[#ef7f1b] text-white"
-                  : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+                  : "bg-gray-100 text-gray-600"
               }`}
             >
               {cat}
@@ -255,57 +261,43 @@ export default function DesignPage() {
               <div className="animate-spin w-8 h-8 border-2 border-[#ef7f1b] border-t-transparent rounded-full" />
             </div>
           ) : filteredDesigns.length === 0 ? (
-            <div className="text-center py-20">
-              <FileText className="w-12 h-12 text-gray-200 mx-auto mb-4" />
-              <p className="text-gray-400">No drawings found</p>
+            <div className="text-center py-20 text-gray-400">
+              <FileText className="w-12 h-12 mx-auto mb-3 text-gray-200" />
+              No drawings found
             </div>
           ) : viewMode === "grid" ? (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-              {filteredDesigns.map((d, i) => {
+              {filteredDesigns.map((d) => {
                 const st =
                   STATUS_BADGE[d.approval_status] || STATUS_BADGE.pending;
+
                 return (
                   <Card
                     key={d.id}
-                    className="overflow-hidden hover:shadow-lg transition-all cursor-pointer group"
                     onClick={() => setActiveDesign(d)}
+                    className="cursor-pointer overflow-hidden"
                   >
-                    <div className="h-40 bg-gray-100 relative flex items-center justify-center">
+                    <div className="h-40 bg-gray-100 flex items-center justify-center">
                       {d.preview_url ? (
                         <img
                           src={`${process.env.NEXT_PUBLIC_BACKEND_URL}${d.preview_url}`}
-                          alt={d.title}
                           className="w-full h-full object-cover"
                         />
                       ) : (
-                        <FileText className="w-12 h-12 text-gray-300" />
+                        <FileText className="w-10 h-10 text-gray-300" />
                       )}
-
-                      {d.locked && (
-                        <div className="absolute top-3 right-3 bg-green-500 text-white p-1 rounded-full">
-                          <Lock className="w-3.5 h-3.5" />
-                        </div>
-                      )}
-
-                      <div className="absolute inset-0 bg-black/0 group-hover:bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all">
-                        <Eye className="w-7 h-7 text-white" />
-                      </div>
                     </div>
 
                     <div className="p-3">
-                      <div className="flex justify-between items-start mb-1">
-                        <h3 className="font-bold text-sm truncate pr-2">
+                      <div className="flex justify-between">
+                        <h3 className="text-sm font-bold truncate">
                           {d.title}
                         </h3>
-                        <Badge
-                          className={`${st.color} text-[10px] border-0 shrink-0`}
-                        >
+                        <Badge className={`${st.color} text-[10px]`}>
                           {st.label}
                         </Badge>
                       </div>
-                      <p className="text-[11px] text-gray-500">
-                        {d.category} • {d.version}
-                      </p>
+
                       <div className="flex justify-between text-[10px] text-gray-400 mt-2">
                         <span>
                           {d.uploaded_by?.name || d.uploaded_by?.email}
@@ -321,32 +313,34 @@ export default function DesignPage() {
               })}
             </div>
           ) : (
-            /* List View */
             <div className="space-y-3">
               {filteredDesigns.map((d) => {
                 const st =
                   STATUS_BADGE[d.approval_status] || STATUS_BADGE.pending;
+
                 return (
                   <Card
                     key={d.id}
-                    className="p-4 flex items-center gap-4 hover:shadow-md cursor-pointer"
                     onClick={() => setActiveDesign(d)}
+                    className="p-4 flex items-center gap-4 cursor-pointer"
                   >
-                    <div className="w-14 h-14 bg-gray-100 rounded-xl flex items-center justify-center shrink-0">
+                    <div className="w-12 h-12 bg-gray-100 rounded overflow-hidden">
                       {d.preview_url ? (
                         <img
                           src={`${process.env.NEXT_PUBLIC_BACKEND_URL}${d.preview_url}`}
-                          className="rounded-xl object-cover w-full h-full"
-                          alt=""
+                          className="w-full h-full object-cover"
                         />
                       ) : (
-                        <FileText className="w-7 h-7 text-gray-400" />
+                        <FileText className="w-6 h-6 text-gray-400" />
                       )}
                     </div>
 
-                    <Badge className={`${st.color} text-xs border-0`}>
-                      {st.label}
-                    </Badge>
+                    <div className="flex-1">
+                      <p className="text-sm font-medium">{d.title}</p>
+                      <p className="text-xs text-gray-400">{d.category}</p>
+                    </div>
+
+                    <Badge className={`${st.color} text-xs`}>{st.label}</Badge>
 
                     {d.locked && <Lock className="w-4 h-4 text-green-600" />}
                   </Card>
@@ -357,19 +351,20 @@ export default function DesignPage() {
         </div>
       </ScrollArea>
 
-      {/* Upload Dialog */}
+      {/* Upload */}
       <Dialog open={showUpload} onOpenChange={setShowUpload}>
-        <DialogContent className="max-w-md">
+        <DialogContent>
           <DialogHeader>
-            <DialogTitle>Upload New Drawing</DialogTitle>
+            <DialogTitle>Upload Drawing</DialogTitle>
           </DialogHeader>
+
           <UploadDesignForm
-            projectId={selectedProject.id}
-            projectName={selectedProject.name}
-            onSuccess={(newDesign) => {
+            projectId={projectId}
+            projectName={selectedProject?.name}
+            onSuccess={() => {
               setShowUpload(false);
-              refetch(); // Refresh list
-              toast.success("Drawing uploaded successfully");
+              refetch();
+              toast.success("Uploaded successfully");
             }}
           />
         </DialogContent>

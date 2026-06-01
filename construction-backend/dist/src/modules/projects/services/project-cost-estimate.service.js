@@ -24,10 +24,18 @@ let ProjectCostEstimateService = class ProjectCostEstimateService {
         this.costModel = costModel;
         this.projectModel = projectModel;
     }
-    async add(dto) {
-        await this.projectModel.findByPk(dto.project_id, {
-            rejectOnEmpty: true,
+    async findAll() {
+        return this.costModel.findAll({
+            include: [
+                {
+                    model: this.projectModel,
+                },
+            ],
+            order: [['created_at', 'DESC']],
         });
+    }
+    async add(dto) {
+        await this.projectModel.findByPk(dto.project_id, { rejectOnEmpty: true });
         this.validateDto(dto);
         return this.costModel.create(dto);
     }
@@ -39,9 +47,8 @@ let ProjectCostEstimateService = class ProjectCostEstimateService {
     }
     async update(id, dto) {
         const estimate = await this.costModel.findByPk(id);
-        if (!estimate) {
+        if (!estimate)
             throw new common_1.NotFoundException('Cost estimate not found');
-        }
         this.validateDto(dto);
         await estimate.update(dto);
         return estimate;
@@ -50,13 +57,28 @@ let ProjectCostEstimateService = class ProjectCostEstimateService {
         return this.costModel.destroy({ where: { id } });
     }
     validateDto(dto) {
-        const isValidArray = (arr) => Array.isArray(arr) &&
-            arr.every((i) => typeof i.title === 'string' && typeof i.description === 'string');
+        const isValidEstimateItem = (i) => typeof i.title === 'string' &&
+            typeof i.description === 'string' &&
+            (i.price === undefined ||
+                i.price === null ||
+                typeof i.price === 'number');
+        const isValidPaymentItem = (i) => typeof i.title === 'string' &&
+            typeof i.description === 'string' &&
+            (i.amount === undefined ||
+                i.amount === null ||
+                typeof i.amount === 'number');
         if (dto.material_labour_estimate &&
-            !isValidArray(dto.material_labour_estimate)) {
+            !Array.isArray(dto.material_labour_estimate)) {
+            throw new common_1.BadRequestException('material_labour_estimate must be an array');
+        }
+        if (dto.material_labour_estimate &&
+            !dto.material_labour_estimate.every(isValidEstimateItem)) {
             throw new common_1.BadRequestException('Invalid material_labour_estimate format');
         }
-        if (dto.payment_plan && !isValidArray(dto.payment_plan)) {
+        if (dto.payment_plan && !Array.isArray(dto.payment_plan)) {
+            throw new common_1.BadRequestException('payment_plan must be an array');
+        }
+        if (dto.payment_plan && !dto.payment_plan.every(isValidPaymentItem)) {
             throw new common_1.BadRequestException('Invalid payment_plan format');
         }
     }

@@ -9,7 +9,18 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.ProjectsModule = void 0;
 const common_1 = require("@nestjs/common");
 const sequelize_1 = require("@nestjs/sequelize");
+const cdn_module_1 = require("../cdn/cdn.module");
 const projects_controller_1 = require("./projects.controller");
+const briefs_controller_1 = require("./controllers/briefs.controller");
+const scopes_controller_1 = require("./controllers/scopes.controller");
+const pitches_controller_1 = require("./controllers/pitches.controller");
+const pitch_comments_controller_1 = require("./controllers/pitch-comments.controller");
+const reki_controller_1 = require("./controllers/reki.controller");
+const pitch_references_controller_1 = require("./controllers/pitch-references.controller");
+const reki_photos_controller_1 = require("./controllers/reki-photos.controller");
+const cost_estimates_controller_1 = require("./controllers/cost-estimates.controller");
+const drawings_controller_1 = require("./controllers/drawings.controller");
+const drawing_logs_controller_1 = require("./controllers/drawing-logs.controller");
 const projects_service_1 = require("./projects.service");
 const project_brief_service_1 = require("./services/project-brief.service");
 const pitch_reference_service_1 = require("./services/pitch-reference.service");
@@ -24,6 +35,7 @@ const project_model_1 = require("./models/project.model");
 const client_model_1 = require("../clients/models/client.model");
 const site_model_1 = require("../sites/models/site.model");
 const user_model_1 = require("../users/models/user.model");
+const address_model_1 = require("../address/models/address.model");
 const project_brief_model_1 = require("./models/project_brief.model");
 const project_pitch_model_1 = require("./models/project_pitch.model");
 const pitch_references_model_1 = require("./models/pitch_references.model");
@@ -34,23 +46,13 @@ const project_cost_estimates_model_1 = require("./models/project_cost_estimates.
 const project_drawings_model_1 = require("./models/project-drawings.model");
 const drawing_approval_logs_model_1 = require("./models/drawing_approval_logs.model");
 const pitch_comment_model_1 = require("./models/pitch-comment.model");
-const address_model_1 = require("../address/models/address.model");
-const briefs_controller_1 = require("./controllers/briefs.controller");
-const scopes_controller_1 = require("./controllers/scopes.controller");
-const pitches_controller_1 = require("./controllers/pitches.controller");
-const pitch_comments_controller_1 = require("./controllers/pitch-comments.controller");
-const reki_controller_1 = require("./controllers/reki.controller");
-const pitch_references_controller_1 = require("./controllers/pitch-references.controller");
-const reki_photos_controller_1 = require("./controllers/reki-photos.controller");
-const cost_estimates_controller_1 = require("./controllers/cost-estimates.controller");
-const drawing_logs_controller_1 = require("./controllers/drawing-logs.controller");
-const drawings_controller_1 = require("./controllers/drawings.controller");
 let ProjectsModule = class ProjectsModule {
 };
 exports.ProjectsModule = ProjectsModule;
 exports.ProjectsModule = ProjectsModule = __decorate([
     (0, common_1.Module)({
         imports: [
+            cdn_module_1.CdnModule,
             sequelize_1.SequelizeModule.forFeature([
                 project_model_1.Project,
                 client_model_1.Client,
@@ -97,11 +99,11 @@ exports.ProjectsModule = ProjectsModule = __decorate([
         exports: [
             projects_service_1.ProjectsService,
             project_brief_service_1.ProjectBriefService,
+            project_pitch_service_1.ProjectPitchService,
             pitch_reference_service_1.PitchReferenceService,
             reki_report_service_1.RekiReportService,
             reki_photo_service_1.RekiPhotoService,
             scope_of_work_service_1.ScopeOfWorkService,
-            project_pitch_service_1.ProjectPitchService,
             project_cost_estimate_service_1.ProjectCostEstimateService,
             project_drawing_service_1.ProjectDrawingService,
             drawing_approval_log_service_1.DrawingApprovalLogService,

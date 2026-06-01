@@ -30,6 +30,9 @@ import { SitesModule } from './modules/sites/sites.module';
 import { CdnModule } from './modules/cdn/cdn.module';
 import { NotificationsModule } from './modules/notifications/notifications.module';
 import { TaskModule } from './modules/tasks/task.module';
+import { CostEstimatesModule } from './modules/projects/cost-estimate.module';
+import { DrawingsModule } from './modules/projects/drawing.module';
+
 @Module({
   imports: [
     // =================================================
@@ -79,6 +82,8 @@ import { TaskModule } from './modules/tasks/task.module';
     CdnModule,
     NotificationsModule,
     TaskModule,
+    CostEstimatesModule,
+    DrawingsModule,
   ],
 
   controllers: [AppController],

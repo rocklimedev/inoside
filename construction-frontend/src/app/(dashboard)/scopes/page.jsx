@@ -1,4 +1,5 @@
 "use client";
+
 import { useState, useMemo, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/contexts/AuthContext";
@@ -9,15 +10,11 @@ import {
   useDeleteScopeMutation,
 } from "@/api/projects/scopeApi";
 import { toast } from "sonner";
+
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
+import { Input } from "@/components/ui/input";
 import {
   Select,
   SelectTrigger,
@@ -25,71 +22,63 @@ import {
   SelectItem,
   SelectValue,
 } from "@/components/ui/select";
-import { ScrollArea } from "@/components/ui/scroll-area";
-import { Separator } from "@/components/ui/separator";
+
 import {
-  Search,
-  Filter,
-  ArrowUpDown,
-  LayoutGrid,
-  List,
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+
+import { ScrollArea } from "@/components/ui/scroll-area";
+
+import {
   Plus,
-  X,
-  Loader2,
-  Trash2,
+  Search,
+  Grid3X3,
+  List,
+  MoreVertical,
   Pencil,
-  ClipboardList,
-  Building2,
+  Trash2,
   CheckCircle2,
   XCircle,
-  CalendarDays,
-  MoreHorizontal,
+  ClipboardList,
+  Loader2,
 } from "lucide-react";
 
 const STATUS_MAP = {
-  scope_done: { label: "Scope Done", color: "bg-green-50 text-green-600" },
-  draft: { label: "Draft", color: "bg-gray-100 text-gray-600" },
-  completed: { label: "Document Ready", color: "bg-blue-50 text-blue-600" },
-  approved: { label: "Approved", color: "bg-green-50 text-green-600" },
+  scope_done: { label: "Scope Done", color: "bg-green-100 text-green-700" },
+  draft: { label: "Draft", color: "bg-gray-100 text-gray-700" },
+  completed: { label: "Document Ready", color: "bg-blue-100 text-blue-700" },
+  approved: { label: "Approved", color: "bg-emerald-100 text-emerald-700" },
   changes_requested: {
     label: "Changes Requested",
-    color: "bg-red-50 text-[#e31d3b]",
+    color: "bg-red-100 text-red-700",
   },
 };
-
-const STATUSES = Object.keys(STATUS_MAP);
 
 export default function ScopePage() {
   const router = useRouter();
   const { user } = useAuth();
 
-  // ======================================================
-  // STATE
-  // ======================================================
-  const [viewMode, setViewMode] = useState("list" > "grid");
+  const [viewMode, setViewMode] = useState("grid");
   const [search, setSearch] = useState("");
-  const [showFilters, setShowFilters] = useState(false);
-  const [sortBy, setSortBy] = useState("status" > "date");
-  const [selectedIds, setSelectedIds] = useState([]);
-  const [filters, setFilters] = useState({
-    statuses: [],
-  });
+  const [sortBy, setSortBy] = useState("date");
+  const [filterStatus, setFilterStatus] = useState("all");
 
-  // ======================================================
-  // API
-  // ======================================================
   const {
     data: scopes = [],
     isLoading,
     error,
     refetch,
   } = useGetAllScopesQuery();
-  const [approveScope, { isLoading: approving }] = useApproveScopeMutation();
-  const [rejectScope, { isLoading: rejecting }] = useRejectScopeMutation();
-  const [deleteScope, { isLoading: deleting }] = useDeleteScopeMutation();
+
+  const [approveScope] = useApproveScopeMutation();
+  const [rejectScope] = useRejectScopeMutation();
+  const [deleteScope] = useDeleteScopeMutation();
 
   // ======================================================
-  // MAP DATA (Fixed for your real structure)
+  // MAPPED DATA
   // ======================================================
   const mappedScopes = useMemo(() => {
     return scopes.map((item) => ({
@@ -98,16 +87,15 @@ export default function ScopePage() {
       project_name: item?.project?.name || "Untitled Project",
       client_name: item?.project?.client?.name || "No Client",
       stage: item?.project?.current_stage || "Not Available",
-      status: item?.project?.status || "draft", // Using project.status
+      status: item?.status || item?.project?.status || "draft",
       scope_summary: item.scope_summary,
-      area_summary: item.area_summary,
       created_at: item.created_at,
       raw: item,
     }));
   }, [scopes]);
 
   // ======================================================
-  // FILTER + SEARCH + SORT
+  // FILTERED & SORTED
   // ======================================================
   const filteredScopes = useMemo(() => {
     let result = [...mappedScopes];
@@ -116,15 +104,16 @@ export default function ScopePage() {
     if (search.trim()) {
       const term = search.toLowerCase();
       result = result.filter((item) =>
-        [item.project_name, item.client_name, item.stage, item.status].some(
-          (field) => field?.toLowerCase().includes(term),
-        ),
+        [item.project_name, item.client_name, item.stage, item.status]
+          .join(" ")
+          .toLowerCase()
+          .includes(term),
       );
     }
 
-    // Filters
-    if (filters.statuses.length > 0) {
-      result = result.filter((item) => filters.statuses.includes(item.status));
+    // Status Filter
+    if (filterStatus !== "all") {
+      result = result.filter((item) => item.status === filterStatus);
     }
 
     // Sorting
@@ -132,53 +121,27 @@ export default function ScopePage() {
       if (sortBy === "name")
         return a.project_name.localeCompare(b.project_name);
       if (sortBy === "status") return a.status.localeCompare(b.status);
-      if (sortBy === "date")
-        return (
-          new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
-        );
-      return 0;
+      // Default: Latest first
+      return (
+        new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+      );
     });
 
     return result;
-  }, [mappedScopes, search, filters, sortBy]);
-
-  // ======================================================
-  // HELPERS
-  // ======================================================
-  const toggleFilter = (value) => {
-    setFilters((prev) => ({
-      ...prev,
-      statuses: prev.statuses.includes(value)
-        ? prev.statuses.filter((v) => v !== value)
-        : [...prev.statuses, value],
-    }));
-  };
-
-  const clearFilters = () => setFilters({ statuses: [] });
-
-  const toggleSelect = (id) => {
-    setSelectedIds((prev) =>
-      prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id],
-    );
-  };
-
-  const toggleSelectAll = () => {
-    setSelectedIds(
-      selectedIds.length === filteredScopes.length
-        ? []
-        : filteredScopes.map((s) => s.id),
-    );
-  };
-
-  const clearSelection = () => setSelectedIds([]);
+  }, [mappedScopes, search, filterStatus, sortBy]);
 
   // ======================================================
   // ACTIONS
   // ======================================================
   const handleNewScope = () => router.push("/scopes/add");
-  const handleEdit = (item) =>
+
+  const handleEdit = (item) => {
     router.push(`/scopes/add?id=${item.id}&projectId=${item.project_id}`);
-  const openItem = (item) => router.push(`/scopes/view?scopeId=${item.id}`);
+  };
+
+  const openItem = (id) => {
+    router.push(`/scopes/view?scopeId=${id}`);
+  };
 
   const handleApprove = async (projectId) => {
     try {
@@ -207,305 +170,305 @@ export default function ScopePage() {
     if (!confirm("Delete this scope?")) return;
     try {
       await deleteScope(scopeId).unwrap();
-      toast.success("Scope deleted");
+      toast.success("Scope deleted successfully");
       refetch();
     } catch (err) {
       toast.error(err?.data?.message || "Failed to delete");
     }
   };
 
-  const handleBulkDelete = async () => {
-    if (!confirm(`Delete ${selectedIds.length} scopes?`)) return;
-    try {
-      await Promise.all(selectedIds.map((id) => deleteScope(id).unwrap()));
-      toast.success("Selected scopes deleted");
-      clearSelection();
-      refetch();
-    } catch (err) {
-      toast.error("Bulk delete failed");
-    }
-  };
-
-  // Keyboard Shortcut
+  // Keyboard shortcut for search
   useEffect(() => {
     const handleKeyDown = (e) => {
       if (e.key === "/") {
         e.preventDefault();
-        document
-          .querySelector('input[placeholder="Search scope documents..."]')
-          ?.focus();
+        document.querySelector('input[placeholder*="Search"]')?.focus();
       }
     };
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, []);
 
-  if (isLoading)
+  if (isLoading) {
     return (
-      <div className="flex justify-center items-center h-screen">
+      <div className="flex h-screen items-center justify-center bg-[#fafafa]">
         <Loader2 className="w-8 h-8 animate-spin text-[#ef7f1b]" />
       </div>
     );
-  if (error)
+  }
+
+  if (error) {
     return (
-      <div className="text-red-600 text-center h-screen">
+      <div className="flex h-screen items-center justify-center bg-[#fafafa] text-red-500">
         Failed to load scopes.
       </div>
     );
+  }
 
   return (
-    <div className="flex h-full">
-      {/* Filters Sidebar */}
-      {showFilters && (
-        <div className="w-72 border-r bg-white p-6 overflow-auto">
-          <div className="flex justify-between items-center mb-6">
-            <h3 className="font-bold uppercase tracking-wider text-sm">
-              Filters
-            </h3>
-            <button onClick={() => setShowFilters(false)}>
-              <X className="w-5 h-5" />
-            </button>
-          </div>
-
+    <div className="flex h-full flex-col bg-[#fafafa]">
+      {/* HEADER */}
+      <div className="border-b bg-white px-4 py-4 md:px-6">
+        <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
           <div>
-            <h4 className="text-xs font-semibold uppercase text-gray-500 mb-3">
-              Status
-            </h4>
-            {STATUSES.map((status) => (
+            <h1 className="text-2xl font-black">Scope Documents</h1>
+            <p className="mt-1 text-xs text-gray-400">
+              {filteredScopes.length} documents
+            </p>
+          </div>
+
+          <div className="flex items-center gap-2">
+            <div className="flex rounded-lg border overflow-hidden">
               <button
-                key={status}
-                onClick={() => toggleFilter(status)}
-                className={`w-full text-left px-3 py-2.5 rounded-lg mb-1 transition ${
-                  filters.statuses.includes(status)
-                    ? "bg-orange-50 border border-[#ef7f1b] text-[#ef7f1b]"
-                    : "hover:bg-gray-50"
-                }`}
+                onClick={() => setViewMode("grid")}
+                className={`p-2 ${viewMode === "grid" ? "bg-[#ef7f1b] text-white" : "text-gray-500"}`}
               >
-                {STATUS_MAP[status].label}
+                <Grid3X3 className="h-4 w-4" />
               </button>
-            ))}
-          </div>
-
-          {filters.statuses.length > 0 && (
-            <button
-              onClick={clearFilters}
-              className="mt-4 text-sm text-[#ef7f1b] hover:underline"
-            >
-              Clear Filters
-            </button>
-          )}
-        </div>
-      )}
-
-      {/* Main Content */}
-      <div className="flex-1 flex flex-col">
-        {/* Header */}
-        <div className="p-6 border-b bg-white">
-          <div className="flex flex-col lg:flex-row gap-4 justify-between">
-            <div>
-              <h1 className="text-3xl font-black">Scope Documents</h1>
-              <p className="text-gray-500 mt-1">
-                {filteredScopes.length} document
-                {filteredScopes.length !== 1 ? "s" : ""}
-              </p>
-            </div>
-
-            <div className="flex-1 max-w-md">
-              <div className="flex items-center gap-2 bg-gray-50 border rounded-xl px-4 py-2.5 focus-within:border-[#ef7f1b]">
-                <Search className="w-4 h-4 text-gray-400" />
-                <input
-                  type="text"
-                  placeholder="Search scope documents..."
-                  value={search}
-                  onChange={(e) => setSearch(e.target.value)}
-                  className="bg-transparent outline-none w-full text-sm"
-                />
-              </div>
-            </div>
-
-            <div className="flex items-center gap-3 flex-wrap">
-              {selectedIds.length > 0 && (
-                <div className="flex items-center gap-2 bg-white border rounded-xl px-4 py-1.5">
-                  <span>{selectedIds.length} selected</span>
-                  <Button
-                    variant="destructive"
-                    size="sm"
-                    onClick={handleBulkDelete}
-                  >
-                    <Trash2 className="w-4 h-4 mr-1" /> Delete
-                  </Button>
-                  <Button variant="outline" size="sm" onClick={clearSelection}>
-                    Cancel
-                  </Button>
-                </div>
-              )}
-
-              <Button
-                variant="outline"
-                onClick={() => setShowFilters(!showFilters)}
+              <button
+                onClick={() => setViewMode("list")}
+                className={`p-2 ${viewMode === "list" ? "bg-[#ef7f1b] text-white" : "text-gray-500"}`}
               >
-                <Filter className="w-4 h-4 mr-2" /> Filter
-              </Button>
-
-              <Select value={sortBy} onValueChange={(v) => setSortBy(v)}>
-                <SelectTrigger className="w-40">
-                  <ArrowUpDown className="w-4 h-4 mr-2" />
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="date">Date</SelectItem>
-                  <SelectItem value="name">Name</SelectItem>
-                  <SelectItem value="status">Status</SelectItem>
-                </SelectContent>
-              </Select>
-
-              <div className="flex border rounded-xl overflow-hidden">
-                <button
-                  onClick={() => setViewMode("grid")}
-                  className={`p-2.5 ${viewMode === "grid" ? "bg-[#ef7f1b] text-white" : "hover:bg-gray-100"}`}
-                >
-                  <LayoutGrid className="w-4 h-4" />
-                </button>
-                <button
-                  onClick={() => setViewMode("list")}
-                  className={`p-2.5 ${viewMode === "list" ? "bg-[#ef7f1b] text-white" : "hover:bg-gray-100"}`}
-                >
-                  <List className="w-4 h-4" />
-                </button>
-              </div>
-
-              {user?.role !== "Client" && (
-                <Button
-                  onClick={handleNewScope}
-                  className="bg-[#ef7f1b] hover:bg-[#d66e15]"
-                >
-                  <Plus className="w-4 h-4 mr-2" /> New Scope
-                </Button>
-              )}
+                <List className="h-4 w-4" />
+              </button>
             </div>
-          </div>
-        </div>
 
-        {/* Content */}
-        <ScrollArea className="flex-1">
-          <div className="p-6">
-            {filteredScopes.length === 0 ? (
-              <div className="text-center py-20">
-                <ClipboardList className="w-12 h-12 text-gray-200 mx-auto mb-3" />
-                <p className="text-gray-400">No scope documents found.</p>
-              </div>
-            ) : viewMode === "grid" ? (
-              <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-5">
-                {filteredScopes.map((item) => {
-                  const st = STATUS_MAP[item.status] || STATUS_MAP.draft;
-                  return (
-                    <Card
-                      key={item.id}
-                      className="p-5 hover:shadow-xl transition-all"
-                    >
-                      <div
-                        onClick={() => openItem(item.raw)}
-                        className="cursor-pointer"
-                      >
-                        <div className="flex justify-between items-start">
-                          <div>
-                            <h3 className="font-bold text-lg">
-                              {item.project_name}
-                            </h3>
-                            <div className="flex items-center gap-1 text-sm text-gray-500 mt-1">
-                              <Building2 className="w-4 h-4" />
-                              {item.client_name}
-                            </div>
-                          </div>
-                          <Badge className={st.color}>{st.label}</Badge>
-                        </div>
-
-                        {item.scope_summary && (
-                          <p className="text-sm text-gray-600 mt-3 line-clamp-2">
-                            {item.scope_summary}
-                          </p>
-                        )}
-
-                        <div className="mt-4 text-xs text-gray-500">
-                          {new Date(item.created_at).toLocaleDateString()}
-                        </div>
-                        <div className="mt-2">
-                          <span className="font-medium text-[#ef7f1b]">
-                            {item.stage}
-                          </span>
-                        </div>
-                      </div>
-
-                      {user?.role !== "Client" && (
-                        <div className="flex justify-end mt-4">
-                          <DropdownMenu>
-                            <DropdownMenuTrigger asChild>
-                              <Button variant="outline" size="icon">
-                                <MoreHorizontal className="w-4 h-4" />
-                              </Button>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent align="end">
-                              <DropdownMenuItem
-                                onClick={() => handleEdit(item.raw)}
-                              >
-                                <Pencil className="w-4 h-4 mr-2" /> Edit
-                              </DropdownMenuItem>
-                              <DropdownMenuItem
-                                onClick={() => handleApprove(item.project_id)}
-                              >
-                                <CheckCircle2 className="w-4 h-4 mr-2 text-green-600" />{" "}
-                                Approve
-                              </DropdownMenuItem>
-                              <DropdownMenuItem
-                                onClick={() => handleReject(item.project_id)}
-                              >
-                                <XCircle className="w-4 h-4 mr-2 text-red-600" />{" "}
-                                Request Changes
-                              </DropdownMenuItem>
-                              <DropdownMenuItem
-                                onClick={() => handleDelete(item.id)}
-                                className="text-red-600"
-                              >
-                                <Trash2 className="w-4 h-4 mr-2" /> Delete
-                              </DropdownMenuItem>
-                            </DropdownMenuContent>
-                          </DropdownMenu>
-                        </div>
-                      )}
-                    </Card>
-                  );
-                })}
-              </div>
-            ) : (
-              // List View (similar structure, you can expand if needed)
-              <div className="space-y-3">
-                {filteredScopes.map((item) => {
-                  const st = STATUS_MAP[item.status] || STATUS_MAP.draft;
-                  return (
-                    <Card key={item.id} className="p-4">
-                      <div className="flex items-center justify-between">
-                        <div
-                          onClick={() => openItem(item.raw)}
-                          className="flex-1 cursor-pointer"
-                        >
-                          <h3 className="font-bold">{item.project_name}</h3>
-                          <p className="text-sm text-gray-500">
-                            {item.client_name}
-                          </p>
-                          <p className="text-xs text-gray-400 mt-1">
-                            {item.stage}
-                          </p>
-                        </div>
-                        <Badge className={st.color}>{st.label}</Badge>
-                      </div>
-                    </Card>
-                  );
-                })}
-              </div>
+            {user?.role !== "Client" && (
+              <Button
+                onClick={handleNewScope}
+                className="bg-[#ef7f1b] hover:bg-[#d96f18]"
+                size="sm"
+              >
+                <Plus className="h-4 w-4 mr-1" />
+                New Scope
+              </Button>
             )}
           </div>
-        </ScrollArea>
+        </div>
+
+        {/* Search + Filters */}
+        <div className="mt-4 flex flex-col gap-3 md:flex-row">
+          <div className="relative flex-1">
+            <Search className="absolute left-3 top-2.5 h-4 w-4 text-gray-400" />
+            <Input
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Search scope documents..."
+              className="pl-10"
+            />
+          </div>
+
+          <Select value={filterStatus} onValueChange={setFilterStatus}>
+            <SelectTrigger className="w-full md:w-52">
+              <SelectValue placeholder="All Status" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Status</SelectItem>
+              {Object.entries(STATUS_MAP).map(([key, value]) => (
+                <SelectItem key={key} value={key}>
+                  {value.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+
+          <Select value={sortBy} onValueChange={setSortBy}>
+            <SelectTrigger className="w-full md:w-44">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="date">Latest First</SelectItem>
+              <SelectItem value="name">Project Name</SelectItem>
+              <SelectItem value="status">Status</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
       </div>
+
+      {/* CONTENT */}
+      <ScrollArea className="flex-1">
+        <div className="p-4 md:p-6">
+          {filteredScopes.length === 0 ? (
+            <div className="text-center py-20 text-gray-500">
+              <ClipboardList className="w-12 h-12 mx-auto mb-4 opacity-40" />
+              <h3 className="text-lg font-semibold">
+                No scope documents found
+              </h3>
+            </div>
+          ) : viewMode === "grid" ? (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3 2xl:grid-cols-4 gap-4">
+              {filteredScopes.map((item) => {
+                const statusInfo = STATUS_MAP[item.status] || STATUS_MAP.draft;
+                return (
+                  <Card
+                    key={item.id}
+                    className="group rounded-2xl border bg-white p-5 hover:-translate-y-1 hover:shadow-lg transition cursor-pointer"
+                    onClick={() => openItem(item.id)}
+                  >
+                    <div className="flex justify-between items-start mb-4">
+                      <div className="h-12 w-12 rounded-2xl bg-orange-50 flex items-center justify-center">
+                        <ClipboardList className="h-6 w-6 text-[#ef7f1b]" />
+                      </div>
+                      <Badge className={statusInfo.color}>
+                        {statusInfo.label}
+                      </Badge>
+                    </div>
+
+                    <h3 className="font-bold text-lg line-clamp-2 group-hover:text-[#ef7f1b] transition-colors">
+                      {item.project_name}
+                    </h3>
+
+                    <p className="text-sm text-gray-500 mt-1">
+                      {item.client_name}
+                    </p>
+
+                    {item.scope_summary && (
+                      <p className="text-sm text-gray-600 mt-3 line-clamp-2">
+                        {item.scope_summary}
+                      </p>
+                    )}
+
+                    <div className="mt-4 text-xs text-gray-400">
+                      {new Date(item.created_at).toLocaleDateString("en-IN")}
+                    </div>
+
+                    {user?.role !== "Client" && (
+                      <div className="mt-5 flex justify-end opacity-0 group-hover:opacity-100 transition">
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={(e) => e.stopPropagation()}
+                            >
+                              <MoreVertical className="h-4 w-4" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            <DropdownMenuItem
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleEdit(item);
+                              }}
+                            >
+                              <Pencil className="mr-2 h-4 w-4" /> Edit
+                            </DropdownMenuItem>
+                            <DropdownMenuItem
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleApprove(item.project_id);
+                              }}
+                            >
+                              <CheckCircle2 className="mr-2 h-4 w-4 text-green-600" />{" "}
+                              Approve
+                            </DropdownMenuItem>
+                            <DropdownMenuItem
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleReject(item.project_id);
+                              }}
+                            >
+                              <XCircle className="mr-2 h-4 w-4 text-red-600" />{" "}
+                              Request Changes
+                            </DropdownMenuItem>
+                            <DropdownMenuItem
+                              className="text-red-600"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleDelete(item.id);
+                              }}
+                            >
+                              <Trash2 className="mr-2 h-4 w-4" /> Delete
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      </div>
+                    )}
+                  </Card>
+                );
+              })}
+            </div>
+          ) : (
+            /* ================= LIST VIEW ================= */
+            <div className="space-y-3">
+              {filteredScopes.map((item) => {
+                const statusInfo = STATUS_MAP[item.status] || STATUS_MAP.draft;
+                return (
+                  <Card
+                    key={item.id}
+                    className="flex items-center gap-4 p-4 hover:shadow-md transition cursor-pointer"
+                    onClick={() => openItem(item.id)}
+                  >
+                    <div className="h-12 w-12 rounded-2xl bg-orange-50 flex items-center justify-center">
+                      <ClipboardList className="h-6 w-6 text-[#ef7f1b]" />
+                    </div>
+
+                    <div className="flex-1 min-w-0">
+                      <p className="font-bold truncate">{item.project_name}</p>
+                      <p className="text-sm text-gray-500 truncate">
+                        {item.client_name}
+                      </p>
+                    </div>
+
+                    <Badge className={statusInfo.color}>
+                      {statusInfo.label}
+                    </Badge>
+
+                    {user?.role !== "Client" && (
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={(e) => e.stopPropagation()}
+                          >
+                            <MoreVertical className="h-4 w-4" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          <DropdownMenuItem
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleEdit(item);
+                            }}
+                          >
+                            Edit
+                          </DropdownMenuItem>
+                          <DropdownMenuItem
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleApprove(item.project_id);
+                            }}
+                          >
+                            Approve
+                          </DropdownMenuItem>
+                          <DropdownMenuItem
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleReject(item.project_id);
+                            }}
+                          >
+                            Request Changes
+                          </DropdownMenuItem>
+                          <DropdownMenuItem
+                            className="text-red-600"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleDelete(item.id);
+                            }}
+                          >
+                            Delete
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    )}
+                  </Card>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      </ScrollArea>
     </div>
   );
 }

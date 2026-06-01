@@ -18,11 +18,13 @@ import type {
 export interface EstimateItem {
   title: string;
   description: string;
+  price?: number | null; // ✅ Added
 }
 
 export interface PaymentPlanItem {
   title: string;
   description: string;
+  amount?: number | null; // ✅ Added (better name for payment)
 }
 
 @Table({
@@ -52,11 +54,9 @@ export class ProjectCostEstimate extends Model<
   @Column(DataType.DECIMAL(15, 2))
   declare tentative_total_cost: number;
 
-  // ✅ CHANGED: typed JSON array
   @Column(DataType.JSON)
   declare material_labour_estimate: EstimateItem[];
 
-  // ✅ CHANGED: typed JSON array
   @Column(DataType.JSON)
   declare payment_plan: PaymentPlanItem[];
 

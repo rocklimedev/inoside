@@ -597,7 +597,6 @@ export const navSections = [
       { icon: ClipboardList, label: "Scope of Work", path: "/scopes" },
       { icon: Clock, label: "Time & Cost", path: "/time-cost" },
       { icon: Calculator, label: "BOQ", path: "/boq" },
-      { icon: Palette, label: "Design", path: "/designs" },
       { icon: Hammer, label: "Execution", path: "/execution" },
       { icon: Store, label: "Vendors", path: "/vendors" },
       { icon: Package, label: "Inventory", path: "/inventory" },
@@ -608,7 +607,6 @@ export const navSections = [
   {
     title: "DOCUMENTS",
     items: [
-      { icon: Files, label: "PDFs", path: "/pdfs" },
       { icon: PenTool, label: "Drawings", path: "/drawings" },
       { icon: ThumbsUp, label: "Approvals", path: "/approvals" },
       { icon: BarChart3, label: "Reports", path: "/reports" },

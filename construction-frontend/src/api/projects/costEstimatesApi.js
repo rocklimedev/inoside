@@ -4,36 +4,37 @@ export const costEstimatesApi = baseApi.injectEndpoints({
   endpoints: (builder) => ({
     addCostEstimate: builder.mutation({
       query: ({ projectId, ...body }) => ({
-        url: `/projects/${projectId}/cost-estimates`,
+        url: `/cost-estimates/project/${projectId}`,
         method: "POST",
         body,
       }),
-
       invalidatesTags: ["CostEstimates"],
     }),
 
-    getCostEstimates: builder.query({
-      query: (projectId) => `/projects/${projectId}/cost-estimates`,
+    getAllCostEstimates: builder.query({
+      query: () => "/cost-estimates",
+      providesTags: ["CostEstimates"],
+    }),
 
+    getCostEstimates: builder.query({
+      query: (projectId) => `/cost-estimates/project/${projectId}`,
       providesTags: ["CostEstimates"],
     }),
 
     updateCostEstimate: builder.mutation({
       query: ({ estimateId, ...body }) => ({
-        url: `/projects/cost-estimates/${estimateId}`,
+        url: `/cost-estimates/${estimateId}`,
         method: "PATCH",
         body,
       }),
-
       invalidatesTags: ["CostEstimates"],
     }),
 
     deleteCostEstimate: builder.mutation({
       query: (estimateId) => ({
-        url: `/projects/cost-estimates/${estimateId}`,
+        url: `/cost-estimates/${estimateId}`,
         method: "DELETE",
       }),
-
       invalidatesTags: ["CostEstimates"],
     }),
   }),
@@ -43,6 +44,7 @@ export const costEstimatesApi = baseApi.injectEndpoints({
 
 export const {
   useAddCostEstimateMutation,
+  useGetAllCostEstimatesQuery,
   useGetCostEstimatesQuery,
   useUpdateCostEstimateMutation,
   useDeleteCostEstimateMutation,

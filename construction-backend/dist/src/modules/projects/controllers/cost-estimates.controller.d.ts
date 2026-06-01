@@ -19,6 +19,7 @@ interface CreateCostEstimateDto {
 export declare class CostEstimatesController {
     private readonly costService;
     constructor(costService: ProjectCostEstimateService);
+    findAll(): Promise<import("../models/project_cost_estimates.model").ProjectCostEstimate[]>;
     addEstimate(projectId: string, dto: CreateCostEstimateDto): Promise<import("../models/project_cost_estimates.model").ProjectCostEstimate>;
     getEstimates(projectId: string): Promise<import("../models/project_cost_estimates.model").ProjectCostEstimate[]>;
     updateEstimate(estimateId: string, dto: Partial<CreateCostEstimateDto>): Promise<import("../models/project_cost_estimates.model").ProjectCostEstimate>;

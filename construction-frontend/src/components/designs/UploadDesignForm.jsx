@@ -6,7 +6,8 @@ import { Loader2, Upload } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
+import { Label } from "@/components/ui/label";
+
 import {
   Select,
   SelectContent,
@@ -14,44 +15,39 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Label } from "@/components/ui/label";
 
-import { useUploadDrawingMutation } from "@/api/projects/drawingsApi"; // adjust path
-const CATEGORIES = [
-  "All",
-  "Interior",
-  "Room-wise",
-  "Structure",
-  "MEP",
-  "Walls",
-  "Doors",
-  "Windows",
-  "Lighting",
-  "Furniture",
-  "Ceiling",
-  "Flooring",
-  "Elevations",
-  "2D Layouts",
-  "3D Views",
-  "Other",
+import { useUploadDrawingMutation } from "@/api/projects/drawingsApi";
+import { useGetProjectsQuery } from "@/api/projectsApi";
+
+const DRAWING_TYPES = [
+  "Design",
+  "Execution",
+  "Technical",
+  "Construction",
+  "Working",
 ];
-function UploadDesignForm({ projectId, projectName, onSuccess }) {
+
+function UploadDesignForm({ onSuccess }) {
+  const [selectedProjectId, setSelectedProjectId] = useState("");
+
   const [form, setForm] = useState({
-    title: "",
-    category: "2D Layouts",
-    description: "",
-    room_area_tag: "",
-    version: "v1.0",
+    drawing_type: "Design",
+    version: 1,
+    area_floor: "",
   });
 
   const [file, setFile] = useState(null);
-  const [uploadDrawing, { isLoading: uploading }] = useUploadDrawingMutation();
 
   const fileRef = useRef(null);
 
+  const { data: projects = [], isLoading: projectsLoading } =
+    useGetProjectsQuery();
+
+  const [uploadDrawing, { isLoading: uploading }] = useUploadDrawingMutation();
+
   const handleSubmit = async () => {
-    if (!form.title.trim()) {
-      toast.error("Title is required");
+    if (!selectedProjectId) {
+      toast.error("Please select a project");
       return;
     }
 
@@ -62,129 +58,143 @@ function UploadDesignForm({ projectId, projectName, onSuccess }) {
 
     const formData = new FormData();
 
-    // Append file
     formData.append("file", file);
 
-    // Append other fields
-    formData.append("title", form.title);
-    formData.append("category", form.category);
-    formData.append("description", form.description);
-    formData.append("room_area_tag", form.room_area_tag);
-    formData.append("version", form.version);
-    formData.append("project_name", projectName);
+    formData.append("drawing_type", form.drawing_type);
+
+    formData.append("version", String(form.version));
+
+    formData.append("area_floor", form.area_floor);
 
     try {
       const result = await uploadDrawing({
-        projectId,
-        body: formData, // RTK Query will handle it
+        projectId: selectedProjectId,
+        body: formData,
       }).unwrap();
 
-      toast.success("Design uploaded successfully!");
+      toast.success("Drawing uploaded successfully");
+
       onSuccess?.(result);
 
-      // Reset form
+      setSelectedProjectId("");
+
       setForm({
-        title: "",
-        category: "2D Layouts",
-        description: "",
-        room_area_tag: "",
-        version: "v1.0",
+        drawing_type: "Design",
+        version: 1,
+        area_floor: "",
       });
+
       setFile(null);
-      if (fileRef.current) fileRef.current.value = "";
+
+      if (fileRef.current) {
+        fileRef.current.value = "";
+      }
     } catch (err) {
       console.error(err);
-      toast.error(err?.data?.message || "Upload failed");
+
+      toast.error(err?.data?.message || "Failed to upload drawing");
     }
   };
 
   return (
-    <div className="space-y-3 py-2">
-      {/* Category */}
+    <div className="space-y-4 py-2">
+      {/* Project */}
       <div>
         <Label className="text-[10px] font-bold uppercase tracking-wider text-gray-400">
-          Category
+          Project *
         </Label>
-        <Select
-          value={form.category}
-          onValueChange={(v) => setForm((p) => ({ ...p, category: v }))}
-        >
+
+        <Select value={selectedProjectId} onValueChange={setSelectedProjectId}>
           <SelectTrigger className="mt-1">
-            <SelectValue />
+            <SelectValue
+              placeholder={
+                projectsLoading ? "Loading projects..." : "Select Project"
+              }
+            />
           </SelectTrigger>
+
           <SelectContent>
-            {CATEGORIES.filter((c) => c !== "All").map((c) => (
-              <SelectItem key={c} value={c}>
-                {c}
+            {projects?.map((project) => (
+              <SelectItem key={project.id} value={project.id}>
+                {project.name}
               </SelectItem>
             ))}
           </SelectContent>
         </Select>
       </div>
 
-      {/* Title */}
+      {/* Drawing Type */}
       <div>
         <Label className="text-[10px] font-bold uppercase tracking-wider text-gray-400">
-          Title *
+          Drawing Type
         </Label>
+
+        <Select
+          value={form.drawing_type}
+          onValueChange={(value) =>
+            setForm((prev) => ({
+              ...prev,
+              drawing_type: value,
+            }))
+          }
+        >
+          <SelectTrigger className="mt-1">
+            <SelectValue />
+          </SelectTrigger>
+
+          <SelectContent>
+            {DRAWING_TYPES.map((type) => (
+              <SelectItem key={type} value={type}>
+                {type}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </div>
+
+      {/* Version */}
+      <div>
+        <Label className="text-[10px] font-bold uppercase tracking-wider text-gray-400">
+          Version
+        </Label>
+
         <Input
-          value={form.title}
-          onChange={(e) => setForm((p) => ({ ...p, title: e.target.value }))}
+          type="number"
+          min={1}
+          value={form.version}
+          onChange={(e) =>
+            setForm((prev) => ({
+              ...prev,
+              version: Number(e.target.value) || 1,
+            }))
+          }
           className="mt-1"
-          placeholder="e.g. Master Bedroom Floor Plan"
-          data-testid="design-title-input"
         />
       </div>
 
-      {/* Version + Room Area */}
-      <div className="grid grid-cols-2 gap-3">
-        <div>
-          <Label className="text-[10px] font-bold uppercase tracking-wider text-gray-400">
-            Version
-          </Label>
-          <Input
-            value={form.version}
-            onChange={(e) =>
-              setForm((p) => ({ ...p, version: e.target.value }))
-            }
-            className="mt-1"
-          />
-        </div>
-
-        <div>
-          <Label className="text-[10px] font-bold uppercase tracking-wider text-gray-400">
-            Room / Area Tag
-          </Label>
-          <Input
-            value={form.room_area_tag}
-            onChange={(e) =>
-              setForm((p) => ({ ...p, room_area_tag: e.target.value }))
-            }
-            className="mt-1"
-            placeholder="e.g. Master Bedroom"
-          />
-        </div>
-      </div>
-
-      {/* Description */}
+      {/* Area Floor */}
       <div>
         <Label className="text-[10px] font-bold uppercase tracking-wider text-gray-400">
-          Description
+          Area / Floor
         </Label>
-        <Textarea
-          value={form.description}
+
+        <Input
+          value={form.area_floor}
           onChange={(e) =>
-            setForm((p) => ({ ...p, description: e.target.value }))
+            setForm((prev) => ({
+              ...prev,
+              area_floor: e.target.value,
+            }))
           }
           className="mt-1"
-          rows={2}
+          placeholder="Ground Floor, First Floor, Kitchen, Living Room, etc."
         />
       </div>
 
       {/* File Upload */}
       <div>
         <Label className="text-[10px] font-bold uppercase tracking-wider text-gray-400">
-          PDF File *
+          PDF Drawing *
         </Label>
 
         <div
@@ -204,9 +214,12 @@ function UploadDesignForm({ projectId, projectName, onSuccess }) {
               {file.name}
             </p>
           ) : (
-            <div className="space-y-1">
+            <div className="space-y-2">
               <Upload className="mx-auto w-8 h-8 text-gray-400" />
-              <p className="text-xs text-gray-400">Click to select PDF</p>
+
+              <p className="text-xs text-gray-400">
+                Click to select PDF drawing
+              </p>
             </div>
           )}
         </div>
@@ -216,9 +229,8 @@ function UploadDesignForm({ projectId, projectName, onSuccess }) {
       <div className="flex justify-end pt-2">
         <Button
           onClick={handleSubmit}
-          disabled={uploading || !file || !form.title.trim()}
-          className="bg-[#ef7f1b] hover:bg-[#d66e15] text-white min-w-[140px]"
-          data-testid="design-upload-submit"
+          disabled={uploading || !selectedProjectId || !file}
+          className="bg-[#ef7f1b] hover:bg-[#d66e15] text-white min-w-[160px]"
         >
           {uploading ? (
             <>
@@ -228,7 +240,7 @@ function UploadDesignForm({ projectId, projectName, onSuccess }) {
           ) : (
             <>
               <Upload className="w-4 h-4 mr-2" />
-              Upload Design
+              Upload Drawing
             </>
           )}
         </Button>

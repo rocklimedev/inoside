@@ -1,495 +1,277 @@
 "use client";
-
-import { useState } from "react";
-import Link from "next/link";
 import { useSearchParams } from "next/navigation";
-
+import { useEffect, useState } from "react";
 import { useGetProjectByIdQuery } from "@/api/projectsApi";
-
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-  CardDescription,
-} from "@/components/ui/card";
+import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Separator } from "@/components/ui/separator";
-import { Progress } from "@/components/ui/progress";
-import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { FileText, Calendar, User, MapPin, ArrowLeft } from "lucide-react";
+import Link from "next/link";
 
-import {
-  CheckCircle2,
-  Clock3,
-  AlertTriangle,
-  Eye,
-  MessageSquare,
-  MapPin,
-  Building2,
-  ChevronRight,
-  FileText,
-  Layers3,
-  Menu,
-} from "lucide-react";
-
-/* ---------------- STAGES ---------------- */
-const STAGES = [
+const MODULES = [
   "Brief",
   "Pitch",
-  "Reki",
-  "Scope",
+  "Site Reki",
+  "Scope of Work",
+  "Time & Cost",
   "BOQ",
   "Design",
   "Execution",
   "Handover",
 ];
 
-/* ---------------- HELPERS ---------------- */
-const getStageIcon = (status) => {
-  if (status === "done")
-    return <CheckCircle2 className="h-5 w-5 text-green-500" />;
-  if (status === "blocked")
-    return <AlertTriangle className="h-5 w-5 text-red-500" />;
-  return <Clock3 className="h-5 w-5 text-amber-500" />;
-};
-
-const getStageStyles = (active, status) => {
-  if (active) {
-    return "bg-primary text-primary-foreground border-primary shadow-lg scale-[1.02]";
-  }
-  if (status === "done") {
-    return "border-green-200 bg-green-50 hover:bg-green-100 dark:bg-green-950/50";
-  }
-  return "hover:bg-muted/70 border-border";
-};
-
-const isFilled = (val) => {
-  if (val === null || val === undefined) return false;
-  if (typeof val === "object") return Object.keys(val).length > 0;
-  return true;
-};
-
 export default function ProjectViewPage() {
   const searchParams = useSearchParams();
   const projectId = searchParams.get("projectId");
 
-  const [activeStage, setActiveStage] = useState("Brief");
-  const [showSidebar, setShowSidebar] = useState(false);
-
   const {
     data: project,
     isLoading,
-    isError,
+    error,
   } = useGetProjectByIdQuery(projectId, {
     skip: !projectId,
   });
 
-  if (!projectId) {
-    return (
-      <div className="min-h-screen flex items-center justify-center text-muted-foreground">
-        Missing projectId in URL
-      </div>
-    );
-  }
+  const [activeTab, setActiveTab] = useState("Scope of Work");
 
   if (isLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center text-muted-foreground">
-        Loading project...
+      <div className="flex items-center justify-center h-screen">
+        <div className="animate-spin w-8 h-8 border-2 border-[#ef7f1b] border-t-transparent rounded-full" />
       </div>
     );
   }
 
-  if (isError || !project) {
+  if (error || !project) {
     return (
-      <div className="min-h-screen flex items-center justify-center text-red-500">
-        Failed to load project
+      <div className="p-6 text-red-500">
+        Project not found or failed to load.
       </div>
     );
   }
 
-  /* ---------------- STAGE DATA ---------------- */
-  const stageData = {
-    Brief: {
-      status: isFilled(project.brief) ? "done" : "pending",
-      title: "Project Brief",
-      description: "Client requirements and project goals",
-      content: project.brief,
-    },
-    Pitch: {
-      status: project.pitch?.status === "Draft" ? "pending" : "done",
-      title: "Pitch",
-      description: "Design proposal and visual direction",
-      content: project.pitch,
-    },
-    Reki: {
-      status: project.reki ? "done" : "pending",
-      title: "Reki",
-      description: "Site inspection and survey details",
-      content: project.reki,
-    },
-    Scope: {
-      status: project.scope ? "done" : "pending",
-      title: "Scope",
-      description: "Scope definition and deliverables",
-      content: project.scope,
-    },
-    BOQ: {
-      status: project.costEstimates?.length ? "done" : "pending",
-      title: "BOQ",
-      description: "Budget and quantity estimation",
-      content: project.costEstimates,
-    },
-    Design: {
-      status: project.drawings?.length ? "done" : "pending",
-      title: "Design",
-      description: "Drawings and design assets",
-      content: project.drawings,
-    },
-    Execution: {
-      status: project.status === "execution" ? "done" : "pending",
-      title: "Execution",
-      description: "Execution and on-site updates",
-      content: null,
-    },
-    Handover: {
-      status: project.is_completed ? "done" : "pending",
-      title: "Handover",
-      description: "Final delivery and closure",
-      content: null,
-    },
-  };
-
-  const current = stageData[activeStage];
+  const p = project; // for easier access
 
   return (
-    <div className="min-h-screen bg-muted/30">
-      <div className="flex flex-col lg:flex-row">
-        {/* ==================== MOBILE HEADER ==================== */}
-        <div className="lg:hidden border-b bg-background sticky top-0 z-50">
-          <div className="flex items-center justify-between p-4">
-            <div className="flex items-center gap-3">
-              <Layers3 className="h-6 w-6 text-primary" />
-              <h1 className="font-bold text-xl">{project.name}</h1>
-            </div>
-            <Button
-              variant="outline"
-              size="icon"
-              onClick={() => setShowSidebar(!showSidebar)}
-            >
-              <Menu className="h-5 w-5" />
-            </Button>
-          </div>
+    <div className="p-6 max-w-7xl mx-auto">
+      {/* Header */}
+      <div className="flex items-center gap-4 mb-6">
+        <Link href="/projects">
+          <Button variant="ghost" size="sm">
+            <ArrowLeft className="w-4 h-4 mr-2" />
+            Back
+          </Button>
+        </Link>
+        <div>
+          <h1 className="text-3xl font-bold text-black">{p.name}</h1>
+          <p className="text-gray-500 mt-1">
+            {p.project_type} • {p.service_type}
+          </p>
         </div>
+        <Badge className="ml-auto text-sm" variant="outline">
+          {p.current_stage}
+        </Badge>
+      </div>
 
-        {/* ==================== SIDEBAR ==================== */}
-        <aside
-          className={`
-          ${showSidebar ? "block" : "hidden"} 
-          lg:block w-full lg:w-96 border-r bg-background lg:sticky lg:top-0 lg:h-screen overflow-auto
-        `}
-        >
-          <div className="p-6 space-y-6">
-            <Card className="border-0 shadow-xl">
-              <CardContent className="p-6 space-y-6">
-                <div>
-                  <h1 className="text-2xl font-bold tracking-tight">
-                    {project.name}
-                  </h1>
-                  <div className="flex items-center gap-2 mt-2 text-muted-foreground">
-                    <Building2 className="h-4 w-4" />
-                    <span>{project.client?.name || "No Client"}</span>
-                  </div>
-                </div>
-
-                <div className="flex flex-wrap gap-2">
-                  <Badge className="capitalize text-sm px-3 py-1">
-                    {project.status}
-                  </Badge>
-                  <Badge variant="secondary" className="text-sm px-3 py-1">
-                    {project.project_type}
-                  </Badge>
-                </div>
-
-                <Separator />
-
-                {/* Progress */}
-                <div className="space-y-3">
-                  <div className="flex justify-between text-sm">
-                    <span className="text-muted-foreground">
-                      Overall Progress
-                    </span>
-                    <span className="font-semibold text-primary">
-                      {project.progress_percentage || 0}%
-                    </span>
-                  </div>
-                  <Progress
-                    value={project.progress_percentage || 0}
-                    className="h-3"
-                  />
-                </div>
-
-                {/* Location */}
-                <div className="flex gap-4 bg-muted/60 rounded-2xl p-4">
-                  <MapPin className="h-6 w-6 text-primary mt-0.5" />
-                  <div>
-                    <p className="font-medium">Site Location</p>
-                    <p className="text-sm text-muted-foreground mt-1">
-                      {project.site?.address || "No address available"}
-                    </p>
-                  </div>
-                </div>
-
-                {/* Actions */}
-                <div className="space-y-3 pt-2">
-                  <Link href={`/dashboard/projects/${project.id}`}>
-                    <Button className="w-full h-12 rounded-2xl text-base">
-                      <Eye className="mr-2 h-5 w-5" />
-                      View Full Project
-                    </Button>
-                  </Link>
-                  <Button
-                    variant="outline"
-                    className="w-full h-12 rounded-2xl text-base"
-                  >
-                    <MessageSquare className="mr-2 h-5 w-5" />
-                    Comments
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Workflow Status */}
-            <Card className="border-0 shadow">
-              <CardHeader>
-                <CardTitle>Workflow Status</CardTitle>
-                <CardDescription>Project pipeline overview</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-3">
-                {STAGES.map((stage) => {
-                  const item = stageData[stage];
-                  return (
-                    <div
-                      key={stage}
-                      className="flex items-center justify-between p-4 rounded-2xl border hover:bg-muted/50 transition-colors cursor-pointer"
-                      onClick={() => {
-                        setActiveStage(stage);
-                        setShowSidebar(false); // Close sidebar on mobile
-                      }}
-                    >
-                      <div className="flex items-center gap-4">
-                        {getStageIcon(item.status)}
-                        <div>
-                          <p className="font-medium">{stage}</p>
-                          <p className="text-xs text-muted-foreground capitalize">
-                            {item.status}
-                          </p>
-                        </div>
-                      </div>
-                      <ChevronRight className="h-4 w-4 text-muted-foreground" />
-                    </div>
-                  );
-                })}
-              </CardContent>
-            </Card>
+      {/* Project Info Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
+        <Card className="p-4">
+          <div className="flex items-center gap-3">
+            <User className="w-5 h-5 text-[#ef7f1b]" />
+            <div>
+              <p className="text-xs text-gray-500">Client</p>
+              <p className="font-medium">{p.client?.name}</p>
+            </div>
           </div>
-        </aside>
+        </Card>
 
-        {/* ==================== MAIN CONTENT ==================== */}
-        <main className="flex-1 min-w-0">
-          {/* Header */}
-          <div className="border-b bg-background/95 backdrop-blur-md sticky top-0 z-40 hidden lg:block">
-            <div className="px-8 py-6">
-              <div className="flex items-center gap-4">
-                <Layers3 className="h-7 w-7 text-primary" />
-                <div>
-                  <h2 className="text-3xl font-bold tracking-tight">
-                    Project Workflow
-                  </h2>
-                  <p className="text-muted-foreground mt-1">
-                    Track every stage of your project journey
-                  </p>
+        <Card className="p-4">
+          <div className="flex items-center gap-3">
+            <Calendar className="w-5 h-5 text-[#ef7f1b]" />
+            <div>
+              <p className="text-xs text-gray-500">Timeline</p>
+              <p className="font-medium">{p.timeline_expectation}</p>
+            </div>
+          </div>
+        </Card>
+
+        <Card className="p-4">
+          <div className="flex items-center gap-3">
+            <MapPin className="w-5 h-5 text-[#ef7f1b]" />
+            <div>
+              <p className="text-xs text-gray-500">Purpose</p>
+              <p className="font-medium">{p.purpose}</p>
+            </div>
+          </div>
+        </Card>
+
+        <Card className="p-4">
+          <div className="flex items-center gap-3">
+            <FileText className="w-5 h-5 text-[#ef7f1b]" />
+            <div>
+              <p className="text-xs text-gray-500">Progress</p>
+              <p className="font-medium">{p.progress_percentage}%</p>
+            </div>
+          </div>
+        </Card>
+      </div>
+
+      {/* Main Tabs */}
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+        <TabsList className="grid w-full grid-cols-4 lg:grid-cols-9 bg-gray-100 p-1">
+          {MODULES.map((module) => (
+            <TabsTrigger
+              key={module}
+              value={module}
+              className="text-xs data-[state=active]:bg-white data-[state=active]:shadow"
+            >
+              {module}
+            </TabsTrigger>
+          ))}
+        </TabsList>
+
+        {/* Brief */}
+        <TabsContent value="Brief" className="mt-6">
+          <Card className="p-6">
+            <h3 className="font-semibold mb-4">Project Brief</h3>
+            <p className="text-gray-600">
+              {p.brief || "No brief available yet."}
+            </p>
+          </Card>
+        </TabsContent>
+
+        {/* Pitch */}
+        <TabsContent value="Pitch" className="mt-6">
+          <Card className="p-6">
+            <div className="flex justify-between items-start mb-4">
+              <h3 className="font-semibold">Pitch Details</h3>
+              <Badge
+                className={
+                  p.pitch?.status === "Rejected"
+                    ? "bg-red-100 text-red-700"
+                    : ""
+                }
+              >
+                {p.pitch?.status}
+              </Badge>
+            </div>
+
+            <div className="grid grid-cols-2 gap-6 text-sm">
+              <div>
+                <strong>Luxury Level:</strong> {p.pitch?.luxury_level}
+              </div>
+              <div>
+                <strong>Color Tone:</strong> {p.pitch?.color_tone}
+              </div>
+              <div>
+                <strong>Budget Flexibility:</strong>{" "}
+                {p.pitch?.budget_flexibility ? "Yes" : "No"}
+              </div>
+              {p.pitch?.pitch_pdf_url && (
+                <div className="col-span-2">
+                  <a
+                    href={p.pitch.pitch_pdf_url}
+                    target="_blank"
+                    className="text-[#ef7f1b] hover:underline flex items-center gap-2"
+                  >
+                    <FileText className="w-4 h-4" /> View Pitch PDF
+                  </a>
                 </div>
+              )}
+            </div>
+          </Card>
+        </TabsContent>
+
+        {/* Site Reki */}
+        <TabsContent value="Site Reki" className="mt-6">
+          <Card className="p-6">
+            <h3 className="font-semibold mb-4">Site Reconnaissance</h3>
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-4 text-sm">
+              <div>
+                <strong>Existing Structure:</strong>{" "}
+                {p.reki?.existing_structure ? "Yes" : "No"}
+              </div>
+              <div>
+                <strong>Floors:</strong> {p.reki?.existing_floors}
+              </div>
+              <div>
+                <strong>Structural Cracks:</strong>{" "}
+                {p.reki?.structural_cracks ? "Yes" : "No"}
+              </div>
+              <div>
+                <strong>Dampness:</strong> {p.reki?.dampness ? "Yes" : "No"}
+              </div>
+              <div>
+                <strong>Termite Damage:</strong>{" "}
+                {p.reki?.termite_damage ? "Yes" : "No"}
+              </div>
+              <div>
+                <strong>Demolition Required:</strong>{" "}
+                {p.reki?.demolition_required ? "Yes" : "No"}
               </div>
             </div>
+          </Card>
+        </TabsContent>
 
-            {/* Tabs */}
-            <div className="px-8 pb-6">
-              <Tabs value={activeStage}>
-                <TabsList className="inline-flex h-auto bg-transparent p-1 gap-3 overflow-x-auto w-full scrollbar-hide">
-                  {STAGES.map((stage) => {
-                    const data = stageData[stage];
-                    return (
-                      <TabsTrigger
-                        key={stage}
-                        value={stage}
-                        onClick={() => setActiveStage(stage)}
-                        className={`
-                          min-w-[170px] rounded-2xl border px-5 py-4 transition-all data-[state=active]:shadow-xl
-                          ${getStageStyles(activeStage === stage, data.status)}
-                        `}
-                      >
-                        <div className="w-full text-left">
-                          <div className="flex justify-between items-center">
-                            <span className="font-semibold">{stage}</span>
-                            {getStageIcon(data.status)}
-                          </div>
-                          <p className="text-xs opacity-75 mt-1 capitalize">
-                            {data.status}
-                          </p>
-                        </div>
-                      </TabsTrigger>
-                    );
-                  })}
-                </TabsList>
-              </Tabs>
+        {/* Scope of Work */}
+        <TabsContent value="Scope of Work" className="mt-6">
+          <Card className="p-6">
+            <h3 className="font-semibold mb-4">Scope Summary</h3>
+            <p className="mb-6 text-gray-700">{p.scope?.scope_summary}</p>
+
+            <div className="space-y-8">
+              <ScopeSection title="Civil Works" items={p.scope?.civil_works} />
+              <ScopeSection title="MEP Works" items={p.scope?.mep_works} />
+              <ScopeSection
+                title="Interior Works"
+                items={p.scope?.interior_works}
+              />
+              <ScopeSection title="Finishes" items={p.scope?.finishes} />
+              <ScopeSection
+                title="Area Summary"
+                items={p.scope?.area_summary}
+              />
             </div>
+          </Card>
+        </TabsContent>
+
+        {/* Other Tabs (Placeholder) */}
+        {["Time & Cost", "BOQ", "Design", "Execution", "Handover"].map(
+          (tab) => (
+            <TabsContent key={tab} value={tab} className="mt-6">
+              <Card className="p-6">
+                <h3 className="font-semibold mb-3">{tab}</h3>
+                <p className="text-gray-500">
+                  Content for <strong>{tab}</strong> will be populated here.
+                </p>
+                <p className="text-xs text-gray-400 mt-4">
+                  You can extend this easily by adding logic similar to above
+                  tabs.
+                </p>
+              </Card>
+            </TabsContent>
+          ),
+        )}
+      </Tabs>
+    </div>
+  );
+}
+
+// Reusable Component
+function ScopeSection({ title, items }) {
+  if (!items || items.length === 0) return null;
+
+  return (
+    <div>
+      <h4 className="font-medium text-gray-700 mb-3 border-b pb-2">{title}</h4>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+        {items.map((item, i) => (
+          <div key={i} className="bg-gray-50 p-4 rounded-lg">
+            <p className="font-medium text-sm">{item.title}</p>
+            <p className="text-xs text-gray-600 mt-1">{item.description}</p>
           </div>
-
-          {/* Stage Content */}
-          <div className="p-6 lg:p-8">
-            <Card className="border-0 shadow-2xl rounded-3xl overflow-hidden">
-              <CardHeader className="pb-6 px-8 pt-8">
-                <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4">
-                  <div>
-                    <CardTitle className="text-3xl">{current.title}</CardTitle>
-                    <CardDescription className="text-base mt-2">
-                      {current.description}
-                    </CardDescription>
-                  </div>
-                  <Badge
-                    variant={
-                      current.status === "done" ? "default" : "secondary"
-                    }
-                    className="text-sm px-4 py-2 capitalize self-start"
-                  >
-                    {current.status}
-                  </Badge>
-                </div>
-              </CardHeader>
-
-              <Separator />
-
-              <CardContent className="p-8">
-                {!current.content ? (
-                  <div className="rounded-3xl border border-dashed py-20 text-center">
-                    <FileText className="h-16 w-16 mx-auto text-muted-foreground mb-6" />
-                    <h3 className="text-2xl font-semibold">
-                      Stage Not Completed
-                    </h3>
-                    <p className="text-muted-foreground mt-3 max-w-sm mx-auto">
-                      This stage is still pending. Data will appear here once
-                      completed.
-                    </p>
-                  </div>
-                ) : (
-                  <div className="space-y-6">
-                    {/* Reki Specific */}
-                    {activeStage === "Reki" && project.reki && (
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        {[
-                          {
-                            label: "Client Present",
-                            value: project.reki.client_present,
-                          },
-                          {
-                            label: "Road Access",
-                            value: project.reki.road_access,
-                          },
-                          {
-                            label: "Structural Cracks",
-                            value: project.reki.structural_cracks,
-                          },
-                          { label: "Dampness", value: project.reki.dampness },
-                          {
-                            label: "Termite Damage",
-                            value: project.reki.termite_damage,
-                          },
-                          {
-                            label: "Demolition Required",
-                            value: project.reki.demolition_required,
-                          },
-                        ].map((item) => (
-                          <Card key={item.label} className="rounded-2xl">
-                            <CardContent className="p-6 flex items-center justify-between">
-                              <div>
-                                <p className="text-muted-foreground">
-                                  {item.label}
-                                </p>
-                                <p className="font-semibold text-lg mt-1">
-                                  {item.value ? "Yes" : "No"}
-                                </p>
-                              </div>
-                              <CheckCircle2
-                                className={`h-8 w-8 ${item.value ? "text-green-500" : "text-muted-foreground"}`}
-                              />
-                            </CardContent>
-                          </Card>
-                        ))}
-                      </div>
-                    )}
-
-                    {/* Pitch Specific */}
-                    {activeStage === "Pitch" && project.pitch && (
-                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                        <Card className="rounded-2xl">
-                          <CardContent className="p-6">
-                            <p className="text-muted-foreground">Status</p>
-                            <p className="font-semibold mt-2 text-lg">
-                              {project.pitch.status}
-                            </p>
-                          </CardContent>
-                        </Card>
-                        <Card className="rounded-2xl">
-                          <CardContent className="p-6">
-                            <p className="text-muted-foreground">
-                              Luxury Level
-                            </p>
-                            <p className="font-semibold mt-2 text-lg">
-                              {project.pitch.luxury_level}
-                            </p>
-                          </CardContent>
-                        </Card>
-                        <Card className="rounded-2xl">
-                          <CardContent className="p-6">
-                            <p className="text-muted-foreground">Color Tone</p>
-                            <p className="font-semibold mt-2 text-lg">
-                              {project.pitch.color_tone}
-                            </p>
-                          </CardContent>
-                        </Card>
-
-                        {project.pitch.pitch_pdf_url && (
-                          <div className="sm:col-span-3 mt-4">
-                            <a
-                              href={project.pitch.pitch_pdf_url}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                            >
-                              <Button size="lg" className="rounded-2xl">
-                                View Pitch PDF
-                              </Button>
-                            </a>
-                          </div>
-                        )}
-                      </div>
-                    )}
-
-                    {/* Default JSON View */}
-                    {activeStage !== "Pitch" && activeStage !== "Reki" && (
-                      <div className="rounded-2xl bg-muted/70 border p-6 overflow-auto max-h-[70vh]">
-                        <pre className="text-sm text-muted-foreground">
-                          {JSON.stringify(current.content, null, 2)}
-                        </pre>
-                      </div>
-                    )}
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-          </div>
-        </main>
+        ))}
       </div>
     </div>
   );

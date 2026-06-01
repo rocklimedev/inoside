@@ -4,10 +4,12 @@ import type { InferAttributes, InferCreationAttributes, CreationOptional, NonAtt
 export interface EstimateItem {
     title: string;
     description: string;
+    price?: number | null;
 }
 export interface PaymentPlanItem {
     title: string;
     description: string;
+    amount?: number | null;
 }
 export declare class ProjectCostEstimate extends Model<InferAttributes<ProjectCostEstimate>, InferCreationAttributes<ProjectCostEstimate>> {
     id: CreationOptional<string>;
