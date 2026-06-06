@@ -15,7 +15,9 @@ export const costEstimatesApi = baseApi.injectEndpoints({
       query: () => "/cost-estimates",
       providesTags: ["CostEstimates"],
     }),
-
+    getCostEstimateById: builder.query({
+      query: (id) => `/cost-estimates/${id}`,
+    }),
     getCostEstimates: builder.query({
       query: (projectId) => `/cost-estimates/project/${projectId}`,
       providesTags: ["CostEstimates"],
@@ -45,6 +47,7 @@ export const costEstimatesApi = baseApi.injectEndpoints({
 export const {
   useAddCostEstimateMutation,
   useGetAllCostEstimatesQuery,
+  useGetCostEstimateByIdQuery,
   useGetCostEstimatesQuery,
   useUpdateCostEstimateMutation,
   useDeleteCostEstimateMutation,

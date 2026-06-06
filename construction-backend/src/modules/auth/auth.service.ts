@@ -12,31 +12,11 @@ import { JwtService } from '@nestjs/jwt';
 import { User } from '../users/models/user.model';
 import { Role } from '../rbac/models/role.model';
 import { Permission } from '../rbac/models/permission.model';
-
+import { AuthEngagementService } from '../engagement/services/auth-engagement.service';
 import { CreateUserDto } from '../users/dto/create-user.dto';
 import { LoginDto } from './dto/login.dto';
-
-export interface AuthUserResponse {
-  id: string;
-  name: string;
-  email: string;
-  role: Role | null;
-
-  is_active: boolean;
-  is_email_verified: boolean;
-
-  // Avatar fields
-  avatar_url?: string | null;
-  avatar_thumbnail?: string | null;
-
-  // Optional fields
-  last_login?: Date | null;
-}
-
-export interface LoginResponse {
-  access_token: string;
-  user: AuthUserResponse;
-}
+import { AuthUserResponse } from './interface/auth-user.interface';
+import { LoginResponse } from './interface/login-user.interface';
 
 @Injectable()
 export class AuthService {
@@ -48,6 +28,7 @@ export class AuthService {
     private readonly roleModel: typeof Role,
 
     private readonly jwtService: JwtService,
+    private readonly authEngagement: AuthEngagementService,
   ) {}
 
   // ================= REGISTER =================
@@ -97,7 +78,12 @@ export class AuthService {
     if (!createdUser) {
       throw new BadRequestException('Failed to create user');
     }
-
+    await this.authEngagement.userRegistered({
+      id: createdUser.id,
+      name: createdUser.name,
+      email: createdUser.email,
+      role: createdUser.role?.name,
+    });
     return this.formatUserResponse(createdUser);
   }
 
@@ -107,7 +93,6 @@ export class AuthService {
 
     const user = await this.userModel.findOne({
       where: { email },
-
       include: [
         {
           model: Role,
@@ -116,18 +101,30 @@ export class AuthService {
       ],
     });
 
+    // User not found
     if (!user) {
+      await this.authEngagement.loginFailed(email);
+
       throw new UnauthorizedException('Invalid credentials');
     }
 
     const isPasswordValid = await bcrypt.compare(password, user.password_hash);
 
+    // Invalid password
     if (!isPasswordValid) {
+      await this.authEngagement.loginFailed(email);
+
       throw new UnauthorizedException('Invalid credentials');
     }
 
-    // Check only active status
+    // Account inactive
     if (!user.is_active) {
+      await this.authEngagement.loginBlocked({
+        id: user.id,
+        name: user.name,
+        email: user.email,
+      });
+
       throw new UnauthorizedException(
         'Account is inactive. Contact administrator.',
       );
@@ -155,7 +152,6 @@ export class AuthService {
       email: user.email,
       name: user.name,
 
-      // Avatar fields
       avatar_url: user.avatar_url,
       avatar_thumbnail: user.avatar_thumbnail,
 
@@ -165,12 +161,19 @@ export class AuthService {
 
     const access_token = this.jwtService.sign(payload);
 
+    // Successful login audit
+    await this.authEngagement.loginSuccess({
+      id: user.id,
+      name: user.name,
+      email: user.email,
+      role: user.role?.name,
+    });
+
     return {
       access_token,
       user: this.formatUserResponse(user),
     };
   }
-
   // ================= VALIDATE USER =================
   async validateUser(userId: string): Promise<AuthUserResponse> {
     const user = await this.userModel.findByPk(userId, {

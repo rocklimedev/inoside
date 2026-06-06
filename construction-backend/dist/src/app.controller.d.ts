@@ -1,4 +1,7 @@
+import { AppService } from './app.service';
 export declare class AppController {
+    private readonly appService;
+    constructor(appService: AppService);
     getRoot(): {
         success: boolean;
         application: {
@@ -77,7 +80,6 @@ export declare class AppController {
             };
         };
     };
-    getDocs(): void;
     readinessCheck(): {
         success: boolean;
         ready: boolean;

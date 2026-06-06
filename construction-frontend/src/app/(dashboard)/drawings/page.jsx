@@ -22,7 +22,6 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-
 import {
   PenTool,
   Search,
@@ -34,8 +33,8 @@ import {
   Grid3X3,
   List,
   Upload,
+  FileText,
 } from "lucide-react";
-
 import { useGetAllDrawingsQuery } from "@/api/projects/drawingsApi";
 import UploadDesignForm from "@/components/designs/UploadDesignForm";
 
@@ -101,23 +100,26 @@ export default function DrawingsPage() {
 
   const drawings = useMemo(() => {
     const raw = drawingsData || [];
+    return raw.map((d) => {
+      const fileUrl = d.file_url || "";
 
-    return raw.map((d) => ({
-      id: d.id,
-      title: `${d.drawing_type ?? "Drawing"} v${d.version ?? 1}`,
-      project_name: d.project?.name ?? "Unknown Project",
-      category: d.drawing_type ?? "Other",
-      drawing_type: d.drawing_type ?? "Other",
-      area_floor: d.area_floor ?? "—",
-      version: d.version ?? 1,
-      file_url: d.file_url ?? "",
-      status: d.approved ? "approved" : "pending",
-      approval_status: d.approved ? "approved" : "pending",
-      uploaded_by: d.uploaded_by ?? "—",
-      uploaded_at: d.uploaded_at ?? null,
-      preview_url: d.file_url ?? "",
-      comment_count: 0,
-    }));
+      return {
+        id: d.id,
+        title: `${d.drawing_type ?? "Drawing"} v${d.version ?? 1}`,
+        project_name: d.project?.name ?? "Unknown Project",
+        category: d.drawing_type ?? "Other",
+        drawing_type: d.drawing_type ?? "Other",
+        area_floor: d.area_floor ?? "—",
+        version: d.version ?? 1,
+        file_url: fileUrl,
+        isPdf: fileUrl.toLowerCase().includes(".pdf"),
+        status: d.approved ? "approved" : "pending",
+        approval_status: d.approved ? "approved" : "pending",
+        uploaded_by: d.uploaded_by ?? "—",
+        uploaded_at: d.uploaded_at ?? null,
+        comment_count: 0,
+      };
+    });
   }, [drawingsData]);
 
   /* ================= FILTERING ================= */
@@ -276,30 +278,55 @@ function GridView({ drawings, onSelect }) {
         return (
           <Card
             key={d.id}
-            className="cursor-pointer p-0 overflow-hidden"
+            className="cursor-pointer overflow-hidden hover:shadow-lg transition-all duration-200"
             onClick={() => onSelect(d)}
           >
-            <div className="h-32 bg-gray-50 flex items-center justify-center">
-              {d.preview_url ? (
-                <img
-                  src={d.preview_url}
-                  className="h-full w-full object-cover"
-                />
+            <div className="h-40 border-b bg-gray-50">
+              {d.file_url ? (
+                d.isPdf ? (
+                  <div className="relative h-full bg-gradient-to-br from-red-500 to-red-700 flex flex-col items-center justify-center text-white">
+                    <FileText className="w-14 h-14 mb-2" />
+
+                    <div className="font-bold text-sm">PDF DRAWING</div>
+
+                    <div className="text-xs opacity-80">
+                      Version {d.version}
+                    </div>
+
+                    <div className="absolute top-2 right-2 bg-white/20 px-2 py-1 rounded text-[10px] font-semibold">
+                      PDF
+                    </div>
+                  </div>
+                ) : (
+                  <img
+                    src={d.file_url}
+                    alt={d.title}
+                    className="w-full h-full object-cover"
+                  />
+                )
               ) : (
-                <ImageOff className="text-gray-300 w-8 h-8" />
+                <div className="h-full flex flex-col items-center justify-center">
+                  <ImageOff className="w-10 h-10 text-gray-300 mb-2" />
+                  <span className="text-xs text-gray-400">No Preview</span>
+                </div>
               )}
             </div>
 
             <div className="p-3">
-              <div className="text-xs font-bold truncate">{d.title}</div>
+              <div className="font-semibold text-sm truncate">{d.title}</div>
 
-              <div className="text-[10px] text-gray-400">
-                {d.project_name} • {d.area_floor}
+              <div className="text-xs text-gray-500 truncate">
+                {d.project_name}
               </div>
 
-              <div className="flex justify-between mt-2">
-                <Badge className="text-[9px]">{d.version}</Badge>
-                <Badge className={`text-[9px] ${st.color}`}>{st.label}</Badge>
+              <div className="text-xs text-gray-400 mt-1">
+                Area: {d.area_floor}
+              </div>
+
+              <div className="flex justify-between mt-3">
+                <Badge variant="outline">v{d.version}</Badge>
+
+                <Badge className={st.color}>{st.label}</Badge>
               </div>
             </div>
           </Card>
@@ -361,25 +388,40 @@ function DrawingPreviewSheet({ drawing, onClose }) {
 
   return (
     <Sheet open={!!drawing} onOpenChange={(o) => !o && onClose()}>
-      <SheetContent className="w-[500px] p-0">
+      <SheetContent className="w-[700px] p-0">
         <div className="p-4 border-b">
           <h2 className="font-bold text-sm">{drawing.title}</h2>
-          <p className="text-xs text-gray-400">{drawing.project_name}</p>
+
+          <p className="text-xs text-gray-500">{drawing.project_name}</p>
         </div>
 
-        <div className="flex-1 h-[80vh]">
+        <div className="h-[80vh]">
           {drawing.file_url ? (
-            <iframe src={drawing.file_url} className="w-full h-full" />
+            drawing.isPdf ? (
+              <iframe
+                src={drawing.file_url}
+                title={drawing.title}
+                className="w-full h-full"
+              />
+            ) : (
+              <img
+                src={drawing.file_url}
+                alt={drawing.title}
+                className="w-full h-full object-contain"
+              />
+            )
           ) : (
-            <div className="p-6 text-gray-400">No file</div>
+            <div className="flex items-center justify-center h-full text-gray-400">
+              No file available
+            </div>
           )}
         </div>
 
         <div className="p-3 border-t">
-          <a href={drawing.file_url} target="_blank">
+          <a href={drawing.file_url} target="_blank" rel="noopener noreferrer">
             <Button className="w-full">
               <Download className="w-4 h-4 mr-2" />
-              Download
+              Download Drawing
             </Button>
           </a>
         </div>

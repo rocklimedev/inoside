@@ -46,6 +46,9 @@ const project_cost_estimates_model_1 = require("./models/project_cost_estimates.
 const project_drawings_model_1 = require("./models/project-drawings.model");
 const drawing_approval_logs_model_1 = require("./models/drawing_approval_logs.model");
 const pitch_comment_model_1 = require("./models/pitch-comment.model");
+const daily_progress_report_model_1 = require("./models/daily-progress-report.model");
+const daily_progress_reports_service_1 = require("./services/daily-progress-reports.service");
+const daily_progress_reports_controller_1 = require("./controllers/daily-progress-reports.controller");
 let ProjectsModule = class ProjectsModule {
 };
 exports.ProjectsModule = ProjectsModule;
@@ -63,6 +66,7 @@ exports.ProjectsModule = ProjectsModule = __decorate([
                 project_pitch_model_1.ProjectPitch,
                 pitch_references_model_1.PitchReference,
                 reki_reports_model_1.RekiReport,
+                daily_progress_report_model_1.DailyProgressReport,
                 reki_photos_model_1.RekiPhoto,
                 scope_of_work_model_1.ScopeOfWork,
                 pitch_comment_model_1.PitchComment,
@@ -83,6 +87,7 @@ exports.ProjectsModule = ProjectsModule = __decorate([
             cost_estimates_controller_1.CostEstimatesController,
             drawings_controller_1.DrawingsController,
             drawing_logs_controller_1.DrawingLogsController,
+            daily_progress_reports_controller_1.DailyProgressReportsController,
         ],
         providers: [
             projects_service_1.ProjectsService,
@@ -95,6 +100,7 @@ exports.ProjectsModule = ProjectsModule = __decorate([
             project_cost_estimate_service_1.ProjectCostEstimateService,
             project_drawing_service_1.ProjectDrawingService,
             drawing_approval_log_service_1.DrawingApprovalLogService,
+            daily_progress_reports_service_1.DailyProgressReportsService,
         ],
         exports: [
             projects_service_1.ProjectsService,
@@ -107,6 +113,7 @@ exports.ProjectsModule = ProjectsModule = __decorate([
             project_cost_estimate_service_1.ProjectCostEstimateService,
             project_drawing_service_1.ProjectDrawingService,
             drawing_approval_log_service_1.DrawingApprovalLogService,
+            daily_progress_reports_service_1.DailyProgressReportsService,
         ],
     })
 ], ProjectsModule);

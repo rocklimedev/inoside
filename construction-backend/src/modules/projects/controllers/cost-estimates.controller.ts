@@ -63,7 +63,10 @@ export class CostEstimatesController {
   getEstimates(@Param('id') projectId: string) {
     return this.costService.findByProject(projectId);
   }
-
+  @Get(':id')
+  findById(@Param('id') id: string) {
+    return this.costService.findById(id);
+  }
   // PATCH /cost-estimates/:estimateId
   @Patch(':estimateId')
   updateEstimate(

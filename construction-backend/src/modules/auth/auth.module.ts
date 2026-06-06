@@ -15,7 +15,7 @@ import { RolePermission } from '../rbac/models/role-permission.model';
 import { AuthService } from './auth.service';
 import { AuthController } from './auth.controller';
 import { JwtStrategy } from '@/common/strategy/jwt.strategy';
-
+import { EngagementModule } from '../engagement/engagement.module';
 // Modules
 import { UsersModule } from '../users/users.module';
 import { RbacModule } from '../rbac/rbac.module';
@@ -46,6 +46,7 @@ import { RbacModule } from '../rbac/rbac.module';
 
     UsersModule,
     RbacModule,
+    EngagementModule,
   ],
 
   controllers: [AuthController],

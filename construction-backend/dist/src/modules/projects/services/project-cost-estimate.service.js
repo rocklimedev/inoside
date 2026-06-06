@@ -45,6 +45,20 @@ let ProjectCostEstimateService = class ProjectCostEstimateService {
             order: [['created_at', 'DESC']],
         });
     }
+    async findById(id) {
+        const estimate = await this.costModel.findOne({
+            where: { id },
+            include: [
+                {
+                    model: this.projectModel,
+                },
+            ],
+        });
+        if (!estimate) {
+            throw new common_1.NotFoundException('Cost estimate not found');
+        }
+        return estimate;
+    }
     async update(id, dto) {
         const estimate = await this.costModel.findByPk(id);
         if (!estimate)

@@ -6,4 +6,6 @@ export declare class CreateNotificationDto {
     type?: NotificationType;
     category?: NotificationCategory;
     userId?: string;
+    unread?: boolean;
+    meta?: Record<string, any>;
 }

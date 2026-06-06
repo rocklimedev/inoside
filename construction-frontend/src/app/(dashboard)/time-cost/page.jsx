@@ -92,7 +92,7 @@ export default function TimeCostPage() {
   };
 
   const openItem = (item) => {
-    router.push(`/time-cost/${item.id}?projectId=${item.project_id}`);
+    router.push(`/time-cost/view?costEstimateId=${item.id}`);
   };
 
   if (isLoading) {

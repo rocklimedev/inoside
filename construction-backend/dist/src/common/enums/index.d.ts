@@ -46,3 +46,35 @@ export declare enum OwnershipStatus {
     RENTED = "Rented",
     UNDER_PROCESS = "Under Process"
 }
+export declare enum ContextTag {
+    AUTH = "AUTH",
+    USER = "USER",
+    PROJECT = "PROJECT",
+    INVENTORY = "INVENTORY",
+    BOQ = "BOQ",
+    VENDOR = "VENDOR",
+    CLIENT = "CLIENT",
+    SITE = "SITE",
+    TASK = "TASK",
+    DRAWING = "DRAWING",
+    COST_ESTIMATE = "COST_ESTIMATE"
+}
+export declare enum ActivityAction {
+    CREATE = "CREATE",
+    UPDATE = "UPDATE",
+    DELETE = "DELETE",
+    VIEW = "VIEW",
+    LOGIN = "LOGIN",
+    LOGOUT = "LOGOUT",
+    ASSIGN = "ASSIGN",
+    APPROVE = "APPROVE",
+    REJECT = "REJECT",
+    DOWNLOAD = "DOWNLOAD",
+    UPLOAD = "UPLOAD"
+}
+export declare enum ActivitySeverity {
+    INFO = "INFO",
+    WARNING = "WARNING",
+    ERROR = "ERROR",
+    CRITICAL = "CRITICAL"
+}

@@ -33,6 +33,8 @@ const notifications_module_1 = require("./modules/notifications/notifications.mo
 const task_module_1 = require("./modules/tasks/task.module");
 const cost_estimate_module_1 = require("./modules/projects/cost-estimate.module");
 const drawing_module_1 = require("./modules/projects/drawing.module");
+const activity_log_module_1 = require("./modules/activity-log/activity-log.module");
+const engagement_module_1 = require("./modules/engagement/engagement.module");
 let AppModule = class AppModule {
 };
 exports.AppModule = AppModule;
@@ -69,6 +71,8 @@ exports.AppModule = AppModule = __decorate([
             task_module_1.TaskModule,
             cost_estimate_module_1.CostEstimatesModule,
             drawing_module_1.DrawingsModule,
+            activity_log_module_1.ActivityLogModule,
+            engagement_module_1.EngagementModule,
         ],
         controllers: [app_controller_1.AppController],
         providers: [

@@ -12,12 +12,13 @@ const sequelize_1 = require("@nestjs/sequelize");
 const clients_service_1 = require("./clients.service");
 const clients_controller_1 = require("./clients.controller");
 const client_model_1 = require("./models/client.model");
+const engagement_module_1 = require("../engagement/engagement.module");
 let ClientsModule = class ClientsModule {
 };
 exports.ClientsModule = ClientsModule;
 exports.ClientsModule = ClientsModule = __decorate([
     (0, common_1.Module)({
-        imports: [sequelize_1.SequelizeModule.forFeature([client_model_1.Client])],
+        imports: [sequelize_1.SequelizeModule.forFeature([client_model_1.Client]), engagement_module_1.EngagementModule],
         controllers: [clients_controller_1.ClientsController],
         providers: [clients_service_1.ClientsService],
         exports: [clients_service_1.ClientsService],

@@ -5,7 +5,7 @@ import { LoginDto } from './dto/login.dto';
 export declare class AuthController {
     private readonly authService;
     constructor(authService: AuthService);
-    register(createUserDto: CreateUserDto): Promise<import("./auth.service").AuthUserResponse>;
+    register(createUserDto: CreateUserDto): Promise<import("./interface/auth-user.interface").AuthUserResponse>;
     login(loginDto: LoginDto, res: Response): Promise<void>;
     getProfile(req: any): Promise<{
         message: string;

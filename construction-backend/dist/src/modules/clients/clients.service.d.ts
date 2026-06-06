@@ -1,14 +1,31 @@
 import { Client } from './models/client.model';
 import { CreateClientDto } from './dto/create-client.dto';
 import { UpdateClientDto } from './dto/update-client.dto';
+import { ClientEngagementService } from '@/modules/engagement/services/client-engagement.service';
 export declare class ClientsService {
     private clientModel;
-    constructor(clientModel: typeof Client);
-    create(dto: CreateClientDto): Promise<Client>;
-    findAll(): Promise<Client[]>;
-    findOne(id: string): Promise<Client>;
-    update(id: string, dto: UpdateClientDto): Promise<Client>;
-    remove(id: string): Promise<{
+    private readonly clientEngagementService;
+    constructor(clientModel: typeof Client, clientEngagementService: ClientEngagementService);
+    create(dto: CreateClientDto, actor: {
+        id: string;
+        name: string;
+    }): Promise<Client>;
+    findAll(actor?: {
+        id: string;
+        name: string;
+    }): Promise<Client[]>;
+    findOne(id: string, actor?: {
+        id: string;
+        name: string;
+    }): Promise<Client>;
+    update(id: string, dto: UpdateClientDto, actor: {
+        id: string;
+        name: string;
+    }): Promise<Client>;
+    remove(id: string, actor: {
+        id: string;
+        name: string;
+    }): Promise<{
         message: string;
     }>;
 }

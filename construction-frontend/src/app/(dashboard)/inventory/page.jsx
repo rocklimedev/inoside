@@ -24,7 +24,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 
-import { Dialog, DialogContent } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { ScrollArea } from "@/components/ui/scroll-area";
 
 import {
@@ -314,6 +314,8 @@ export default function InventoryPage() {
       {/* FORM DIALOG */}
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent className="max-w-md rounded-3xl">
+          <DialogTitle className="sr-only">Inventory Form</DialogTitle>
+
           <InventoryForm editItem={editItem} onClose={() => setOpen(false)} />
         </DialogContent>
       </Dialog>
@@ -391,8 +393,10 @@ function InventoryForm({ editItem, onClose }) {
         <SelectTrigger>
           <SelectValue placeholder="Select Brand" />
         </SelectTrigger>
+
         <SelectContent>
-          <SelectItem value="">No Brand</SelectItem>
+          <SelectItem value="none">No Brand</SelectItem>
+
           {brands.map((b) => (
             <SelectItem key={b.id} value={b.id}>
               {b.name}
@@ -400,7 +404,6 @@ function InventoryForm({ editItem, onClose }) {
           ))}
         </SelectContent>
       </Select>
-
       <Input
         placeholder="Description"
         value={form.description}

@@ -32,7 +32,8 @@ import { NotificationsModule } from './modules/notifications/notifications.modul
 import { TaskModule } from './modules/tasks/task.module';
 import { CostEstimatesModule } from './modules/projects/cost-estimate.module';
 import { DrawingsModule } from './modules/projects/drawing.module';
-
+import { ActivityLogModule } from './modules/activity-log/activity-log.module';
+import { EngagementModule } from './modules/engagement/engagement.module';
 @Module({
   imports: [
     // =================================================
@@ -84,6 +85,8 @@ import { DrawingsModule } from './modules/projects/drawing.module';
     TaskModule,
     CostEstimatesModule,
     DrawingsModule,
+    ActivityLogModule,
+    EngagementModule,
   ],
 
   controllers: [AppController],

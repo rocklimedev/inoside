@@ -34,6 +34,9 @@ let CostEstimatesController = class CostEstimatesController {
     getEstimates(projectId) {
         return this.costService.findByProject(projectId);
     }
+    findById(id) {
+        return this.costService.findById(id);
+    }
     updateEstimate(estimateId, dto) {
         this.validate(dto);
         return this.costService.update(estimateId, dto);
@@ -66,6 +69,13 @@ __decorate([
     __metadata("design:paramtypes", [String]),
     __metadata("design:returntype", void 0)
 ], CostEstimatesController.prototype, "getEstimates", null);
+__decorate([
+    (0, common_1.Get)(':id'),
+    __param(0, (0, common_1.Param)('id')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String]),
+    __metadata("design:returntype", void 0)
+], CostEstimatesController.prototype, "findById", null);
 __decorate([
     (0, common_1.Patch)(':estimateId'),
     __param(0, (0, common_1.Param)('estimateId')),

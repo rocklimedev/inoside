@@ -22,6 +22,7 @@ export declare class CostEstimatesController {
     findAll(): Promise<import("../models/project_cost_estimates.model").ProjectCostEstimate[]>;
     addEstimate(projectId: string, dto: CreateCostEstimateDto): Promise<import("../models/project_cost_estimates.model").ProjectCostEstimate>;
     getEstimates(projectId: string): Promise<import("../models/project_cost_estimates.model").ProjectCostEstimate[]>;
+    findById(id: string): Promise<import("../models/project_cost_estimates.model").ProjectCostEstimate>;
     updateEstimate(estimateId: string, dto: Partial<CreateCostEstimateDto>): Promise<import("../models/project_cost_estimates.model").ProjectCostEstimate>;
     deleteEstimate(estimateId: string): Promise<number>;
     private validate;

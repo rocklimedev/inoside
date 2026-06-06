@@ -53,14 +53,17 @@ const jwt_1 = require("@nestjs/jwt");
 const user_model_1 = require("../users/models/user.model");
 const role_model_1 = require("../rbac/models/role.model");
 const permission_model_1 = require("../rbac/models/permission.model");
+const auth_engagement_service_1 = require("../engagement/services/auth-engagement.service");
 let AuthService = class AuthService {
     userModel;
     roleModel;
     jwtService;
-    constructor(userModel, roleModel, jwtService) {
+    authEngagement;
+    constructor(userModel, roleModel, jwtService, authEngagement) {
         this.userModel = userModel;
         this.roleModel = roleModel;
         this.jwtService = jwtService;
+        this.authEngagement = authEngagement;
     }
     async register(createUserDto) {
         const { email, password, role_id, avatar_url, avatar_thumbnail, ...rest } = createUserDto;
@@ -96,6 +99,12 @@ let AuthService = class AuthService {
         if (!createdUser) {
             throw new common_1.BadRequestException('Failed to create user');
         }
+        await this.authEngagement.userRegistered({
+            id: createdUser.id,
+            name: createdUser.name,
+            email: createdUser.email,
+            role: createdUser.role?.name,
+        });
         return this.formatUserResponse(createdUser);
     }
     async login(loginDto) {
@@ -110,13 +119,20 @@ let AuthService = class AuthService {
             ],
         });
         if (!user) {
+            await this.authEngagement.loginFailed(email);
             throw new common_1.UnauthorizedException('Invalid credentials');
         }
         const isPasswordValid = await bcrypt.compare(password, user.password_hash);
         if (!isPasswordValid) {
+            await this.authEngagement.loginFailed(email);
             throw new common_1.UnauthorizedException('Invalid credentials');
         }
         if (!user.is_active) {
+            await this.authEngagement.loginBlocked({
+                id: user.id,
+                name: user.name,
+                email: user.email,
+            });
             throw new common_1.UnauthorizedException('Account is inactive. Contact administrator.');
         }
         await user.update({
@@ -141,6 +157,12 @@ let AuthService = class AuthService {
             permissions: permissions.map((p) => p.name),
         };
         const access_token = this.jwtService.sign(payload);
+        await this.authEngagement.loginSuccess({
+            id: user.id,
+            name: user.name,
+            email: user.email,
+            role: user.role?.name,
+        });
         return {
             access_token,
             user: this.formatUserResponse(user),
@@ -185,6 +207,7 @@ exports.AuthService = AuthService = __decorate([
     (0, common_1.Injectable)(),
     __param(0, (0, sequelize_1.InjectModel)(user_model_1.User)),
     __param(1, (0, sequelize_1.InjectModel)(role_model_1.Role)),
-    __metadata("design:paramtypes", [Object, Object, jwt_1.JwtService])
+    __metadata("design:paramtypes", [Object, Object, jwt_1.JwtService,
+        auth_engagement_service_1.AuthEngagementService])
 ], AuthService);
 //# sourceMappingURL=auth.service.js.map

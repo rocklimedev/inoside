@@ -7,6 +7,7 @@ export declare class ProjectCostEstimateService {
     findAll(): Promise<ProjectCostEstimate[]>;
     add(dto: any): Promise<ProjectCostEstimate>;
     findByProject(project_id: string): Promise<ProjectCostEstimate[]>;
+    findById(id: string): Promise<ProjectCostEstimate>;
     update(id: string, dto: any): Promise<ProjectCostEstimate>;
     delete(id: string): Promise<number>;
     private validateDto;

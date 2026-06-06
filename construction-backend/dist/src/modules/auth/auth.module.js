@@ -19,6 +19,7 @@ const role_permission_model_1 = require("../rbac/models/role-permission.model");
 const auth_service_1 = require("./auth.service");
 const auth_controller_1 = require("./auth.controller");
 const jwt_strategy_1 = require("../../common/strategy/jwt.strategy");
+const engagement_module_1 = require("../engagement/engagement.module");
 const users_module_1 = require("../users/users.module");
 const rbac_module_1 = require("../rbac/rbac.module");
 let AuthModule = class AuthModule {
@@ -45,6 +46,7 @@ exports.AuthModule = AuthModule = __decorate([
             }),
             users_module_1.UsersModule,
             rbac_module_1.RbacModule,
+            engagement_module_1.EngagementModule,
         ],
         controllers: [auth_controller_1.AuthController],
         providers: [auth_service_1.AuthService, jwt_strategy_1.JwtStrategy],

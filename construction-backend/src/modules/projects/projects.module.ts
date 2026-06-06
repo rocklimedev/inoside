@@ -46,7 +46,9 @@ import { ProjectCostEstimate } from './models/project_cost_estimates.model';
 import { ProjectDrawing } from './models/project-drawings.model';
 import { DrawingApprovalLog } from './models/drawing_approval_logs.model';
 import { PitchComment } from './models/pitch-comment.model';
-
+import { DailyProgressReport } from './models/daily-progress-report.model';
+import { DailyProgressReportsService } from './services/daily-progress-reports.service';
+import { DailyProgressReportsController } from './controllers/daily-progress-reports.controller';
 @Module({
   imports: [
     CdnModule,
@@ -64,6 +66,7 @@ import { PitchComment } from './models/pitch-comment.model';
       ProjectPitch,
       PitchReference,
       RekiReport,
+      DailyProgressReport,
       RekiPhoto,
       ScopeOfWork,
       PitchComment,
@@ -85,6 +88,7 @@ import { PitchComment } from './models/pitch-comment.model';
     CostEstimatesController,
     DrawingsController,
     DrawingLogsController,
+    DailyProgressReportsController,
   ],
 
   providers: [
@@ -98,6 +102,7 @@ import { PitchComment } from './models/pitch-comment.model';
     ProjectCostEstimateService,
     ProjectDrawingService,
     DrawingApprovalLogService,
+    DailyProgressReportsService,
   ],
 
   exports: [
@@ -111,6 +116,7 @@ import { PitchComment } from './models/pitch-comment.model';
     ProjectCostEstimateService,
     ProjectDrawingService,
     DrawingApprovalLogService,
+    DailyProgressReportsService,
   ],
 })
 export class ProjectsModule {}

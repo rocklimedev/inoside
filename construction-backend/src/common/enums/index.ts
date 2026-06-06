@@ -51,3 +51,41 @@ export enum OwnershipStatus {
   RENTED = 'Rented',
   UNDER_PROCESS = 'Under Process',
 }
+// enums/context-tag.enum.ts
+
+export enum ContextTag {
+  AUTH = 'AUTH',
+  USER = 'USER',
+  PROJECT = 'PROJECT',
+  INVENTORY = 'INVENTORY',
+  BOQ = 'BOQ',
+  VENDOR = 'VENDOR',
+  CLIENT = 'CLIENT',
+  SITE = 'SITE',
+  TASK = 'TASK',
+  DRAWING = 'DRAWING',
+  COST_ESTIMATE = 'COST_ESTIMATE',
+}
+// enums/activity-action.enum.ts
+
+export enum ActivityAction {
+  CREATE = 'CREATE',
+  UPDATE = 'UPDATE',
+  DELETE = 'DELETE',
+  VIEW = 'VIEW',
+  LOGIN = 'LOGIN',
+  LOGOUT = 'LOGOUT',
+  ASSIGN = 'ASSIGN',
+  APPROVE = 'APPROVE',
+  REJECT = 'REJECT',
+  DOWNLOAD = 'DOWNLOAD',
+  UPLOAD = 'UPLOAD',
+}
+// modules/activity-logs/enums/activity-severity.enum.ts
+
+export enum ActivitySeverity {
+  INFO = 'INFO',
+  WARNING = 'WARNING',
+  ERROR = 'ERROR',
+  CRITICAL = 'CRITICAL',
+}
