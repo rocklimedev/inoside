@@ -24,7 +24,7 @@
 
     "esModuleInterop": true,
     "allowSyntheticDefaultImports": true,
-
+    "strictPropertyInitialization": false, // often needed with sequelize
     "isolatedModules": true,
     "incremental": true,
     "skipLibCheck": true,

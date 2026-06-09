@@ -6,21 +6,21 @@ var __decorate = (this && this.__decorate) || function (decorators, target, key,
     return c > 3 && r && Object.defineProperty(target, key, r), r;
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.ActivityLogModule = void 0;
+exports.CommentsModule = void 0;
 const common_1 = require("@nestjs/common");
 const sequelize_1 = require("@nestjs/sequelize");
-const activity_log_model_1 = require("./models/activity-log.model");
-const activity_log_service_1 = require("./activity-log.service");
-const activity_log_controller_1 = require("./activity-log.controller");
-let ActivityLogModule = class ActivityLogModule {
+const comment_controller_1 = require("./comment.controller");
+const comment_service_1 = require("./comment.service");
+const comment_model_1 = require("./models/comment.model");
+let CommentsModule = class CommentsModule {
 };
-exports.ActivityLogModule = ActivityLogModule;
-exports.ActivityLogModule = ActivityLogModule = __decorate([
+exports.CommentsModule = CommentsModule;
+exports.CommentsModule = CommentsModule = __decorate([
     (0, common_1.Module)({
-        imports: [sequelize_1.SequelizeModule.forFeature([activity_log_model_1.ActivityLog])],
-        controllers: [activity_log_controller_1.ActivityLogController],
-        providers: [activity_log_service_1.ActivityLogService],
-        exports: [activity_log_service_1.ActivityLogService],
+        imports: [sequelize_1.SequelizeModule.forFeature([comment_model_1.Comment])],
+        controllers: [comment_controller_1.CommentsController],
+        providers: [comment_service_1.CommentsService],
+        exports: [comment_service_1.CommentsService],
     })
-], ActivityLogModule);
-//# sourceMappingURL=activity-log.module.js.map
+], CommentsModule);
+//# sourceMappingURL=comment.module.js.map

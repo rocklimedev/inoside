@@ -89,3 +89,17 @@ export enum ActivitySeverity {
   ERROR = 'ERROR',
   CRITICAL = 'CRITICAL',
 }
+export enum CommentEntityType {
+  PROJECT = 'project',
+  BOQ = 'boq',
+  DRAWING = 'drawing',
+  REKI_REPORT = 'reki_report',
+  SCOPE_OF_WORK = 'scope_of_work',
+  COST_ESTIMATE = 'cost_estimate',
+  INVENTORY_REQUEST = 'inventory_request',
+  ISSUE_LOG = 'issue_log',
+  QUALITY_CHECK = 'quality_check',
+  SITE_COORDINATION = 'site_coordination',
+  TASK = 'task',
+  VENDOR = 'vendor',
+}

@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.ActivitySeverity = exports.ActivityAction = exports.ContextTag = exports.OwnershipStatus = exports.TimelineExpectation = exports.PurposeType = exports.ServiceType = exports.ProjectType = exports.AddressType = exports.PreferredCommunication = exports.UserRole = void 0;
+exports.CommentEntityType = exports.ActivitySeverity = exports.ActivityAction = exports.ContextTag = exports.OwnershipStatus = exports.TimelineExpectation = exports.PurposeType = exports.ServiceType = exports.ProjectType = exports.AddressType = exports.PreferredCommunication = exports.UserRole = void 0;
 var UserRole;
 (function (UserRole) {
     UserRole["CLIENT"] = "client";
@@ -92,4 +92,19 @@ var ActivitySeverity;
     ActivitySeverity["ERROR"] = "ERROR";
     ActivitySeverity["CRITICAL"] = "CRITICAL";
 })(ActivitySeverity || (exports.ActivitySeverity = ActivitySeverity = {}));
+var CommentEntityType;
+(function (CommentEntityType) {
+    CommentEntityType["PROJECT"] = "project";
+    CommentEntityType["BOQ"] = "boq";
+    CommentEntityType["DRAWING"] = "drawing";
+    CommentEntityType["REKI_REPORT"] = "reki_report";
+    CommentEntityType["SCOPE_OF_WORK"] = "scope_of_work";
+    CommentEntityType["COST_ESTIMATE"] = "cost_estimate";
+    CommentEntityType["INVENTORY_REQUEST"] = "inventory_request";
+    CommentEntityType["ISSUE_LOG"] = "issue_log";
+    CommentEntityType["QUALITY_CHECK"] = "quality_check";
+    CommentEntityType["SITE_COORDINATION"] = "site_coordination";
+    CommentEntityType["TASK"] = "task";
+    CommentEntityType["VENDOR"] = "vendor";
+})(CommentEntityType || (exports.CommentEntityType = CommentEntityType = {}));
 //# sourceMappingURL=index.js.map

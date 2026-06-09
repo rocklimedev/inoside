@@ -6,8 +6,6 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
 import {
   Select,
   SelectTrigger,
@@ -21,7 +19,6 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import { toast } from "sonner";
 import {
   ListTodo,
@@ -29,13 +26,13 @@ import {
   Search,
   User,
   Loader2,
-  Trash2,
-  List,
   Columns3,
+  List,
   Calendar,
+  AlertCircle,
 } from "lucide-react";
 
-// RTK Query Imports
+// RTK Query
 import {
   useGetAllTasksQuery,
   useGetProjectTasksQuery,
@@ -43,8 +40,8 @@ import {
   useUpdateTaskMutation,
   useDeleteTaskMutation,
 } from "@/api/taskApi";
-import { useGetUsersQuery } from "@/api/usersApi";
 import { useGetProjectsQuery } from "@/api/projectsApi";
+
 import KanbanView from "@/components/tasks/KanbanView";
 import ListView from "@/components/tasks/ListView";
 import AddTaskForm from "@/components/tasks/AddTaskForm";
@@ -52,13 +49,13 @@ import AddTaskForm from "@/components/tasks/AddTaskForm";
 export default function TeamTasksPage() {
   const { user } = useAuth();
 
-  const [viewMode, setViewMode] = useState("list"); // default to list on mobile
+  const [viewMode, setViewMode] = useState("list");
   const [search, setSearch] = useState("");
   const [filterProject, setFilterProject] = useState("all");
   const [myTasksOnly, setMyTasksOnly] = useState(false);
   const [showAdd, setShowAdd] = useState(false);
 
-  // RTK Query (same as before)
+  // Queries
   const { data: projects = [], isLoading: projectsLoading } =
     useGetProjectsQuery();
 
@@ -77,23 +74,28 @@ export default function TeamTasksPage() {
 
   const tasks = filterProject === "all" ? allTasksData : projectTasks;
 
-  const filtered = useMemo(() => {
-    return tasks.filter((t) => {
-      if (search && !t.title?.toLowerCase().includes(search.toLowerCase()))
+  // ==================== FILTERING ====================
+  const filteredTasks = useMemo(() => {
+    return tasks.filter((task) => {
+      // Search
+      if (search && !task.title?.toLowerCase().includes(search.toLowerCase())) {
         return false;
-      if (myTasksOnly && t.assigned_to_user_id === user?.id) return false;
+      }
+
+      // My Tasks Only
+      if (myTasksOnly && task.assigned_to_user_id !== user?.id) {
+        return false;
+      }
+
       return true;
     });
-  }, [tasks, search, myTasksOnly, user?.name]);
+  }, [tasks, search, myTasksOnly, user?.id]);
 
-  // Auto switch view mode based on screen size
+  // Auto switch to list view on mobile
   useEffect(() => {
     const handleResize = () => {
-      if (window.innerWidth < 768) {
-        setViewMode("list");
-      }
+      if (window.innerWidth < 768) setViewMode("list");
     };
-
     handleResize();
     window.addEventListener("resize", handleResize);
     return () => window.removeEventListener("resize", handleResize);
@@ -102,7 +104,7 @@ export default function TeamTasksPage() {
   const handleStatusChange = async (taskId, status) => {
     try {
       await updateTask({ taskId, status }).unwrap();
-      toast.success("Status updated");
+      toast.success("Task status updated");
     } catch {
       toast.error("Failed to update status");
     }
@@ -124,7 +126,7 @@ export default function TeamTasksPage() {
   if (isLoading) {
     return (
       <div className="flex items-center justify-center h-full min-h-[60vh]">
-        <div className="animate-spin w-8 h-8 border-2 border-[#ef7f1b] border-t-transparent rounded-full" />
+        <Loader2 className="w-8 h-8 animate-spin text-[#ef7f1b]" />
       </div>
     );
   }
@@ -135,23 +137,23 @@ export default function TeamTasksPage() {
       <div className="p-4 md:px-6 border-b border-gray-200 bg-white sticky top-0 z-10">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-4">
           <div>
-            <h1 className="text-xl font-black text-black">Team Tasks</h1>
-            <p className="text-xs text-gray-400 mt-1">
-              {tasks.length} task{tasks.length !== 1 ? "s" : ""}
+            <h1 className="text-2xl font-black text-black">Team Tasks</h1>
+            <p className="text-sm text-gray-500 mt-1">
+              {filteredTasks.length} of {tasks.length} tasks
             </p>
           </div>
 
-          <div className="flex items-center gap-2 self-end sm:self-auto">
+          <div className="flex items-center gap-3">
             <div className="flex border border-gray-200 rounded-lg overflow-hidden">
               <button
                 onClick={() => setViewMode("kanban")}
-                className={`p-2 ${viewMode === "kanban" ? "bg-gray-100" : ""}`}
+                className={`p-2.5 ${viewMode === "kanban" ? "bg-gray-100" : ""}`}
               >
                 <Columns3 className="w-4 h-4" />
               </button>
               <button
                 onClick={() => setViewMode("list")}
-                className={`p-2 ${viewMode === "list" ? "bg-gray-100" : ""}`}
+                className={`p-2.5 ${viewMode === "list" ? "bg-gray-100" : ""}`}
               >
                 <List className="w-4 h-4" />
               </button>
@@ -159,10 +161,10 @@ export default function TeamTasksPage() {
 
             <Button
               onClick={() => setShowAdd(true)}
-              className="bg-[#ef7f1b] hover:bg-[#d66e15] text-white"
-              size="sm"
+              className="bg-[#ef7f1b] hover:bg-[#d66e15]"
             >
-              <Plus className="w-4 h-4 mr-1" /> Add Task
+              <Plus className="w-4 h-4 mr-2" />
+              New Task
             </Button>
           </div>
         </div>
@@ -174,58 +176,61 @@ export default function TeamTasksPage() {
             <Input
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              placeholder="Search tasks..."
+              placeholder="Search by task title..."
               className="pl-10"
             />
           </div>
 
           <Select value={filterProject} onValueChange={setFilterProject}>
-            <SelectTrigger className="w-full sm:w-44 h-10">
+            <SelectTrigger className="w-full sm:w-56">
               <SelectValue placeholder="All Projects" />
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">All Projects</SelectItem>
               {projects.map((p) => (
-                <SelectItem key={p.id} value={p.id.toString()}>
+                <SelectItem key={p.id} value={p.id}>
                   {p.name}
                 </SelectItem>
               ))}
             </SelectContent>
           </Select>
 
-          <button
+          <Button
+            variant={myTasksOnly ? "default" : "outline"}
             onClick={() => setMyTasksOnly(!myTasksOnly)}
-            className={`px-4 py-2.5 rounded-xl text-sm font-medium transition-all flex items-center justify-center gap-1.5 whitespace-nowrap ${
-              myTasksOnly
-                ? "bg-[#ef7f1b] text-white"
-                : "bg-gray-100 text-gray-600 hover:bg-gray-200"
-            }`}
+            className={myTasksOnly ? "bg-[#ef7f1b] text-white" : ""}
           >
-            <User className="w-4 h-4" /> My Tasks
-          </button>
+            <User className="w-4 h-4 mr-2" />
+            My Tasks
+          </Button>
         </div>
       </div>
 
-      {/* Views */}
-      {viewMode === "kanban" ? (
+      {/* Main Content */}
+      {filteredTasks.length === 0 ? (
+        <div className="flex flex-col items-center justify-center h-96 text-center">
+          <AlertCircle className="w-12 h-12 text-gray-300 mb-3" />
+          <p className="text-gray-500">No tasks found</p>
+        </div>
+      ) : viewMode === "kanban" ? (
         <KanbanView
-          tasks={filtered}
+          tasks={filteredTasks}
           onStatusChange={handleStatusChange}
           onDelete={handleDelete}
         />
       ) : (
         <ListView
-          tasks={filtered}
+          tasks={filteredTasks}
           onStatusChange={handleStatusChange}
           onDelete={handleDelete}
         />
       )}
 
-      {/* Add Task Dialog */}
+      {/* Add Task Modal */}
       <Dialog open={showAdd} onOpenChange={setShowAdd}>
-        <DialogContent className="max-w-md mx-4 sm:mx-auto">
+        <DialogContent className="max-w-lg">
           <DialogHeader>
-            <DialogTitle>Add New Task</DialogTitle>
+            <DialogTitle>Create New Task</DialogTitle>
           </DialogHeader>
           <AddTaskForm
             projects={projects}

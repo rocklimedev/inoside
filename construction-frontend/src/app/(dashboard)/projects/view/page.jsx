@@ -132,15 +132,82 @@ export default function ProjectViewPage() {
         </TabsList>
 
         {/* Brief */}
+        {/* Brief */}
         <TabsContent value="Brief" className="mt-6">
           <Card className="p-6">
             <h3 className="font-semibold mb-4">Project Brief</h3>
-            <p className="text-gray-600">
-              {p.brief || "No brief available yet."}
-            </p>
+
+            {p.brief ? (
+              <div className="space-y-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 text-sm">
+                  <div>
+                    <strong>Rooms / Spaces Required:</strong>
+                    <p className="mt-1 text-gray-600">
+                      {p.brief.rooms_spaces_required || "Not specified"}
+                    </p>
+                  </div>
+
+                  <div>
+                    <strong>Parking Required:</strong>
+                    <p className="mt-1 text-gray-600">
+                      {p.brief.parking_required ? "Yes" : "No"}
+                    </p>
+                  </div>
+
+                  <div>
+                    <strong>First Construction Project:</strong>
+                    <p className="mt-1 text-gray-600">
+                      {p.brief.first_construction_project ? "Yes" : "No"}
+                    </p>
+                  </div>
+
+                  <div>
+                    <strong>End-to-End Services:</strong>
+                    <p className="mt-1 text-gray-600">
+                      {p.brief.end_to_end_services ? "Yes" : "No"}
+                    </p>
+                  </div>
+
+                  <div>
+                    <strong>Decision Readiness:</strong>
+                    <p className="mt-1 text-gray-600">
+                      {p.brief.decision_readiness || "Not specified"}
+                    </p>
+                  </div>
+
+                  <div>
+                    <strong>Status:</strong>
+                    <Badge
+                      variant={p.brief.is_approved ? "default" : "secondary"}
+                    >
+                      {p.brief.status}
+                    </Badge>
+                  </div>
+                </div>
+
+                {p.brief.output_client_profile && (
+                  <div>
+                    <strong>Client Profile:</strong>
+                    <p className="mt-2 text-gray-600 whitespace-pre-wrap">
+                      {p.brief.output_client_profile}
+                    </p>
+                  </div>
+                )}
+
+                {p.brief.output_project_profile && (
+                  <div>
+                    <strong>Project Profile:</strong>
+                    <p className="mt-2 text-gray-600 whitespace-pre-wrap">
+                      {p.brief.output_project_profile}
+                    </p>
+                  </div>
+                )}
+              </div>
+            ) : (
+              <p className="text-gray-500">No brief filled yet.</p>
+            )}
           </Card>
         </TabsContent>
-
         {/* Pitch */}
         <TabsContent value="Pitch" className="mt-6">
           <Card className="p-6">
@@ -258,9 +325,11 @@ export default function ProjectViewPage() {
   );
 }
 
-// Reusable Component
 function ScopeSection({ title, items }) {
-  if (!items || items.length === 0) return null;
+  // Handle null, undefined, or non-array
+  if (!items || !Array.isArray(items) || items.length === 0) {
+    return null;
+  }
 
   return (
     <div>
@@ -268,8 +337,10 @@ function ScopeSection({ title, items }) {
       <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
         {items.map((item, i) => (
           <div key={i} className="bg-gray-50 p-4 rounded-lg">
-            <p className="font-medium text-sm">{item.title}</p>
-            <p className="text-xs text-gray-600 mt-1">{item.description}</p>
+            <p className="font-medium text-sm">{item?.title || "No title"}</p>
+            <p className="text-xs text-gray-600 mt-1">
+              {item?.description || ""}
+            </p>
           </div>
         ))}
       </div>

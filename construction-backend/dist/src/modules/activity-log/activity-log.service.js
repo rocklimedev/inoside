@@ -15,6 +15,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.ActivityLogService = void 0;
 const common_1 = require("@nestjs/common");
 const sequelize_1 = require("@nestjs/sequelize");
+const sequelize_2 = require("sequelize");
 const activity_log_model_1 = require("./models/activity-log.model");
 let ActivityLogService = class ActivityLogService {
     activityLogModel;
@@ -22,32 +23,148 @@ let ActivityLogService = class ActivityLogService {
         this.activityLogModel = activityLogModel;
     }
     async create(payload) {
-        return await this.activityLogModel.create({
+        return this.activityLogModel.create({
             ...payload,
             isSystemGenerated: payload.isSystemGenerated ?? false,
         });
     }
     async bulkCreate(payloads) {
-        return await this.activityLogModel.bulkCreate(payloads.map((payload) => ({
+        return this.activityLogModel.bulkCreate(payloads.map((payload) => ({
             ...payload,
             isSystemGenerated: payload.isSystemGenerated ?? false,
         })));
     }
     async getLogs(page = 1, limit = 20) {
         const offset = (page - 1) * limit;
-        return await this.activityLogModel.findAndCountAll({
+        return this.activityLogModel.findAndCountAll({
             limit,
             offset,
             order: [['createdAt', 'DESC']],
         });
     }
     async findById(activityLogId) {
-        return await this.activityLogModel.findByPk(activityLogId);
+        return this.activityLogModel.findByPk(activityLogId);
+    }
+    async findByUserId(userId, page = 1, limit = 20) {
+        return this.activityLogModel.findAndCountAll({
+            where: { userId },
+            limit,
+            offset: (page - 1) * limit,
+            order: [['createdAt', 'DESC']],
+        });
+    }
+    async findByReference(referenceId, referenceType) {
+        const where = {
+            referenceId,
+        };
+        if (referenceType) {
+            where['referenceType'] = referenceType;
+        }
+        return this.activityLogModel.findAll({
+            where,
+            order: [['createdAt', 'DESC']],
+        });
+    }
+    async findByModule(moduleName, page = 1, limit = 20) {
+        return this.activityLogModel.findAndCountAll({
+            where: { moduleName },
+            limit,
+            offset: (page - 1) * limit,
+            order: [['createdAt', 'DESC']],
+        });
+    }
+    async findByContextTag(contextTag, page = 1, limit = 20) {
+        return this.activityLogModel.findAndCountAll({
+            where: { contextTag },
+            limit,
+            offset: (page - 1) * limit,
+            order: [['createdAt', 'DESC']],
+        });
+    }
+    async findBySeverity(severity, page = 1, limit = 20) {
+        return this.activityLogModel.findAndCountAll({
+            where: { severity },
+            limit,
+            offset: (page - 1) * limit,
+            order: [['createdAt', 'DESC']],
+        });
+    }
+    async search(filters) {
+        const { page = 1, limit = 20 } = filters;
+        const where = {};
+        if (filters.userId)
+            where['userId'] = filters.userId;
+        if (filters.moduleName)
+            where['moduleName'] = filters.moduleName;
+        if (filters.contextTag)
+            where['contextTag'] = filters.contextTag;
+        if (filters.action)
+            where['action'] = filters.action;
+        if (filters.severity)
+            where['severity'] = filters.severity;
+        if (filters.referenceId)
+            where['referenceId'] = filters.referenceId;
+        if (filters.startDate || filters.endDate) {
+            where['createdAt'] = {};
+            if (filters.startDate) {
+                where['createdAt'][sequelize_2.Op.gte] = filters.startDate;
+            }
+            if (filters.endDate) {
+                where['createdAt'][sequelize_2.Op.lte] = filters.endDate;
+            }
+        }
+        return this.activityLogModel.findAndCountAll({
+            where,
+            limit,
+            offset: (page - 1) * limit,
+            order: [['createdAt', 'DESC']],
+        });
+    }
+    async getRecent(limit = 50) {
+        return this.activityLogModel.findAll({
+            limit,
+            order: [['createdAt', 'DESC']],
+        });
+    }
+    async getStats() {
+        const totalLogs = await this.activityLogModel.count();
+        const [info, warning, error, critical] = await Promise.all([
+            this.activityLogModel.count({
+                where: { severity: 'INFO' },
+            }),
+            this.activityLogModel.count({
+                where: { severity: 'WARNING' },
+            }),
+            this.activityLogModel.count({
+                where: { severity: 'ERROR' },
+            }),
+            this.activityLogModel.count({
+                where: { severity: 'CRITICAL' },
+            }),
+        ]);
+        return {
+            totalLogs,
+            info,
+            warning,
+            error,
+            critical,
+        };
     }
     async delete(activityLogId) {
-        return await this.activityLogModel.destroy({
+        return this.activityLogModel.destroy({
             where: {
                 activityLogId,
+            },
+        });
+    }
+    async deleteOlderThan(days) {
+        const cutoffDate = new Date();
+        cutoffDate.setDate(cutoffDate.getDate() - days);
+        return this.activityLogModel.destroy({
+            where: {
+                createdAt: {
+                    [sequelize_2.Op.lt]: cutoffDate,
+                },
             },
         });
     }
