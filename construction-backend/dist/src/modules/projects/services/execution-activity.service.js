@@ -39,14 +39,37 @@ let ExecutionActivityService = class ExecutionActivityService {
             include: [
                 {
                     model: execution_stage_model_1.ExecutionStage,
+                    attributes: ['id', 'name', 'status'],
                 },
                 {
                     model: user_model_1.User,
                     as: 'createdBy',
-                    attributes: ['id', 'first_name', 'last_name', 'email'],
+                    attributes: ['id', 'name', 'email'],
                 },
             ],
-            order: [['activity_date', 'DESC']],
+            order: [
+                ['order', 'ASC'],
+                ['activity_date', 'DESC'],
+                ['created_at', 'DESC'],
+            ],
+        });
+    }
+    async findByStage(stageId) {
+        return await this.activityModel.findAll({
+            where: {
+                stage_id: stageId,
+            },
+            include: [
+                {
+                    model: user_model_1.User,
+                    as: 'createdBy',
+                    attributes: ['id', 'name'],
+                },
+            ],
+            order: [
+                ['order', 'ASC'],
+                ['created_at', 'ASC'],
+            ],
         });
     }
     async findOne(id) {
@@ -54,11 +77,12 @@ let ExecutionActivityService = class ExecutionActivityService {
             include: [
                 {
                     model: execution_stage_model_1.ExecutionStage,
+                    attributes: ['id', 'name', 'status'],
                 },
                 {
                     model: user_model_1.User,
                     as: 'createdBy',
-                    attributes: ['id', 'first_name', 'last_name', 'email'],
+                    attributes: ['id', 'name', 'email'],
                 },
             ],
         });
@@ -67,14 +91,36 @@ let ExecutionActivityService = class ExecutionActivityService {
         }
         return activity;
     }
-    async update(id, dto) {
+    async update(id, dto, userId) {
         const activity = await this.findOne(id);
-        await activity.update(dto);
-        return activity;
+        await activity.update({
+            ...dto,
+            updated_by: userId,
+        });
+        return await this.findOne(id);
     }
-    async remove(id) {
+    async remove(id, userId) {
         const activity = await this.findOne(id);
         await activity.destroy();
+    }
+    async reorderActivities(stageId, activityIds, userId) {
+        const updates = activityIds.map((id, index) => this.activityModel.update({
+            order: index + 1,
+            updated_by: userId,
+        }, {
+            where: {
+                id,
+                stage_id: stageId,
+            },
+        }));
+        await Promise.all(updates);
+    }
+    async countByProject(projectId) {
+        return await this.activityModel.count({
+            where: {
+                project_id: projectId,
+            },
+        });
     }
 };
 exports.ExecutionActivityService = ExecutionActivityService;

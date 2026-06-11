@@ -77,6 +77,13 @@ export declare class AppService {
             };
         };
     };
+    metrics(): {
+        requests: number;
+        avg_latency: number;
+        uptime: number;
+        memory: NodeJS.MemoryUsage;
+        timestamp: number;
+    };
     readinessCheck(): {
         success: boolean;
         ready: boolean;

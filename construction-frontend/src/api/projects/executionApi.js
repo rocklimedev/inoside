@@ -1,8 +1,10 @@
-import { apiSlice } from "./apiSlice";
+import { baseApi } from "../baseApi";
 
-export const executionApi = apiSlice.injectEndpoints({
+export const executionApi = baseApi.injectEndpoints({
   endpoints: (builder) => ({
-    // ================= STAGES =================
+    // =====================================================
+    // STAGES
+    // =====================================================
 
     getExecutionStages: builder.query({
       query: (projectId) => `/execution/stages/project/${projectId}`,
@@ -37,13 +39,31 @@ export const executionApi = apiSlice.injectEndpoints({
         url: `/execution/stages/${id}`,
         method: "DELETE",
       }),
+      invalidatesTags: ["ExecutionStages", "ExecutionActivities"],
+    }),
+
+    reorderExecutionStages: builder.mutation({
+      query: ({ projectId, stageIds }) => ({
+        url: `/execution/stages/project/${projectId}/reorder`,
+        method: "PATCH",
+        body: {
+          stageIds,
+        },
+      }),
       invalidatesTags: ["ExecutionStages"],
     }),
 
-    // ================= ACTIVITIES =================
+    // =====================================================
+    // ACTIVITIES
+    // =====================================================
 
     getExecutionActivities: builder.query({
       query: (projectId) => `/execution/activities/project/${projectId}`,
+      providesTags: ["ExecutionActivities"],
+    }),
+
+    getExecutionActivitiesByStage: builder.query({
+      query: (stageId) => `/execution/activities/stage/${stageId}`,
       providesTags: ["ExecutionActivities"],
     }),
 
@@ -77,23 +97,37 @@ export const executionApi = apiSlice.injectEndpoints({
       }),
       invalidatesTags: ["ExecutionActivities", "ExecutionStages"],
     }),
+
+    reorderExecutionActivities: builder.mutation({
+      query: ({ stageId, activityIds }) => ({
+        url: `/execution/activities/stage/${stageId}/reorder`,
+        method: "PATCH",
+        body: {
+          activityIds,
+        },
+      }),
+      invalidatesTags: ["ExecutionActivities", "ExecutionStages"],
+    }),
   }),
+
+  overrideExisting: true,
 });
 
 export const {
-  // ================= STAGES =================
-
+  // STAGES
   useGetExecutionStagesQuery,
   useGetExecutionStageQuery,
   useCreateExecutionStageMutation,
   useUpdateExecutionStageMutation,
   useDeleteExecutionStageMutation,
+  useReorderExecutionStagesMutation,
 
-  // ================= ACTIVITIES =================
-
+  // ACTIVITIES
   useGetExecutionActivitiesQuery,
+  useGetExecutionActivitiesByStageQuery,
   useGetExecutionActivityQuery,
   useCreateExecutionActivityMutation,
   useUpdateExecutionActivityMutation,
   useDeleteExecutionActivityMutation,
+  useReorderExecutionActivitiesMutation,
 } = executionApi;

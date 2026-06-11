@@ -70,6 +70,8 @@ export const baseApi = createApi({
     "Pitches",
     "PitchComments",
     "PitchReferences",
+    "ExecutionStages",
+    "ExecutionActivities",
     "Reki",
     "Scope",
     "CostEstimates",

@@ -22,8 +22,8 @@ let ExecutionStageController = class ExecutionStageController {
     constructor(service) {
         this.service = service;
     }
-    async create(dto) {
-        return this.service.create(dto);
+    async create(dto, req) {
+        return this.service.create(dto, req.user?.id);
     }
     async findAll(projectId) {
         return this.service.findAll(projectId);
@@ -31,19 +31,31 @@ let ExecutionStageController = class ExecutionStageController {
     async findOne(id) {
         return this.service.findOne(id);
     }
-    async update(id, dto) {
-        return this.service.update(id, dto);
+    async update(id, dto, req) {
+        return this.service.update(id, dto, req.user?.id);
     }
-    async remove(id) {
-        return this.service.remove(id);
+    async reorderStages(projectId, body, req) {
+        await this.service.reorderStages(projectId, body.stageIds, req.user?.id);
+        return {
+            success: true,
+            message: 'Stages reordered successfully',
+        };
+    }
+    async remove(id, req) {
+        await this.service.remove(id, req.user?.id);
+        return {
+            success: true,
+            message: 'Stage deleted successfully',
+        };
     }
 };
 exports.ExecutionStageController = ExecutionStageController;
 __decorate([
     (0, common_1.Post)(),
     __param(0, (0, common_1.Body)()),
+    __param(1, (0, common_1.Req)()),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [create_stage_dto_1.CreateExecutionStageDto]),
+    __metadata("design:paramtypes", [create_stage_dto_1.CreateExecutionStageDto, Object]),
     __metadata("design:returntype", Promise)
 ], ExecutionStageController.prototype, "create", null);
 __decorate([
@@ -64,15 +76,26 @@ __decorate([
     (0, common_1.Patch)(':id'),
     __param(0, (0, common_1.Param)('id')),
     __param(1, (0, common_1.Body)()),
+    __param(2, (0, common_1.Req)()),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [String, update_stage_dto_1.UpdateExecutionStageDto]),
+    __metadata("design:paramtypes", [String, update_stage_dto_1.UpdateExecutionStageDto, Object]),
     __metadata("design:returntype", Promise)
 ], ExecutionStageController.prototype, "update", null);
 __decorate([
+    (0, common_1.Patch)('project/:projectId/reorder'),
+    __param(0, (0, common_1.Param)('projectId')),
+    __param(1, (0, common_1.Body)()),
+    __param(2, (0, common_1.Req)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String, Object, Object]),
+    __metadata("design:returntype", Promise)
+], ExecutionStageController.prototype, "reorderStages", null);
+__decorate([
     (0, common_1.Delete)(':id'),
     __param(0, (0, common_1.Param)('id')),
+    __param(1, (0, common_1.Req)()),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [String]),
+    __metadata("design:paramtypes", [String, Object]),
     __metadata("design:returntype", Promise)
 ], ExecutionStageController.prototype, "remove", null);
 exports.ExecutionStageController = ExecutionStageController = __decorate([

@@ -54,6 +54,13 @@ export declare class AppController {
             orm: string;
         };
     };
+    metrics(): {
+        requests: number;
+        avg_latency: number;
+        uptime: number;
+        memory: NodeJS.MemoryUsage;
+        timestamp: number;
+    };
     ping(): {
         success: boolean;
         message: string;

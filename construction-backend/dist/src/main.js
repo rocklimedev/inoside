@@ -8,10 +8,12 @@ const core_1 = require("@nestjs/core");
 const cookie_parser_1 = __importDefault(require("cookie-parser"));
 const helmet_1 = __importDefault(require("helmet"));
 const compression_1 = __importDefault(require("compression"));
+const metrics_enterceptor_1 = require("./common/enterceptor/metrics.enterceptor");
 const swagger_1 = require("@nestjs/swagger");
 const app_module_1 = require("./app.module");
 async function bootstrap() {
     const app = await core_1.NestFactory.create(app_module_1.AppModule);
+    app.useGlobalInterceptors(new metrics_enterceptor_1.MetricsInterceptor());
     app.getHttpAdapter().getInstance().set('trust proxy', 1);
     app.use((0, helmet_1.default)({
         crossOriginResourcePolicy: false,

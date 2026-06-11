@@ -24,6 +24,7 @@ __decorate([
 ], ExecutionActivity.prototype, "id", void 0);
 __decorate([
     (0, sequelize_typescript_1.ForeignKey)(() => project_model_1.Project),
+    (0, sequelize_typescript_1.AllowNull)(false),
     (0, sequelize_typescript_1.Column)(sequelize_typescript_1.DataType.UUID),
     __metadata("design:type", String)
 ], ExecutionActivity.prototype, "project_id", void 0);
@@ -33,6 +34,7 @@ __decorate([
 ], ExecutionActivity.prototype, "project", void 0);
 __decorate([
     (0, sequelize_typescript_1.ForeignKey)(() => execution_stage_model_1.ExecutionStage),
+    (0, sequelize_typescript_1.AllowNull)(false),
     (0, sequelize_typescript_1.Column)(sequelize_typescript_1.DataType.UUID),
     __metadata("design:type", String)
 ], ExecutionActivity.prototype, "stage_id", void 0);
@@ -41,46 +43,81 @@ __decorate([
     __metadata("design:type", execution_stage_model_1.ExecutionStage)
 ], ExecutionActivity.prototype, "stage", void 0);
 __decorate([
-    (0, sequelize_typescript_1.Column)({
-        type: sequelize_typescript_1.DataType.STRING,
-        allowNull: false,
-    }),
+    (0, sequelize_typescript_1.AllowNull)(false),
+    (0, sequelize_typescript_1.Default)(1),
+    (0, sequelize_typescript_1.Column)(sequelize_typescript_1.DataType.INTEGER),
+    __metadata("design:type", Number)
+], ExecutionActivity.prototype, "order", void 0);
+__decorate([
+    (0, sequelize_typescript_1.AllowNull)(false),
+    (0, sequelize_typescript_1.Column)(sequelize_typescript_1.DataType.STRING(255)),
     __metadata("design:type", String)
 ], ExecutionActivity.prototype, "title", void 0);
 __decorate([
+    (0, sequelize_typescript_1.AllowNull)(true),
     (0, sequelize_typescript_1.Column)(sequelize_typescript_1.DataType.TEXT),
     __metadata("design:type", String)
 ], ExecutionActivity.prototype, "description", void 0);
 __decorate([
+    (0, sequelize_typescript_1.AllowNull)(true),
     (0, sequelize_typescript_1.Column)(sequelize_typescript_1.DataType.DATEONLY),
-    __metadata("design:type", Date)
+    __metadata("design:type", Object)
 ], ExecutionActivity.prototype, "activity_date", void 0);
 __decorate([
-    (0, sequelize_typescript_1.Column)(sequelize_typescript_1.DataType.DECIMAL(12, 2)),
+    (0, sequelize_typescript_1.AllowNull)(true),
+    (0, sequelize_typescript_1.Column)(sequelize_typescript_1.DataType.DATEONLY),
+    __metadata("design:type", Object)
+], ExecutionActivity.prototype, "planned_start_date", void 0);
+__decorate([
+    (0, sequelize_typescript_1.AllowNull)(true),
+    (0, sequelize_typescript_1.Column)(sequelize_typescript_1.DataType.DATEONLY),
+    __metadata("design:type", Object)
+], ExecutionActivity.prototype, "planned_end_date", void 0);
+__decorate([
+    (0, sequelize_typescript_1.Default)(0),
+    (0, sequelize_typescript_1.Column)({
+        type: sequelize_typescript_1.DataType.DECIMAL(12, 2),
+        allowNull: false,
+    }),
     __metadata("design:type", Number)
 ], ExecutionActivity.prototype, "planned_quantity", void 0);
 __decorate([
-    (0, sequelize_typescript_1.Column)(sequelize_typescript_1.DataType.DECIMAL(12, 2)),
+    (0, sequelize_typescript_1.Default)(0),
+    (0, sequelize_typescript_1.Column)({
+        type: sequelize_typescript_1.DataType.DECIMAL(12, 2),
+        allowNull: false,
+    }),
     __metadata("design:type", Number)
 ], ExecutionActivity.prototype, "completed_quantity", void 0);
 __decorate([
-    (0, sequelize_typescript_1.Column)(sequelize_typescript_1.DataType.STRING),
+    (0, sequelize_typescript_1.AllowNull)(true),
+    (0, sequelize_typescript_1.Column)(sequelize_typescript_1.DataType.STRING(50)),
     __metadata("design:type", String)
 ], ExecutionActivity.prototype, "unit", void 0);
 __decorate([
+    (0, sequelize_typescript_1.Default)('pending'),
     (0, sequelize_typescript_1.Column)({
         type: sequelize_typescript_1.DataType.ENUM('pending', 'ongoing', 'completed', 'delayed'),
-        defaultValue: 'pending',
+        allowNull: false,
     }),
     __metadata("design:type", String)
 ], ExecutionActivity.prototype, "status", void 0);
 __decorate([
+    (0, sequelize_typescript_1.Default)(0),
+    (0, sequelize_typescript_1.Column)({
+        type: sequelize_typescript_1.DataType.DECIMAL(5, 2),
+        allowNull: false,
+    }),
+    __metadata("design:type", Number)
+], ExecutionActivity.prototype, "progress_percentage", void 0);
+__decorate([
     (0, sequelize_typescript_1.ForeignKey)(() => user_model_1.User),
+    (0, sequelize_typescript_1.AllowNull)(false),
     (0, sequelize_typescript_1.Column)(sequelize_typescript_1.DataType.UUID),
     __metadata("design:type", String)
 ], ExecutionActivity.prototype, "created_by", void 0);
 __decorate([
-    (0, sequelize_typescript_1.BelongsTo)(() => user_model_1.User),
+    (0, sequelize_typescript_1.BelongsTo)(() => user_model_1.User, 'created_by'),
     __metadata("design:type", user_model_1.User)
 ], ExecutionActivity.prototype, "createdBy", void 0);
 exports.ExecutionActivity = ExecutionActivity = __decorate([
@@ -89,6 +126,7 @@ exports.ExecutionActivity = ExecutionActivity = __decorate([
         timestamps: true,
         createdAt: 'created_at',
         updatedAt: 'updated_at',
+        paranoid: false,
     })
 ], ExecutionActivity);
 //# sourceMappingURL=execution-activity.model.js.map

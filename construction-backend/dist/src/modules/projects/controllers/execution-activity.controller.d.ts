@@ -6,7 +6,17 @@ export declare class ExecutionActivityController {
     constructor(service: ExecutionActivityService);
     create(dto: CreateExecutionActivityDto, req: any): Promise<import("../models/execution-activity.model").ExecutionActivity>;
     findAll(projectId: string): Promise<import("../models/execution-activity.model").ExecutionActivity[]>;
+    findByStage(stageId: string): Promise<import("../models/execution-activity.model").ExecutionActivity[]>;
     findOne(id: string): Promise<import("../models/execution-activity.model").ExecutionActivity>;
-    update(id: string, dto: UpdateExecutionActivityDto): Promise<import("../models/execution-activity.model").ExecutionActivity>;
-    remove(id: string): Promise<void>;
+    update(id: string, dto: UpdateExecutionActivityDto, req: any): Promise<import("../models/execution-activity.model").ExecutionActivity>;
+    reorderActivities(stageId: string, body: {
+        activityIds: string[];
+    }, req: any): Promise<{
+        success: boolean;
+        message: string;
+    }>;
+    remove(id: string, req: any): Promise<{
+        success: boolean;
+        message: string;
+    }>;
 }

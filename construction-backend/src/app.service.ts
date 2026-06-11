@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-
+import { MetricsInterceptor } from './common/enterceptor/metrics.enterceptor';
 @Injectable()
 export class AppService {
   getRoot() {
@@ -107,7 +107,25 @@ export class AppService {
       },
     };
   }
+  metrics() {
+    return {
+      requests: MetricsInterceptor.requests,
 
+      avg_latency:
+        MetricsInterceptor.requests > 0
+          ? Math.round(
+              MetricsInterceptor.totalResponseTime /
+                MetricsInterceptor.requests,
+            )
+          : 0,
+
+      uptime: process.uptime(),
+
+      memory: process.memoryUsage(),
+
+      timestamp: Date.now(),
+    };
+  }
   readinessCheck() {
     return {
       success: true,

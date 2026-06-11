@@ -1,70 +1,145 @@
+import { useState } from "react";
+import { DragDropContext, Droppable, Draggable } from "@hello-pangea/dnd";
+import {
+  ArrowLeft,
+  Plus,
+  FileText,
+  Calendar,
+  Clock,
+  CheckCircle,
+  AlertTriangle,
+  TrendingUp,
+  Users,
+  GripVertical,
+  Trash2,
+  Download,
+} from "lucide-react";
+
+import {
+  useGetExecutionStagesQuery,
+  useGetExecutionActivitiesQuery,
+} from "@/api/projects/executionApi";
+
+import {
+  useGetProjectTasksQuery,
+  useUpdateTaskMutation,
+  useDeleteTaskMutation,
+} from "@/api/taskApi";
+
 import AddReportForm from "./AddReportForm";
 import AddTaskForm from "./AddTaskForm";
-export default function ExecutionWorkspace({ project, api, user, onBack }) {
-  const [tasks, setTasks] = useState([]);
-  const [reports, setReports] = useState([]);
-  const [drawings, setDrawings] = useState([]);
-  const [timeline, setTimeline] = useState(null);
+
+import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Badge } from "@/components/ui/badge";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { toast } from "sonner";
+
+const COLUMNS = [
+  { id: "todo", title: "To Do", color: "border-red-500", bg: "bg-red-50" },
+  {
+    id: "in_progress",
+    title: "In Progress",
+    color: "border-[#ef7f1b]",
+    bg: "bg-orange-50",
+  },
+  { id: "review", title: "Review", color: "border-blue-500", bg: "bg-blue-50" },
+  { id: "done", title: "Done", color: "border-green-500", bg: "bg-green-50" },
+];
+
+const PRIORITY_MAP = {
+  high: { label: "High", color: "bg-red-100 text-red-700" },
+  medium: { label: "Medium", color: "bg-yellow-100 text-yellow-700" },
+  low: { label: "Low", color: "bg-green-100 text-green-700" },
+};
+
+const BACKEND = "http://localhost:5000/api";
+
+export default function ExecutionWorkspace({
+  projectId,
+  project,
+  user,
+  onBack,
+}) {
+  const isClient = user?.role === "Client";
+
   const [showAddTask, setShowAddTask] = useState(false);
   const [showAddReport, setShowAddReport] = useState(false);
   const [activeTab, setActiveTab] = useState("kanban");
-  const isClient = user?.role === "Client";
 
-  useEffect(() => {
-    loadData();
-  }, []);
+  // ================= RTK Query =================
+  const { data: tasks = [], isLoading: tasksLoading } =
+    useGetProjectTasksQuery(projectId);
 
-  const loadData = async () => {
-    try {
-      const [t, r, d, tl] = await Promise.all([
-        api.get(`/execution/tasks?project_id=${project.id}`),
-        api.get(`/execution/daily-reports?project_id=${project.id}`),
-        api.get(`/execution/drawings?project_id=${project.id}`),
-        api.get(`/execution/timeline/${project.id}`),
-      ]);
-      setTasks(t.data);
-      setReports(r.data);
-      setDrawings(d.data);
-      setTimeline(tl.data);
-    } catch (e) {
-      console.error(e);
-    }
-  };
+  const { data: stages = [], isLoading: stagesLoading } =
+    useGetExecutionStagesQuery(projectId);
+  const { data: activities = [] } = useGetExecutionActivitiesQuery(projectId);
 
+  const [updateTask] = useUpdateTaskMutation();
+  const [deleteTask] = useDeleteTaskMutation();
+
+  // ================= Handlers =================
   const handleDragEnd = async (result) => {
     if (!result.destination || isClient) return;
+
     const { draggableId, destination } = result;
     const newStatus = destination.droppableId;
-    setTasks((prev) =>
-      prev.map((t) => (t.id === draggableId ? { ...t, status: newStatus } : t)),
-    );
+
     try {
-      await api.put(`/execution/tasks/${draggableId}`, { status: newStatus });
-    } catch {
-      toast.error("Failed to update task");
-      loadData();
+      await updateTask({ taskId: draggableId, status: newStatus }).unwrap();
+      toast.success("Task moved successfully");
+    } catch (err) {
+      toast.error("Failed to update task status");
     }
   };
 
   const handleDeleteTask = async (tid) => {
+    if (!window.confirm("Are you sure you want to delete this task?")) return;
+
     try {
-      await api.delete(`/execution/tasks/${tid}`);
-      setTasks((p) => p.filter((t) => t.id !== tid));
-      toast.success("Deleted");
-    } catch {
-      toast.error("Failed");
+      await deleteTask(tid).unwrap();
+      toast.success("Task deleted successfully");
+    } catch (err) {
+      toast.error("Failed to delete task");
     }
   };
 
-  const kpi = timeline || {
+  // ================= KPI =================
+  const completedTasks = tasks.filter((t) => t.status === "done").length;
+  const inProgressTasks = tasks.filter(
+    (t) => t.status === "in_progress",
+  ).length;
+  const todayStr = new Date().toISOString().split("T")[0];
+  const todayTasks = tasks.filter(
+    (t) => t.deadline && t.deadline.startsWith(todayStr),
+  ).length;
+  const completionPct = tasks.length
+    ? Math.round((completedTasks / tasks.length) * 100)
+    : 0;
+
+  const kpi = {
     total_tasks: tasks.length,
-    completed: tasks.filter((t) => t.status === "done").length,
-    in_progress: tasks.filter((t) => t.status === "in_progress").length,
-    delayed: 0,
-    completion_pct: 0,
-    today_tasks: 0,
+    completed: completedTasks,
+    in_progress: inProgressTasks,
+    delayed: tasks.filter(
+      (t) =>
+        t.deadline && new Date(t.deadline) < new Date() && t.status !== "done",
+    ).length,
+    completion_pct: completionPct,
+    today_tasks: todayTasks,
   };
-  const openIssues = reports.reduce((s, r) => s + (r.issues_faced ? 1 : 0), 0);
+
+  // Reports & drawings are removed since no API exists — tabs kept as placeholders
+  const reports = [];
+  const drawings = [];
+  const openIssues = 0;
 
   return (
     <div className="flex flex-col h-full" data-testid="execution-workspace">
@@ -76,10 +151,13 @@ export default function ExecutionWorkspace({ project, api, user, onBack }) {
               <ArrowLeft className="w-5 h-5" />
             </button>
             <div>
-              <h1 className="text-base font-bold text-black">{project.name}</h1>
+              <h1 className="text-base font-bold text-black">
+                {project?.name}
+              </h1>
               <p className="text-[11px] text-gray-400">Execution Workspace</p>
             </div>
           </div>
+
           {!isClient && (
             <div className="flex items-center gap-2">
               <Button
@@ -119,11 +197,7 @@ export default function ExecutionWorkspace({ project, api, user, onBack }) {
         ].map((k, i) => {
           const Icon = k.icon;
           return (
-            <Card
-              key={i}
-              className="p-3 text-center"
-              data-testid={`exec-kpi-${i}`}
-            >
+            <Card key={i} className="p-3 text-center">
               <Icon className="w-4 h-4 text-gray-400 mx-auto mb-1" />
               <p className="text-lg font-black text-black">{k.value}</p>
               <p className="text-[9px] text-gray-400">{k.label}</p>
@@ -142,6 +216,9 @@ export default function ExecutionWorkspace({ project, api, user, onBack }) {
           <TabsTrigger value="kanban" className="text-xs px-3 py-1.5">
             Kanban Board
           </TabsTrigger>
+          <TabsTrigger value="stages" className="text-xs px-3 py-1.5">
+            Stages
+          </TabsTrigger>
           <TabsTrigger value="reports" className="text-xs px-3 py-1.5">
             Daily Reports
           </TabsTrigger>
@@ -153,7 +230,7 @@ export default function ExecutionWorkspace({ project, api, user, onBack }) {
           </TabsTrigger>
         </TabsList>
 
-        {/* Kanban */}
+        {/* ================= KANBAN ================= */}
         <TabsContent value="kanban" className="flex-1 overflow-hidden m-0">
           <DragDropContext onDragEnd={handleDragEnd}>
             <div className="flex gap-4 p-4 h-full overflow-x-auto">
@@ -165,9 +242,13 @@ export default function ExecutionWorkspace({ project, api, user, onBack }) {
                       <div
                         ref={provided.innerRef}
                         {...provided.droppableProps}
-                        className={`flex-1 min-w-[280px] max-w-[360px] rounded-xl border-t-2 ${col.color} ${col.bg} ${snapshot.isDraggingOver ? "ring-2 ring-[#ef7f1b]/20" : ""} flex flex-col`}
+                        className={`flex-1 min-w-[280px] max-w-[360px] rounded-xl border-t-2 ${col.color} ${col.bg} ${
+                          snapshot.isDraggingOver
+                            ? "ring-2 ring-[#ef7f1b]/20"
+                            : ""
+                        } flex flex-col`}
                       >
-                        <div className="p-3 flex items-center justify-between">
+                        <div className="p-3 flex items-center justify-between sticky top-0 bg-inherit z-10">
                           <h3 className="text-xs font-bold text-black">
                             {col.title}
                           </h3>
@@ -175,12 +256,13 @@ export default function ExecutionWorkspace({ project, api, user, onBack }) {
                             {colTasks.length}
                           </span>
                         </div>
+
                         <ScrollArea className="flex-1 px-3 pb-3">
                           <div className="space-y-2">
                             {colTasks.map((task, idx) => (
                               <Draggable
                                 key={task.id}
-                                draggableId={task.id}
+                                draggableId={String(task.id)}
                                 index={idx}
                                 isDragDisabled={isClient}
                               >
@@ -188,13 +270,17 @@ export default function ExecutionWorkspace({ project, api, user, onBack }) {
                                   <div
                                     ref={prov.innerRef}
                                     {...prov.draggableProps}
-                                    className={`bg-white rounded-lg p-3 border border-gray-100 ${snap.isDragging ? "shadow-lg ring-2 ring-[#ef7f1b]/20" : "shadow-sm"} transition-shadow`}
+                                    className={`bg-white rounded-lg p-3 border border-gray-100 ${
+                                      snap.isDragging
+                                        ? "shadow-lg ring-2 ring-[#ef7f1b]/20"
+                                        : "shadow-sm"
+                                    } transition-shadow`}
                                   >
                                     <div className="flex items-start gap-2">
                                       {!isClient && (
                                         <div
                                           {...prov.dragHandleProps}
-                                          className="mt-1 text-gray-300 hover:text-gray-500"
+                                          className="mt-1 text-gray-300 hover:text-gray-500 cursor-grab"
                                         >
                                           <GripVertical className="w-3.5 h-3.5" />
                                         </div>
@@ -205,7 +291,12 @@ export default function ExecutionWorkspace({ project, api, user, onBack }) {
                                         </h4>
                                         <div className="flex items-center gap-2 mt-1.5 flex-wrap">
                                           <Badge
-                                            className={`${(PRIORITY_MAP[task.priority] || PRIORITY_MAP.medium).color} text-[9px] border-0`}
+                                            className={`${
+                                              (
+                                                PRIORITY_MAP[task.priority] ||
+                                                PRIORITY_MAP.medium
+                                              ).color
+                                            } text-[9px] border-0`}
                                           >
                                             {
                                               (
@@ -258,196 +349,159 @@ export default function ExecutionWorkspace({ project, api, user, onBack }) {
           </DragDropContext>
         </TabsContent>
 
-        {/* Daily Reports */}
-        <TabsContent value="reports" className="flex-1 overflow-hidden m-0">
-          <ScrollArea className="h-full">
-            <div className="p-4 space-y-3 max-w-3xl">
-              {reports.length === 0 ? (
-                <div className="text-center py-16">
-                  <FileText className="w-10 h-10 text-gray-200 mx-auto mb-3" />
-                  <p className="text-sm text-gray-400">No daily reports yet</p>
-                </div>
-              ) : (
-                reports.map((r, i) => (
-                  <Card
-                    key={r.id}
-                    className="p-4"
-                    data-testid={`report-card-${i}`}
-                  >
-                    <div className="flex items-center justify-between mb-2">
-                      <h3 className="text-sm font-bold text-black">{r.date}</h3>
-                      <span className="text-[10px] text-gray-400">
-                        by {r.created_by}
-                      </span>
-                    </div>
-                    <div className="grid grid-cols-2 gap-3 text-xs">
-                      {r.work_executed && (
-                        <div>
-                          <p className="text-[10px] text-gray-400 font-bold uppercase">
-                            Work Executed
-                          </p>
-                          <p className="text-black">{r.work_executed}</p>
-                        </div>
-                      )}
-                      {r.manpower_count && (
-                        <div>
-                          <p className="text-[10px] text-gray-400 font-bold uppercase">
-                            Manpower
-                          </p>
-                          <p className="text-black">{r.manpower_count}</p>
-                        </div>
-                      )}
-                      {r.materials_used && (
-                        <div>
-                          <p className="text-[10px] text-gray-400 font-bold uppercase">
-                            Materials
-                          </p>
-                          <p className="text-black">{r.materials_used}</p>
-                        </div>
-                      )}
-                      {r.progress_notes && (
-                        <div>
-                          <p className="text-[10px] text-gray-400 font-bold uppercase">
-                            Notes
-                          </p>
-                          <p className="text-black">{r.progress_notes}</p>
-                        </div>
-                      )}
-                      {r.issues_faced && (
-                        <div className="col-span-2">
-                          <p className="text-[10px] text-[#e31d3b] font-bold uppercase">
-                            Issues
-                          </p>
-                          <p className="text-black">{r.issues_faced}</p>
-                        </div>
-                      )}
-                    </div>
-                    {(r.site_photos || []).length > 0 && (
-                      <div className="flex gap-2 mt-3">
-                        {r.site_photos.map((p, j) => (
-                          <img
-                            key={j}
-                            src={`${BACKEND}${p.url}`}
-                            alt=""
-                            className="w-16 h-16 rounded-lg object-cover border border-gray-200"
-                          />
-                        ))}
-                      </div>
-                    )}
-                  </Card>
-                ))
-              )}
-            </div>
-          </ScrollArea>
-        </TabsContent>
+        {/* ================= STAGES ================= */}
+        <TabsContent value="stages" className="flex-1 overflow-hidden m-0 p-4">
+          <div className="max-w-5xl mx-auto">
+            <h2 className="text-lg font-bold mb-6">Project Execution Stages</h2>
 
-        {/* Drawings */}
-        <TabsContent value="drawings" className="flex-1 overflow-hidden m-0">
-          <ScrollArea className="h-full">
-            <div className="p-4">
-              {drawings.length === 0 ? (
-                <div className="text-center py-16">
-                  <FileText className="w-10 h-10 text-gray-200 mx-auto mb-3" />
-                  <p className="text-sm text-gray-400">No execution drawings</p>
-                </div>
-              ) : (
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                  {drawings.map((d, i) => (
-                    <Card
-                      key={d.id}
-                      className="p-4"
-                      data-testid={`drawing-card-${i}`}
-                    >
-                      <div className="flex items-start justify-between mb-2">
-                        <h3 className="text-xs font-bold text-black">
-                          {d.title}
-                        </h3>
-                        <Badge className="bg-gray-100 text-gray-600 text-[9px] border-0">
-                          {d.version}
+            {stagesLoading ? (
+              <p className="text-center py-10 text-gray-500">
+                Loading stages and activities...
+              </p>
+            ) : stages.length === 0 ? (
+              <div className="text-center py-16">
+                <FileText className="w-12 h-12 text-gray-200 mx-auto mb-3" />
+                <p className="text-gray-400">No stages created yet</p>
+              </div>
+            ) : (
+              <div className="space-y-8">
+                {stages.map((stage) => {
+                  const stageActivities = activities.filter(
+                    (a) => a.stage_id === stage.id,
+                  );
+                  return (
+                    <Card key={stage.id} className="p-6">
+                      <div className="flex justify-between items-start mb-4">
+                        <div>
+                          <h3 className="text-lg font-bold text-black">
+                            {stage.name}
+                          </h3>
+                          {stage.description && (
+                            <p className="text-sm text-gray-600 mt-1">
+                              {stage.description}
+                            </p>
+                          )}
+                        </div>
+                        <Badge variant="outline">
+                          {stage.status || "Active"}
                         </Badge>
                       </div>
-                      <p className="text-[10px] text-gray-400">
-                        {d.category} &middot; {d.area_floor}
-                      </p>
-                      <div className="flex items-center justify-between mt-3 pt-2 border-t border-gray-100">
-                        <span className="text-[10px] text-gray-400">
-                          by {d.uploaded_by}
-                        </span>
-                        {d.file_url && (
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            className="h-6 text-[10px]"
-                            onClick={() =>
-                              window.open(`${BACKEND}${d.file_url}`, "_blank")
-                            }
-                          >
-                            <Download className="w-3 h-3 mr-1" /> PDF
-                          </Button>
+
+                      <div className="pl-4 border-l-2 border-[#ef7f1b]">
+                        <h4 className="uppercase text-xs font-bold text-gray-500 mb-3">
+                          Activities
+                        </h4>
+                        {stageActivities.length === 0 ? (
+                          <p className="text-sm text-gray-400">
+                            No activities in this stage
+                          </p>
+                        ) : (
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                            {stageActivities.map((act) => (
+                              <div
+                                key={act.id}
+                                className="bg-gray-50 p-4 rounded-lg"
+                              >
+                                <p className="font-medium text-sm">
+                                  {act.name}
+                                </p>
+                                <p className="text-xs text-gray-500 mt-1">
+                                  Status:{" "}
+                                  <span className="capitalize">
+                                    {act.status}
+                                  </span>
+                                </p>
+                              </div>
+                            ))}
+                          </div>
                         )}
                       </div>
                     </Card>
-                  ))}
-                </div>
-              )}
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        </TabsContent>
+
+        {/* ================= DAILY REPORTS ================= */}
+        <TabsContent value="reports" className="flex-1 overflow-hidden m-0">
+          <ScrollArea className="h-full">
+            <div className="p-4 space-y-4 max-w-3xl">
+              <div className="text-center py-20">
+                <FileText className="w-12 h-12 text-gray-200 mx-auto mb-4" />
+                <p className="text-gray-400">No daily reports submitted yet</p>
+              </div>
             </div>
           </ScrollArea>
         </TabsContent>
 
-        {/* Timeline */}
+        {/* ================= DRAWINGS ================= */}
+        <TabsContent value="drawings" className="flex-1 overflow-hidden m-0">
+          <ScrollArea className="h-full">
+            <div className="p-4">
+              <div className="text-center py-20">
+                <FileText className="w-12 h-12 text-gray-200 mx-auto mb-4" />
+                <p className="text-gray-400">No drawings uploaded yet</p>
+              </div>
+            </div>
+          </ScrollArea>
+        </TabsContent>
+
+        {/* ================= TIMELINE ================= */}
         <TabsContent value="timeline" className="flex-1 overflow-hidden m-0">
           <div className="p-4 max-w-2xl">
-            <Card className="p-6">
-              <h3 className="text-sm font-bold text-black mb-4">
+            <Card className="p-8">
+              <h3 className="text-lg font-bold mb-6">
                 Project Execution Timeline
               </h3>
-              <div className="space-y-4">
+
+              <div className="space-y-8">
                 <div>
-                  <div className="flex items-center justify-between mb-1">
-                    <span className="text-xs text-gray-600">
-                      Overall Progress
-                    </span>
-                    <span className="text-sm font-black text-[#ef7f1b]">
+                  <div className="flex justify-between text-sm mb-2">
+                    <span>Overall Progress</span>
+                    <span className="font-bold text-[#ef7f1b]">
                       {kpi.completion_pct}%
                     </span>
                   </div>
                   <div className="w-full h-3 bg-gray-100 rounded-full overflow-hidden">
                     <div
-                      className="h-full bg-[#ef7f1b] rounded-full transition-all duration-700"
+                      className="h-full bg-[#ef7f1b] rounded-full transition-all"
                       style={{ width: `${kpi.completion_pct}%` }}
                     />
                   </div>
                 </div>
-                <div className="grid grid-cols-2 gap-4 mt-4">
+
+                <div className="grid grid-cols-2 gap-6">
                   <div>
-                    <p className="text-[10px] text-gray-400 font-bold uppercase">
+                    <p className="text-xs uppercase font-bold text-gray-400">
                       Total Tasks
                     </p>
-                    <p className="text-lg font-black text-black">
+                    <p className="text-4xl font-black text-black mt-1">
                       {kpi.total_tasks}
                     </p>
                   </div>
                   <div>
-                    <p className="text-[10px] text-gray-400 font-bold uppercase">
+                    <p className="text-xs uppercase font-bold text-gray-400">
                       Completed
                     </p>
-                    <p className="text-lg font-black text-green-600">
+                    <p className="text-4xl font-black text-green-600 mt-1">
                       {kpi.completed}
                     </p>
                   </div>
                   <div>
-                    <p className="text-[10px] text-gray-400 font-bold uppercase">
+                    <p className="text-xs uppercase font-bold text-gray-400">
                       In Progress
                     </p>
-                    <p className="text-lg font-black text-[#ef7f1b]">
+                    <p className="text-4xl font-black text-[#ef7f1b] mt-1">
                       {kpi.in_progress}
                     </p>
                   </div>
                   <div>
-                    <p className="text-[10px] text-gray-400 font-bold uppercase">
+                    <p className="text-xs uppercase font-bold text-gray-400">
                       Delayed
                     </p>
-                    <p className="text-lg font-black text-[#e31d3b]">
+                    <p className="text-4xl font-black text-red-600 mt-1">
                       {kpi.delayed}
                     </p>
                   </div>
@@ -460,18 +514,16 @@ export default function ExecutionWorkspace({ project, api, user, onBack }) {
 
       {/* Add Task Dialog */}
       <Dialog open={showAddTask} onOpenChange={setShowAddTask}>
-        <DialogContent className="max-w-md" data-testid="add-task-dialog">
+        <DialogContent className="max-w-md">
           <DialogHeader>
-            <DialogTitle>Add Task</DialogTitle>
+            <DialogTitle>Add New Task</DialogTitle>
           </DialogHeader>
           <AddTaskForm
-            api={api}
-            projectId={project.id}
-            projectName={project.name}
-            onSuccess={(t) => {
-              setTasks((p) => [...p, t]);
+            projectId={projectId}
+            projectName={project?.name}
+            onSuccess={() => {
               setShowAddTask(false);
-              toast.success("Task added");
+              toast.success("Task added successfully");
             }}
           />
         </DialogContent>
@@ -479,17 +531,15 @@ export default function ExecutionWorkspace({ project, api, user, onBack }) {
 
       {/* Add Daily Report Dialog */}
       <Dialog open={showAddReport} onOpenChange={setShowAddReport}>
-        <DialogContent className="max-w-lg" data-testid="add-report-dialog">
+        <DialogContent className="max-w-lg">
           <DialogHeader>
             <DialogTitle>Daily Progress Report</DialogTitle>
           </DialogHeader>
           <AddReportForm
-            api={api}
-            projectId={project.id}
-            onSuccess={(r) => {
-              setReports((p) => [r, ...p]);
+            projectId={projectId}
+            onSuccess={() => {
               setShowAddReport(false);
-              toast.success("Report submitted");
+              toast.success("Daily report submitted");
             }}
           />
         </DialogContent>

@@ -8,6 +8,7 @@ var __decorate = (this && this.__decorate) || function (decorators, target, key,
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.AppService = void 0;
 const common_1 = require("@nestjs/common");
+const metrics_enterceptor_1 = require("./common/enterceptor/metrics.enterceptor");
 let AppService = class AppService {
     getRoot() {
         return {
@@ -95,6 +96,18 @@ let AppService = class AppService {
                     path: '/opt/media-buildcon/uploads',
                 },
             },
+        };
+    }
+    metrics() {
+        return {
+            requests: metrics_enterceptor_1.MetricsInterceptor.requests,
+            avg_latency: metrics_enterceptor_1.MetricsInterceptor.requests > 0
+                ? Math.round(metrics_enterceptor_1.MetricsInterceptor.totalResponseTime /
+                    metrics_enterceptor_1.MetricsInterceptor.requests)
+                : 0,
+            uptime: process.uptime(),
+            memory: process.memoryUsage(),
+            timestamp: Date.now(),
         };
     }
     readinessCheck() {

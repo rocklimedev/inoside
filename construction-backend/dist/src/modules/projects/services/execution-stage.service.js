@@ -16,15 +16,17 @@ exports.ExecutionStageService = void 0;
 const common_1 = require("@nestjs/common");
 const sequelize_1 = require("@nestjs/sequelize");
 const uuid_1 = require("uuid");
+const execution_activity_model_1 = require("../models/execution-activity.model");
 const execution_stage_model_1 = require("../models/execution-stage.model");
 let ExecutionStageService = class ExecutionStageService {
     stageModel;
     constructor(stageModel) {
         this.stageModel = stageModel;
     }
-    async create(dto) {
+    async create(dto, userId) {
         return await this.stageModel.create({
             id: (0, uuid_1.v4)(),
+            created_by: userId,
             ...dto,
         });
     }
@@ -33,24 +35,76 @@ let ExecutionStageService = class ExecutionStageService {
             where: {
                 project_id: projectId,
             },
-            order: [['created_at', 'ASC']],
+            order: [
+                ['order', 'ASC'],
+                ['created_at', 'ASC'],
+            ],
+            include: [
+                {
+                    model: execution_activity_model_1.ExecutionActivity,
+                    as: 'activities',
+                    attributes: [
+                        'id',
+                        'title',
+                        'status',
+                        'progress_percentage',
+                        'created_by',
+                    ],
+                },
+            ],
         });
     }
     async findOne(id) {
-        const stage = await this.stageModel.findByPk(id);
+        const stage = await this.stageModel.findByPk(id, {
+            include: [
+                {
+                    model: execution_activity_model_1.ExecutionActivity,
+                    as: 'activities',
+                    attributes: [
+                        'id',
+                        'title',
+                        'status',
+                        'progress_percentage',
+                        'created_by',
+                    ],
+                },
+            ],
+        });
         if (!stage) {
             throw new common_1.NotFoundException(`Execution stage with ID ${id} not found`);
         }
         return stage;
     }
-    async update(id, dto) {
+    async update(id, dto, userId) {
         const stage = await this.findOne(id);
-        await stage.update(dto);
-        return stage;
+        await stage.update({
+            ...dto,
+            updated_by: userId,
+        });
+        return await this.findOne(id);
     }
-    async remove(id) {
+    async remove(id, userId) {
         const stage = await this.findOne(id);
         await stage.destroy();
+    }
+    async reorderStages(projectId, stageIds, userId) {
+        const updates = stageIds.map((id, index) => this.stageModel.update({
+            order: index + 1,
+            updated_by: userId,
+        }, {
+            where: {
+                id,
+                project_id: projectId,
+            },
+        }));
+        await Promise.all(updates);
+    }
+    async countByProject(projectId) {
+        return await this.stageModel.count({
+            where: {
+                project_id: projectId,
+            },
+        });
     }
 };
 exports.ExecutionStageService = ExecutionStageService;

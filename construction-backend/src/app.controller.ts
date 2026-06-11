@@ -23,7 +23,10 @@ export class AppController {
   healthCheck() {
     return this.appService.healthCheck();
   }
-
+  @Get('metrics')
+  metrics() {
+    return this.appService.metrics();
+  }
   @Get('ping')
   @ApiOperation({ summary: 'Fast Ping Endpoint' })
   ping() {
