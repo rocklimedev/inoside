@@ -49,6 +49,16 @@ import { PitchComment } from './models/pitch-comment.model';
 import { DailyProgressReport } from './models/daily-progress-report.model';
 import { DailyProgressReportsService } from './services/daily-progress-reports.service';
 import { DailyProgressReportsController } from './controllers/daily-progress-reports.controller';
+
+// ================= EXECUTION =================
+import { ExecutionStage } from './models/execution-stage.model';
+import { ExecutionActivity } from './models/execution-activity.model';
+
+import { ExecutionStageController } from './controllers/execution-stage.controller';
+import { ExecutionActivityController } from './controllers/execution-activity.controller';
+
+import { ExecutionStageService } from './services/execution-stage.service';
+import { ExecutionActivityService } from './services/execution-activity.service';
 @Module({
   imports: [
     CdnModule,
@@ -73,6 +83,10 @@ import { DailyProgressReportsController } from './controllers/daily-progress-rep
       ProjectCostEstimate,
       ProjectDrawing,
       DrawingApprovalLog,
+
+      // ================= EXECUTION =================
+      ExecutionStage,
+      ExecutionActivity,
     ]),
   ],
 
@@ -89,6 +103,10 @@ import { DailyProgressReportsController } from './controllers/daily-progress-rep
     DrawingsController,
     DrawingLogsController,
     DailyProgressReportsController,
+
+    // ================= EXECUTION =================
+    ExecutionStageController,
+    ExecutionActivityController,
   ],
 
   providers: [
@@ -103,6 +121,9 @@ import { DailyProgressReportsController } from './controllers/daily-progress-rep
     ProjectDrawingService,
     DrawingApprovalLogService,
     DailyProgressReportsService,
+    // ================= EXECUTION =================
+    ExecutionStageService,
+    ExecutionActivityService,
   ],
 
   exports: [
@@ -117,6 +138,10 @@ import { DailyProgressReportsController } from './controllers/daily-progress-rep
     ProjectDrawingService,
     DrawingApprovalLogService,
     DailyProgressReportsService,
+
+    // ================= EXECUTION =================
+    ExecutionStageService,
+    ExecutionActivityService,
   ],
 })
 export class ProjectsModule {}

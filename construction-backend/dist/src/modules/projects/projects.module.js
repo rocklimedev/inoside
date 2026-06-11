@@ -49,6 +49,12 @@ const pitch_comment_model_1 = require("./models/pitch-comment.model");
 const daily_progress_report_model_1 = require("./models/daily-progress-report.model");
 const daily_progress_reports_service_1 = require("./services/daily-progress-reports.service");
 const daily_progress_reports_controller_1 = require("./controllers/daily-progress-reports.controller");
+const execution_stage_model_1 = require("./models/execution-stage.model");
+const execution_activity_model_1 = require("./models/execution-activity.model");
+const execution_stage_controller_1 = require("./controllers/execution-stage.controller");
+const execution_activity_controller_1 = require("./controllers/execution-activity.controller");
+const execution_stage_service_1 = require("./services/execution-stage.service");
+const execution_activity_service_1 = require("./services/execution-activity.service");
 let ProjectsModule = class ProjectsModule {
 };
 exports.ProjectsModule = ProjectsModule;
@@ -73,6 +79,8 @@ exports.ProjectsModule = ProjectsModule = __decorate([
                 project_cost_estimates_model_1.ProjectCostEstimate,
                 project_drawings_model_1.ProjectDrawing,
                 drawing_approval_logs_model_1.DrawingApprovalLog,
+                execution_stage_model_1.ExecutionStage,
+                execution_activity_model_1.ExecutionActivity,
             ]),
         ],
         controllers: [
@@ -88,6 +96,8 @@ exports.ProjectsModule = ProjectsModule = __decorate([
             drawings_controller_1.DrawingsController,
             drawing_logs_controller_1.DrawingLogsController,
             daily_progress_reports_controller_1.DailyProgressReportsController,
+            execution_stage_controller_1.ExecutionStageController,
+            execution_activity_controller_1.ExecutionActivityController,
         ],
         providers: [
             projects_service_1.ProjectsService,
@@ -101,6 +111,8 @@ exports.ProjectsModule = ProjectsModule = __decorate([
             project_drawing_service_1.ProjectDrawingService,
             drawing_approval_log_service_1.DrawingApprovalLogService,
             daily_progress_reports_service_1.DailyProgressReportsService,
+            execution_stage_service_1.ExecutionStageService,
+            execution_activity_service_1.ExecutionActivityService,
         ],
         exports: [
             projects_service_1.ProjectsService,
@@ -114,6 +126,8 @@ exports.ProjectsModule = ProjectsModule = __decorate([
             project_drawing_service_1.ProjectDrawingService,
             drawing_approval_log_service_1.DrawingApprovalLogService,
             daily_progress_reports_service_1.DailyProgressReportsService,
+            execution_stage_service_1.ExecutionStageService,
+            execution_activity_service_1.ExecutionActivityService,
         ],
     })
 ], ProjectsModule);
