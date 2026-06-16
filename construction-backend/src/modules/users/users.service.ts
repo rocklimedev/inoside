@@ -29,8 +29,9 @@ export class UsersService {
   ) {}
 
   // ================= CREATE =================
+  // ================= CREATE =================
   async create(createUserDto: CreateUserDto) {
-    const { email, password, role_id, ...rest } = createUserDto;
+    const { email, password, ...rest } = createUserDto;
 
     const existingUser = await this.userModel.findOne({
       where: { email },
@@ -40,10 +41,15 @@ export class UsersService {
       throw new ConflictException(USER_MESSAGES.EMAIL_EXISTS);
     }
 
-    const role = await this.roleModel.findByPk(role_id);
+    // Default role assigned automatically
+    const defaultRole = await this.roleModel.findOne({
+      where: {
+        name: 'employee', // change according to your seed data
+      },
+    });
 
-    if (!role) {
-      throw new BadRequestException(USER_MESSAGES.INVALID_ROLE);
+    if (!defaultRole) {
+      throw new BadRequestException('Default role not configured in system');
     }
 
     const password_hash = await bcrypt.hash(password, 10);
@@ -51,8 +57,15 @@ export class UsersService {
     const user = await this.userModel.create({
       ...rest,
       email,
-      role_id,
+
+      role_id: defaultRole.id,
+
       password_hash,
+
+      // Requires admin approval
+      is_active: false,
+
+      // Requires email verification
       is_email_verified: false,
     });
 

@@ -14,7 +14,8 @@ const inventory_controller_1 = require("./inventory.controller");
 const inventory_request_model_1 = require("./models/inventory-request.model");
 const inventory_dispatch_model_1 = require("./models/inventory-dispatch.model");
 const inventory_master_model_1 = require("./models/inventory-master.model");
-const materials_model_1 = require("./models/materials.model");
+const project_materials_model_1 = require("./models/project-materials.model");
+const inventory_category_model_1 = require("./models/inventory-category.model");
 const brand_model_1 = require("./models/brand.model");
 const unit_model_1 = require("../boq/models/unit.model");
 let InventoryModule = class InventoryModule {
@@ -27,9 +28,10 @@ exports.InventoryModule = InventoryModule = __decorate([
                 inventory_request_model_1.InventoryRequest,
                 inventory_dispatch_model_1.InventoryDispatch,
                 inventory_master_model_1.InventoryMaster,
-                materials_model_1.Material,
+                project_materials_model_1.ProjectMaterial,
                 unit_model_1.Unit,
                 brand_model_1.Brand,
+                inventory_category_model_1.InventoryCategory,
             ]),
         ],
         controllers: [inventory_controller_1.InventoryController],

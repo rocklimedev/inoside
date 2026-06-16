@@ -63,23 +63,28 @@ let UsersService = class UsersService {
         this.cdnService = cdnService;
     }
     async create(createUserDto) {
-        const { email, password, role_id, ...rest } = createUserDto;
+        const { email, password, ...rest } = createUserDto;
         const existingUser = await this.userModel.findOne({
             where: { email },
         });
         if (existingUser) {
             throw new common_1.ConflictException(user_messages_1.USER_MESSAGES.EMAIL_EXISTS);
         }
-        const role = await this.roleModel.findByPk(role_id);
-        if (!role) {
-            throw new common_1.BadRequestException(user_messages_1.USER_MESSAGES.INVALID_ROLE);
+        const defaultRole = await this.roleModel.findOne({
+            where: {
+                name: 'employee',
+            },
+        });
+        if (!defaultRole) {
+            throw new common_1.BadRequestException('Default role not configured in system');
         }
         const password_hash = await bcrypt.hash(password, 10);
         const user = await this.userModel.create({
             ...rest,
             email,
-            role_id,
+            role_id: defaultRole.id,
             password_hash,
+            is_active: false,
             is_email_verified: false,
         });
         const { password_hash: _, ...result } = user.toJSON();

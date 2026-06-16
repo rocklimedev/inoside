@@ -50,18 +50,12 @@ export default function RegisterPage() {
   const { user } = useAuth();
 
   const [register, { isLoading: isRegistering }] = useRegisterMutation();
-  const {
-    data: rolesData,
-    isLoading: rolesLoading,
-    error: rolesError,
-  } = useGetRolesQuery();
 
   const [formData, setFormData] = useState({
     name: "",
     email: "",
     password: "",
     phone: "",
-    role_id: "",
   });
 
   const [showPassword, setShowPassword] = useState(false);
@@ -70,16 +64,6 @@ export default function RegisterPage() {
   const [emailFocused, setEmailFocused] = useState(false);
   const [passwordFocused, setPasswordFocused] = useState(false);
   const [phoneFocused, setPhoneFocused] = useState(false);
-
-  // Redirect if already logged in
-  useEffect(() => {
-    if (user) {
-      const route = roleRoutes[user.role] || "/dashboard/architect";
-      router.replace(route);
-    }
-  }, [user, router]);
-
-  if (user) return null;
 
   const validate = () => {
     const errs = {};
@@ -90,7 +74,6 @@ export default function RegisterPage() {
     if (!formData.password) errs.password = "Password is required";
     else if (formData.password.length < 6)
       errs.password = "Minimum 6 characters";
-    if (!formData.role_id) errs.role = "Please select your role";
 
     setErrors(errs);
     return Object.keys(errs).length === 0;
@@ -100,11 +83,6 @@ export default function RegisterPage() {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
     if (errors[name]) setErrors((prev) => ({ ...prev, [name]: "" }));
-  };
-
-  const handleRoleChange = (value) => {
-    setFormData((prev) => ({ ...prev, role_id: value }));
-    if (errors.role) setErrors((prev) => ({ ...prev, role: "" }));
   };
 
   const handleRegister = async (e) => {
@@ -127,8 +105,6 @@ export default function RegisterPage() {
   const emailActive = emailFocused || formData.email.length > 0;
   const passwordActive = passwordFocused || formData.password.length > 0;
   const phoneActive = phoneFocused || formData.phone.length > 0;
-
-  const availableRoles = rolesData?.data || rolesData || [];
 
   return (
     <div
@@ -494,53 +470,10 @@ export default function RegisterPage() {
               )}
             </div>
 
-            {/* Dynamic Role Selector - FIXED */}
-            <div>
-              <Select value={formData.role_id} onValueChange={handleRoleChange}>
-                <SelectTrigger
-                  className={`h-14 px-4 text-sm rounded-lg border ${
-                    errors.role
-                      ? "border-red-500"
-                      : "border-gray-200 hover:border-gray-300"
-                  } focus:border-[#ef7f1b] focus:ring-2 focus:ring-[#ef7f1b]/20`}
-                  disabled={rolesLoading}
-                >
-                  <SelectValue
-                    placeholder={
-                      rolesLoading ? "Loading roles..." : "Select your role"
-                    }
-                  />
-                </SelectTrigger>
-
-                <SelectContent>
-                  {availableRoles.length > 0 ? (
-                    availableRoles.map((role) => (
-                      <SelectItem key={role.id} value={role.id.toString()}>
-                        {role.display_name || role.name}
-                      </SelectItem>
-                    ))
-                  ) : (
-                    <div className="px-4 py-3 text-sm text-gray-500">
-                      No roles available
-                    </div>
-                  )}
-                </SelectContent>
-              </Select>
-
-              {errors.role && (
-                <p className="text-red-500 text-xs mt-1">{errors.role}</p>
-              )}
-              {rolesError && (
-                <p className="text-red-500 text-xs mt-1">
-                  Failed to load roles
-                </p>
-              )}
-            </div>
-
             {/* Submit Button */}
             <button
               type="submit"
-              disabled={isRegistering || rolesLoading}
+              disabled={isRegistering}
               className="w-full h-12 bg-[#ef7f1b] hover:bg-[#d66e15] text-white font-bold rounded-lg flex items-center justify-center gap-2 disabled:opacity-70"
             >
               {isRegistering ? (

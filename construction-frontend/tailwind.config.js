@@ -70,7 +70,7 @@ module.exports = {
         },
 
         brand: {
-          orange: "#ef7f1b",
+          orange: "#dc2626",
           amber: "#f59e0b",
           slate: "#0f172a",
           surface: "#f8fafc",
@@ -79,7 +79,7 @@ module.exports = {
 
       boxShadow: {
         soft: "0 4px 20px rgba(0,0,0,0.06)",
-        glow: "0 0 0 1px rgba(239,127,27,0.15), 0 8px 30px rgba(239,127,27,0.12)",
+        glow: "0 0 0 1px rgba(220,38,38,0.15), 0 8px 30px rgba(220,38,38,0.12)",
       },
 
       backdropBlur: {

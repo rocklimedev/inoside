@@ -14,20 +14,33 @@ export default function NoAccessPage() {
   useEffect(() => {
     if (!user) {
       router.replace("/login");
-    } else if (user.is_active === true || user.isActive === true) {
-      const route =
-        {
-          Architect: "/dashboard/architect",
-          Client: "/dashboard/client",
-          Builder: "/dashboard/builder",
-          "Site Supervisor": "/dashboard/supervisor",
-          "Team Member": "/dashboard/team",
-        }[user.role] || "/dashboard/architect";
-
-      router.replace(route);
+      return;
     }
-  }, [user, router]);
 
+    const isEmailVerified = user.is_email_verified ?? user.isEmailVerified;
+
+    const isActive = user.is_active ?? user.isActive;
+
+    const role = typeof user.role === "object" ? user.role?.name : user.role;
+
+    // Allow staying on no-access page
+    if (!isEmailVerified || !isActive || !role) {
+      return;
+    }
+
+    const roleRoutes = {
+      architect: "/dashboard/architect",
+      client: "/dashboard/client",
+      builder: "/dashboard/builder",
+      site_supervisor: "/dashboard/site-supervisor",
+      team_member: "/dashboard/team",
+      admin: "/dashboard/admin",
+      super_admin: "/dashboard/admin",
+      developer: "/dashboard/developer",
+    };
+
+    router.replace(roleRoutes[role.toLowerCase()] || "/dashboard");
+  }, [user, router]);
   const handleLogout = () => {
     logout();
     router.push("/login");

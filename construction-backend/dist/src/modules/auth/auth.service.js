@@ -66,26 +66,30 @@ let AuthService = class AuthService {
         this.authEngagement = authEngagement;
     }
     async register(createUserDto) {
-        const { email, password, role_id, avatar_url, avatar_thumbnail, ...rest } = createUserDto;
+        const { email, password, avatar_url, avatar_thumbnail, ...rest } = createUserDto;
         const existingUser = await this.userModel.findOne({
             where: { email },
         });
         if (existingUser) {
             throw new common_1.ConflictException('User with this email already exists');
         }
-        const role = await this.roleModel.findByPk(role_id);
-        if (!role) {
-            throw new common_1.BadRequestException('Invalid role_id provided');
+        const defaultRole = await this.roleModel.findOne({
+            where: {
+                name: 'user',
+            },
+        });
+        if (!defaultRole) {
+            throw new common_1.BadRequestException('Default role not configured in the system');
         }
         const password_hash = await bcrypt.hash(password, 10);
         const user = await this.userModel.create({
             name: rest.name,
             email,
-            role_id,
+            role_id: defaultRole.id,
             password_hash,
             avatar_url: avatar_url ?? null,
             avatar_thumbnail: avatar_thumbnail ?? null,
-            is_active: rest.is_active ?? true,
+            is_active: false,
             is_email_verified: false,
         });
         const createdUser = await this.userModel.findByPk(user.id, {

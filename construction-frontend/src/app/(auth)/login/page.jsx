@@ -65,58 +65,84 @@ export default function LoginPage() {
 
   const handleLogin = async (e) => {
     e.preventDefault();
+
     if (!validate()) return;
 
     setLoading(true);
     setErrors({});
 
     try {
-      const res = await login({ email, password });
+      const res = await login({
+        email,
+        password,
+      });
 
-      let userData = res?.user || userMeta;
+      let userData = res?.user;
 
-      // Safety refresh if needed
-      if (!userData?.role || !userData?.is_active) {
+      // Fallback if login response doesn't contain user
+      if (!userData) {
         await refreshUser();
-        await new Promise((resolve) => setTimeout(resolve, 250));
+        await new Promise((resolve) => setTimeout(resolve, 300));
+
         userData = userMeta;
       }
 
       if (!userData) {
-        toast.error("Login failed. Please try again.");
+        toast.error("Unable to fetch user information.");
         return;
       }
 
-      // ================= POST LOGIN VALIDATIONS =================
-      if (!userData.is_email_verified && !userData.isEmailVerified) {
-        toast.error("Please verify your email address first.");
+      const isEmailVerified =
+        userData.is_email_verified ?? userData.isEmailVerified;
+
+      const isActive = userData.is_active ?? userData.isActive;
+
+      const role =
+        typeof userData.role === "object" ? userData.role?.name : userData.role;
+
+      // ================= ACCESS CHECK =================
+
+      if (!isEmailVerified || !isActive) {
+        toast.error(
+          "Your account is not yet approved. Please verify your email and wait for administrator approval.",
+        );
+
         router.replace("/no-access");
         return;
       }
 
-      if (!userData.is_active && !userData.isActive) {
-        toast.info("Account is not active yet");
-        router.replace("/no-access");
-        return;
-      }
+      // ================= ROLE CHECK =================
 
-      if (!userData.role) {
-        toast.error("No role assigned to your account. Contact administrator.");
+      if (!role) {
+        toast.error(
+          "No role has been assigned to your account. Contact administrator.",
+        );
+
+        router.replace("/no-access");
         return;
       }
 
       // ================= SUCCESS =================
+
       toast.success("Login successful!");
 
-      const roleKey = userData.role.toLowerCase();
+      const roleKey = role.toLowerCase();
+
       const route = roleRoutes[roleKey] || "/dashboard";
 
       router.replace(route);
     } catch (err) {
       const message =
-        err?.data?.message || err?.message || "Invalid credentials";
+        err?.response?.data?.message ||
+        err?.data?.message ||
+        err?.message ||
+        "Invalid credentials";
+
       toast.error(message);
-      setErrors({ general: message });
+
+      setErrors({
+        general: typeof message === "string" ? message : "Login failed",
+      });
     } finally {
       setLoading(false);
     }

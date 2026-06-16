@@ -15,9 +15,9 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.InventoryController = void 0;
 const common_1 = require("@nestjs/common");
 const inventory_service_1 = require("./inventory.service");
-const create_inventory_dispatch_dto_1 = require("./dto/create-inventory-dispatch.dto");
 const create_inventory_request_dto_1 = require("./dto/create-inventory-request.dto");
 const update_inventory_request_dto_1 = require("./dto/update-inventory-request.dto");
+const create_inventory_dispatch_dto_1 = require("./dto/create-inventory-dispatch.dto");
 const update_inventory_dispatch_dto_1 = require("./dto/update-inventory-dispatch.dto");
 const create_inventory_master_dto_1 = require("./dto/create-inventory-master.dto");
 const update_inventory_master_dto_1 = require("./dto/update-inventory-master.dto");
@@ -65,8 +65,14 @@ let InventoryController = class InventoryController {
     findAllDispatches() {
         return this.inventoryService.findAllDispatches();
     }
+    findDispatch(id) {
+        return this.inventoryService.findDispatchById(id);
+    }
     updateDispatch(id, dto) {
         return this.inventoryService.updateDispatch(id, dto);
+    }
+    deleteDispatch(id) {
+        return this.inventoryService.deleteDispatch(id);
     }
     createMaster(dto) {
         return this.inventoryService.createMaster(dto);
@@ -74,16 +80,19 @@ let InventoryController = class InventoryController {
     findAllMaster() {
         return this.inventoryService.findAllMaster();
     }
+    findMaster(id) {
+        return this.inventoryService.findMasterById(id);
+    }
     updateMaster(id, dto) {
         return this.inventoryService.updateMaster(id, dto);
     }
     deleteMaster(id) {
         return this.inventoryService.deleteMaster(id);
     }
-    findMaterials() {
-        return this.inventoryService.findAllMaterials();
+    findAllProjectMaterials() {
+        return this.inventoryService.findAllProjectMaterials();
     }
-    findBrands() {
+    findAllBrands() {
         return this.inventoryService.findAllBrands();
     }
     createBrand(body) {
@@ -185,6 +194,13 @@ __decorate([
     __metadata("design:returntype", void 0)
 ], InventoryController.prototype, "findAllDispatches", null);
 __decorate([
+    (0, common_1.Get)('dispatches/:id'),
+    __param(0, (0, common_1.Param)('id')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String]),
+    __metadata("design:returntype", void 0)
+], InventoryController.prototype, "findDispatch", null);
+__decorate([
     (0, common_1.Put)('dispatches/:id'),
     __param(0, (0, common_1.Param)('id')),
     __param(1, (0, common_1.Body)()),
@@ -192,6 +208,13 @@ __decorate([
     __metadata("design:paramtypes", [String, update_inventory_dispatch_dto_1.UpdateInventoryDispatchDto]),
     __metadata("design:returntype", void 0)
 ], InventoryController.prototype, "updateDispatch", null);
+__decorate([
+    (0, common_1.Delete)('dispatches/:id'),
+    __param(0, (0, common_1.Param)('id')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String]),
+    __metadata("design:returntype", void 0)
+], InventoryController.prototype, "deleteDispatch", null);
 __decorate([
     (0, common_1.Post)('master'),
     __param(0, (0, common_1.Body)()),
@@ -205,6 +228,13 @@ __decorate([
     __metadata("design:paramtypes", []),
     __metadata("design:returntype", void 0)
 ], InventoryController.prototype, "findAllMaster", null);
+__decorate([
+    (0, common_1.Get)('master/:id'),
+    __param(0, (0, common_1.Param)('id')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String]),
+    __metadata("design:returntype", void 0)
+], InventoryController.prototype, "findMaster", null);
 __decorate([
     (0, common_1.Put)('master/:id'),
     __param(0, (0, common_1.Param)('id')),
@@ -225,13 +255,13 @@ __decorate([
     __metadata("design:type", Function),
     __metadata("design:paramtypes", []),
     __metadata("design:returntype", void 0)
-], InventoryController.prototype, "findMaterials", null);
+], InventoryController.prototype, "findAllProjectMaterials", null);
 __decorate([
     (0, common_1.Get)('brands'),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", []),
     __metadata("design:returntype", void 0)
-], InventoryController.prototype, "findBrands", null);
+], InventoryController.prototype, "findAllBrands", null);
 __decorate([
     (0, common_1.Post)('brands'),
     __param(0, (0, common_1.Body)()),

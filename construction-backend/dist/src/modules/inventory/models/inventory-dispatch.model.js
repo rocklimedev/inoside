@@ -17,9 +17,7 @@ let InventoryDispatch = class InventoryDispatch extends sequelize_typescript_1.M
 exports.InventoryDispatch = InventoryDispatch;
 __decorate([
     sequelize_typescript_1.PrimaryKey,
-    (0, sequelize_typescript_1.Column)({
-        type: sequelize_typescript_1.DataType.CHAR(36),
-    }),
+    (0, sequelize_typescript_1.Column)(sequelize_typescript_1.DataType.CHAR(36)),
     __metadata("design:type", String)
 ], InventoryDispatch.prototype, "id", void 0);
 __decorate([
@@ -39,11 +37,11 @@ __decorate([
         type: sequelize_typescript_1.DataType.DATE,
         allowNull: true,
     }),
-    __metadata("design:type", Date)
+    __metadata("design:type", Object)
 ], InventoryDispatch.prototype, "dispatch_date", void 0);
 __decorate([
     (0, sequelize_typescript_1.Column)({
-        type: sequelize_typescript_1.DataType.DECIMAL(12, 2),
+        type: sequelize_typescript_1.DataType.DECIMAL(12, 3),
         allowNull: false,
     }),
     __metadata("design:type", Number)
@@ -53,16 +51,24 @@ __decorate([
         type: sequelize_typescript_1.DataType.STRING(100),
         allowNull: true,
     }),
-    __metadata("design:type", String)
+    __metadata("design:type", Object)
 ], InventoryDispatch.prototype, "vehicle_challan", void 0);
+__decorate([
+    (0, sequelize_typescript_1.Column)({
+        type: sequelize_typescript_1.DataType.STRING(100),
+        allowNull: true,
+    }),
+    __metadata("design:type", Object)
+], InventoryDispatch.prototype, "driver_name", void 0);
 __decorate([
     (0, sequelize_typescript_1.Column)({
         type: sequelize_typescript_1.DataType.DECIMAL(12, 2),
         allowNull: true,
     }),
-    __metadata("design:type", Number)
+    __metadata("design:type", Object)
 ], InventoryDispatch.prototype, "received_quantity", void 0);
 __decorate([
+    (0, sequelize_typescript_1.Default)(false),
     (0, sequelize_typescript_1.Column)({
         type: sequelize_typescript_1.DataType.BOOLEAN,
         allowNull: true,
@@ -70,6 +76,14 @@ __decorate([
     __metadata("design:type", Boolean)
 ], InventoryDispatch.prototype, "damage_shortage", void 0);
 __decorate([
+    (0, sequelize_typescript_1.Column)({
+        type: sequelize_typescript_1.DataType.DECIMAL(12, 3),
+        allowNull: true,
+    }),
+    __metadata("design:type", Object)
+], InventoryDispatch.prototype, "shortage_quantity", void 0);
+__decorate([
+    (0, sequelize_typescript_1.Default)(false),
     (0, sequelize_typescript_1.Column)({
         type: sequelize_typescript_1.DataType.BOOLEAN,
         allowNull: true,
@@ -81,12 +95,25 @@ __decorate([
         type: sequelize_typescript_1.DataType.STRING(500),
         allowNull: true,
     }),
-    __metadata("design:type", String)
+    __metadata("design:type", Object)
 ], InventoryDispatch.prototype, "delivery_photo_url", void 0);
+__decorate([
+    (0, sequelize_typescript_1.Column)({
+        type: sequelize_typescript_1.DataType.TEXT,
+        allowNull: true,
+    }),
+    __metadata("design:type", Object)
+], InventoryDispatch.prototype, "remarks", void 0);
+__decorate([
+    (0, sequelize_typescript_1.Column)({ type: sequelize_typescript_1.DataType.DATE }),
+    __metadata("design:type", Date)
+], InventoryDispatch.prototype, "created_at", void 0);
 exports.InventoryDispatch = InventoryDispatch = __decorate([
     (0, sequelize_typescript_1.Table)({
         tableName: 'inventory_dispatches',
-        timestamps: false,
+        timestamps: true,
+        createdAt: 'created_at',
+        updatedAt: false,
     })
 ], InventoryDispatch);
 //# sourceMappingURL=inventory-dispatch.model.js.map

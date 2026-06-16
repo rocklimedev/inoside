@@ -6,12 +6,15 @@ import {
   Param,
   Post,
   Put,
+  NotFoundException,
 } from '@nestjs/common';
 
 import { InventoryService } from './inventory.service';
-import { CreateInventoryDispatchDto } from './dto/create-inventory-dispatch.dto';
+
 import { CreateInventoryRequestDto } from './dto/create-inventory-request.dto';
 import { UpdateInventoryRequestDto } from './dto/update-inventory-request.dto';
+
+import { CreateInventoryDispatchDto } from './dto/create-inventory-dispatch.dto';
 import { UpdateInventoryDispatchDto } from './dto/update-inventory-dispatch.dto';
 
 import { CreateInventoryMasterDto } from './dto/create-inventory-master.dto';
@@ -22,15 +25,8 @@ export class InventoryController {
   constructor(private readonly inventoryService: InventoryService) {}
 
   // ====================== UNITS ======================
-
   @Post('units')
-  createUnit(
-    @Body()
-    body: {
-      name: string;
-      short_name: string;
-    },
-  ) {
+  createUnit(@Body() body: { name: string; short_name: string }) {
     return this.inventoryService.createUnit(body.name, body.short_name);
   }
 
@@ -52,11 +48,7 @@ export class InventoryController {
   @Put('units/:id')
   updateUnit(
     @Param('id') id: string,
-    @Body()
-    body: {
-      name?: string;
-      short_name?: string;
-    },
+    @Body() body: { name?: string; short_name?: string },
   ) {
     return this.inventoryService.updateUnit(id, body.name, body.short_name);
   }
@@ -66,8 +58,7 @@ export class InventoryController {
     return this.inventoryService.deleteUnit(id);
   }
 
-  // ---------------- REQUESTS ----------------
-
+  // ====================== INVENTORY REQUESTS ======================
   @Post('requests')
   createRequest(@Body() dto: CreateInventoryRequestDto) {
     return this.inventoryService.createRequest(dto);
@@ -96,8 +87,7 @@ export class InventoryController {
     return this.inventoryService.deleteRequest(id);
   }
 
-  // ---------------- DISPATCH ----------------
-
+  // ====================== INVENTORY DISPATCHES ======================
   @Post('dispatches')
   createDispatch(@Body() dto: CreateInventoryDispatchDto) {
     return this.inventoryService.createDispatch(dto);
@@ -108,6 +98,11 @@ export class InventoryController {
     return this.inventoryService.findAllDispatches();
   }
 
+  @Get('dispatches/:id')
+  findDispatch(@Param('id') id: string) {
+    return this.inventoryService.findDispatchById(id);
+  }
+
   @Put('dispatches/:id')
   updateDispatch(
     @Param('id') id: string,
@@ -116,8 +111,12 @@ export class InventoryController {
     return this.inventoryService.updateDispatch(id, dto);
   }
 
-  // ---------------- MASTER ----------------
+  @Delete('dispatches/:id')
+  deleteDispatch(@Param('id') id: string) {
+    return this.inventoryService.deleteDispatch(id);
+  }
 
+  // ====================== INVENTORY MASTER ======================
   @Post('master')
   createMaster(@Body() dto: CreateInventoryMasterDto) {
     return this.inventoryService.createMaster(dto);
@@ -126,6 +125,11 @@ export class InventoryController {
   @Get('master')
   findAllMaster() {
     return this.inventoryService.findAllMaster();
+  }
+
+  @Get('master/:id')
+  findMaster(@Param('id') id: string) {
+    return this.inventoryService.findMasterById(id);
   }
 
   @Put('master/:id')
@@ -138,17 +142,15 @@ export class InventoryController {
     return this.inventoryService.deleteMaster(id);
   }
 
-  // ---------------- MATERIALS ----------------
-
+  // ====================== PROJECT MATERIALS ======================
   @Get('materials')
-  findMaterials() {
-    return this.inventoryService.findAllMaterials();
+  findAllProjectMaterials() {
+    return this.inventoryService.findAllProjectMaterials();
   }
 
-  // ---------------- BRANDS ----------------
-
+  // ====================== BRANDS ======================
   @Get('brands')
-  findBrands() {
+  findAllBrands() {
     return this.inventoryService.findAllBrands();
   }
 

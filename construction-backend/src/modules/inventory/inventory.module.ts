@@ -7,7 +7,8 @@ import { InventoryController } from './inventory.controller';
 import { InventoryRequest } from './models/inventory-request.model';
 import { InventoryDispatch } from './models/inventory-dispatch.model';
 import { InventoryMaster } from './models/inventory-master.model';
-import { Material } from './models/materials.model';
+import { ProjectMaterial } from './models/project-materials.model';
+import { InventoryCategory } from './models/inventory-category.model';
 import { Brand } from './models/brand.model';
 import { Unit } from '../boq/models/unit.model';
 @Module({
@@ -16,9 +17,10 @@ import { Unit } from '../boq/models/unit.model';
       InventoryRequest,
       InventoryDispatch,
       InventoryMaster,
-      Material,
+      ProjectMaterial,
       Unit,
       Brand,
+      InventoryCategory,
     ]),
   ],
   controllers: [InventoryController],

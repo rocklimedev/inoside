@@ -3,8 +3,6 @@ import {
   IsNotEmpty,
   IsString,
   IsOptional,
-  IsBoolean,
-  IsUUID,
   IsUrl,
 } from 'class-validator';
 
@@ -23,16 +21,6 @@ export class CreateUserDto {
   @IsOptional()
   @IsString()
   phone?: string;
-
-  @IsNotEmpty()
-  @IsUUID()
-  role_id!: string;
-
-  @IsOptional()
-  @IsBoolean()
-  is_active?: boolean;
-
-  // ================= NEW FIELDS =================
 
   @IsOptional()
   @IsUrl()

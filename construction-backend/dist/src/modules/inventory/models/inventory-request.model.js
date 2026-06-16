@@ -12,7 +12,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.InventoryRequest = void 0;
 const sequelize_typescript_1 = require("sequelize-typescript");
 const project_model_1 = require("../../projects/models/project.model");
-const materials_model_1 = require("./materials.model");
+const project_materials_model_1 = require("./project-materials.model");
 const vendor_model_1 = require("../../vendors/models/vendor.model");
 const user_model_1 = require("../../users/models/user.model");
 let InventoryRequest = class InventoryRequest extends sequelize_typescript_1.Model {
@@ -20,10 +20,8 @@ let InventoryRequest = class InventoryRequest extends sequelize_typescript_1.Mod
 exports.InventoryRequest = InventoryRequest;
 __decorate([
     sequelize_typescript_1.PrimaryKey,
-    (0, sequelize_typescript_1.Column)({
-        type: sequelize_typescript_1.DataType.CHAR(36),
-    }),
-    __metadata("design:type", Object)
+    (0, sequelize_typescript_1.Column)(sequelize_typescript_1.DataType.CHAR(36)),
+    __metadata("design:type", String)
 ], InventoryRequest.prototype, "id", void 0);
 __decorate([
     (0, sequelize_typescript_1.ForeignKey)(() => project_model_1.Project),
@@ -38,30 +36,30 @@ __decorate([
     __metadata("design:type", project_model_1.Project)
 ], InventoryRequest.prototype, "project", void 0);
 __decorate([
-    (0, sequelize_typescript_1.ForeignKey)(() => materials_model_1.Material),
+    (0, sequelize_typescript_1.ForeignKey)(() => project_materials_model_1.ProjectMaterial),
     (0, sequelize_typescript_1.Column)({
         type: sequelize_typescript_1.DataType.CHAR(36),
-        allowNull: true,
+        allowNull: false,
     }),
     __metadata("design:type", String)
-], InventoryRequest.prototype, "material_id", void 0);
+], InventoryRequest.prototype, "project_material_id", void 0);
 __decorate([
-    (0, sequelize_typescript_1.BelongsTo)(() => materials_model_1.Material),
-    __metadata("design:type", materials_model_1.Material)
-], InventoryRequest.prototype, "material", void 0);
+    (0, sequelize_typescript_1.BelongsTo)(() => project_materials_model_1.ProjectMaterial),
+    __metadata("design:type", project_materials_model_1.ProjectMaterial)
+], InventoryRequest.prototype, "projectMaterial", void 0);
 __decorate([
     (0, sequelize_typescript_1.Column)({
         type: sequelize_typescript_1.DataType.DECIMAL(12, 2),
-        allowNull: false,
+        allowNull: true,
     }),
-    __metadata("design:type", Number)
+    __metadata("design:type", Object)
 ], InventoryRequest.prototype, "quantity_required", void 0);
 __decorate([
     (0, sequelize_typescript_1.Column)({
         type: sequelize_typescript_1.DataType.DATEONLY,
         allowNull: true,
     }),
-    __metadata("design:type", String)
+    __metadata("design:type", Object)
 ], InventoryRequest.prototype, "required_date", void 0);
 __decorate([
     (0, sequelize_typescript_1.ForeignKey)(() => vendor_model_1.Vendor),
@@ -69,34 +67,42 @@ __decorate([
         type: sequelize_typescript_1.DataType.CHAR(36),
         allowNull: true,
     }),
-    __metadata("design:type", String)
+    __metadata("design:type", Object)
 ], InventoryRequest.prototype, "vendor_id", void 0);
 __decorate([
     (0, sequelize_typescript_1.BelongsTo)(() => vendor_model_1.Vendor),
     __metadata("design:type", vendor_model_1.Vendor)
 ], InventoryRequest.prototype, "vendor", void 0);
 __decorate([
+    (0, sequelize_typescript_1.Default)('Vendor'),
     (0, sequelize_typescript_1.Column)({
-        type: sequelize_typescript_1.DataType.ENUM('Vendor', 'Warehouse'),
-        allowNull: false,
+        type: sequelize_typescript_1.DataType.ENUM('Vendor', 'Warehouse', 'Site Stock'),
+        allowNull: true,
     }),
     __metadata("design:type", String)
 ], InventoryRequest.prototype, "source_type", void 0);
 __decorate([
     (0, sequelize_typescript_1.Default)('requested'),
     (0, sequelize_typescript_1.Column)({
-        type: sequelize_typescript_1.DataType.ENUM('requested', 'approved', 'dispatched', 'delivered'),
-        allowNull: false,
+        type: sequelize_typescript_1.DataType.ENUM('requested', 'approved', 'dispatched', 'delivered', 'rejected', 'cancelled'),
+        allowNull: true,
     }),
     __metadata("design:type", String)
 ], InventoryRequest.prototype, "status", void 0);
+__decorate([
+    (0, sequelize_typescript_1.Column)({
+        type: sequelize_typescript_1.DataType.TEXT,
+        allowNull: true,
+    }),
+    __metadata("design:type", Object)
+], InventoryRequest.prototype, "remarks", void 0);
 __decorate([
     (0, sequelize_typescript_1.ForeignKey)(() => user_model_1.User),
     (0, sequelize_typescript_1.Column)({
         type: sequelize_typescript_1.DataType.CHAR(36),
         allowNull: true,
     }),
-    __metadata("design:type", String)
+    __metadata("design:type", Object)
 ], InventoryRequest.prototype, "requested_by", void 0);
 __decorate([
     (0, sequelize_typescript_1.BelongsTo)(() => user_model_1.User, 'requested_by'),
@@ -108,24 +114,26 @@ __decorate([
         type: sequelize_typescript_1.DataType.CHAR(36),
         allowNull: true,
     }),
-    __metadata("design:type", String)
+    __metadata("design:type", Object)
 ], InventoryRequest.prototype, "approved_by", void 0);
 __decorate([
     (0, sequelize_typescript_1.BelongsTo)(() => user_model_1.User, 'approved_by'),
     __metadata("design:type", user_model_1.User)
 ], InventoryRequest.prototype, "approver", void 0);
 __decorate([
-    (0, sequelize_typescript_1.Column)({
-        type: sequelize_typescript_1.DataType.DATE,
-        allowNull: false,
-        defaultValue: sequelize_typescript_1.DataType.NOW,
-    }),
-    __metadata("design:type", Object)
+    (0, sequelize_typescript_1.Column)({ type: sequelize_typescript_1.DataType.DATE }),
+    __metadata("design:type", Date)
 ], InventoryRequest.prototype, "created_at", void 0);
+__decorate([
+    (0, sequelize_typescript_1.Column)({ type: sequelize_typescript_1.DataType.DATE }),
+    __metadata("design:type", Date)
+], InventoryRequest.prototype, "updated_at", void 0);
 exports.InventoryRequest = InventoryRequest = __decorate([
     (0, sequelize_typescript_1.Table)({
         tableName: 'inventory_requests',
-        timestamps: false,
+        timestamps: true,
+        createdAt: 'created_at',
+        updatedAt: 'updated_at',
     })
 ], InventoryRequest);
 //# sourceMappingURL=inventory-request.model.js.map

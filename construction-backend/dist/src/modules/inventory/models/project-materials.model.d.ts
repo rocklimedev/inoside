@@ -1,0 +1,31 @@
+import { Model } from 'sequelize-typescript';
+import { Project } from '../../projects/models/project.model';
+import { InventoryMaster } from './inventory-master.model';
+import { Unit } from '@/modules/boq/models/unit.model';
+import { Brand } from './brand.model';
+export declare class ProjectMaterial extends Model {
+    id: string;
+    item_name: string;
+    category: string | null;
+    project_id: string;
+    project: Project;
+    inventory_master_id: string | null;
+    inventoryMaster?: InventoryMaster;
+    item_code: string | null;
+    description: string | null;
+    specification: string | null;
+    unit_id: string | null;
+    unit?: Unit;
+    brand_id: string | null;
+    brand?: Brand;
+    quantity_estimated: number;
+    quantity_required: number;
+    quantity_received: number;
+    quantity_used: number;
+    rate: number | null;
+    gst_percent: number;
+    status: string;
+    remarks: string | null;
+    created_at: Date;
+    updated_at: Date;
+}

@@ -1,25 +1,25 @@
 import { Model } from 'sequelize-typescript';
-import { InferAttributes, InferCreationAttributes } from 'sequelize';
-import type { CreationOptional } from 'sequelize';
 import { Project } from '../../projects/models/project.model';
-import { Material } from './materials.model';
+import { ProjectMaterial } from './project-materials.model';
 import { Vendor } from '../../vendors/models/vendor.model';
 import { User } from '../../users/models/user.model';
-export declare class InventoryRequest extends Model<InferAttributes<InventoryRequest>, InferCreationAttributes<InventoryRequest>> {
-    id: CreationOptional<string>;
+export declare class InventoryRequest extends Model {
+    id: string;
     project_id: string;
-    project?: Project;
-    material_id?: string;
-    material?: Material;
-    quantity_required: number;
-    required_date?: string;
-    vendor_id?: string;
+    project: Project;
+    project_material_id: string;
+    projectMaterial: ProjectMaterial;
+    quantity_required: number | null;
+    required_date: string | null;
+    vendor_id: string | null;
     vendor?: Vendor;
-    source_type: 'Vendor' | 'Warehouse';
-    status: 'requested' | 'approved' | 'dispatched' | 'delivered';
-    requested_by?: string;
+    source_type: 'Vendor' | 'Warehouse' | 'Site Stock';
+    status: string;
+    remarks: string | null;
+    requested_by: string | null;
     requester?: User;
-    approved_by?: string;
+    approved_by: string | null;
     approver?: User;
-    created_at: CreationOptional<Date>;
+    created_at: Date;
+    updated_at: Date;
 }

@@ -8,27 +8,22 @@ import {
   BelongsTo,
   Default,
 } from 'sequelize-typescript';
-import { InferAttributes, InferCreationAttributes } from 'sequelize';
 
-import type { CreationOptional } from 'sequelize';
 import { Project } from '../../projects/models/project.model';
-import { Material } from './materials.model';
+import { ProjectMaterial } from './project-materials.model'; // renamed for clarity
 import { Vendor } from '../../vendors/models/vendor.model';
 import { User } from '../../users/models/user.model';
 
 @Table({
   tableName: 'inventory_requests',
-  timestamps: false,
+  timestamps: true,
+  createdAt: 'created_at',
+  updatedAt: 'updated_at',
 })
-export class InventoryRequest extends Model<
-  InferAttributes<InventoryRequest>,
-  InferCreationAttributes<InventoryRequest>
-> {
+export class InventoryRequest extends Model {
   @PrimaryKey
-  @Column({
-    type: DataType.CHAR(36),
-  })
-  declare id: CreationOptional<string>;
+  @Column(DataType.CHAR(36))
+  declare id: string;
 
   @ForeignKey(() => Project)
   @Column({
@@ -38,59 +33,73 @@ export class InventoryRequest extends Model<
   declare project_id: string;
 
   @BelongsTo(() => Project)
-  declare project?: Project;
+  declare project: Project;
 
-  @ForeignKey(() => Material)
+  @ForeignKey(() => ProjectMaterial)
   @Column({
     type: DataType.CHAR(36),
-    allowNull: true,
+    allowNull: false,
   })
-  declare material_id?: string;
+  declare project_material_id: string;
 
-  @BelongsTo(() => Material)
-  declare material?: Material;
+  @BelongsTo(() => ProjectMaterial)
+  declare projectMaterial: ProjectMaterial;
 
   @Column({
     type: DataType.DECIMAL(12, 2),
-    allowNull: false,
+    allowNull: true,
   })
-  declare quantity_required: number;
+  declare quantity_required: number | null;
 
   @Column({
     type: DataType.DATEONLY,
     allowNull: true,
   })
-  declare required_date?: string;
+  declare required_date: string | null;
 
   @ForeignKey(() => Vendor)
   @Column({
     type: DataType.CHAR(36),
     allowNull: true,
   })
-  declare vendor_id?: string;
+  declare vendor_id: string | null;
 
   @BelongsTo(() => Vendor)
   declare vendor?: Vendor;
 
+  @Default('Vendor')
   @Column({
-    type: DataType.ENUM('Vendor', 'Warehouse'),
-    allowNull: false,
+    type: DataType.ENUM('Vendor', 'Warehouse', 'Site Stock'),
+    allowNull: true,
   })
-  declare source_type: 'Vendor' | 'Warehouse';
+  declare source_type: 'Vendor' | 'Warehouse' | 'Site Stock';
 
   @Default('requested')
   @Column({
-    type: DataType.ENUM('requested', 'approved', 'dispatched', 'delivered'),
-    allowNull: false,
+    type: DataType.ENUM(
+      'requested',
+      'approved',
+      'dispatched',
+      'delivered',
+      'rejected',
+      'cancelled',
+    ),
+    allowNull: true,
   })
-  declare status: 'requested' | 'approved' | 'dispatched' | 'delivered';
+  declare status: string;
+
+  @Column({
+    type: DataType.TEXT,
+    allowNull: true,
+  })
+  declare remarks: string | null;
 
   @ForeignKey(() => User)
   @Column({
     type: DataType.CHAR(36),
     allowNull: true,
   })
-  declare requested_by?: string;
+  declare requested_by: string | null;
 
   @BelongsTo(() => User, 'requested_by')
   declare requester?: User;
@@ -100,15 +109,14 @@ export class InventoryRequest extends Model<
     type: DataType.CHAR(36),
     allowNull: true,
   })
-  declare approved_by?: string;
+  declare approved_by: string | null;
 
   @BelongsTo(() => User, 'approved_by')
   declare approver?: User;
 
-  @Column({
-    type: DataType.DATE,
-    allowNull: false,
-    defaultValue: DataType.NOW,
-  })
-  declare created_at: CreationOptional<Date>;
+  @Column({ type: DataType.DATE })
+  declare created_at: Date;
+
+  @Column({ type: DataType.DATE })
+  declare updated_at: Date;
 }

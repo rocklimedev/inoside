@@ -1,7 +1,7 @@
 import { InventoryService } from './inventory.service';
-import { CreateInventoryDispatchDto } from './dto/create-inventory-dispatch.dto';
 import { CreateInventoryRequestDto } from './dto/create-inventory-request.dto';
 import { UpdateInventoryRequestDto } from './dto/update-inventory-request.dto';
+import { CreateInventoryDispatchDto } from './dto/create-inventory-dispatch.dto';
 import { UpdateInventoryDispatchDto } from './dto/update-inventory-dispatch.dto';
 import { CreateInventoryMasterDto } from './dto/create-inventory-master.dto';
 import { UpdateInventoryMasterDto } from './dto/update-inventory-master.dto';
@@ -26,18 +26,29 @@ export declare class InventoryController {
     findAllRequests(): Promise<import("./models/inventory-request.model").InventoryRequest[]>;
     findRequest(id: string): Promise<import("./models/inventory-request.model").InventoryRequest>;
     updateRequest(id: string, dto: UpdateInventoryRequestDto): Promise<import("./models/inventory-request.model").InventoryRequest>;
-    deleteRequest(id: string): Promise<void>;
+    deleteRequest(id: string): Promise<{
+        message: string;
+    }>;
     createDispatch(dto: CreateInventoryDispatchDto): Promise<import("./models/inventory-dispatch.model").InventoryDispatch>;
     findAllDispatches(): Promise<import("./models/inventory-dispatch.model").InventoryDispatch[]>;
+    findDispatch(id: string): Promise<import("./models/inventory-dispatch.model").InventoryDispatch>;
     updateDispatch(id: string, dto: UpdateInventoryDispatchDto): Promise<import("./models/inventory-dispatch.model").InventoryDispatch>;
+    deleteDispatch(id: string): Promise<{
+        message: string;
+    }>;
     createMaster(dto: CreateInventoryMasterDto): Promise<import("./models/inventory-master.model").InventoryMaster>;
     findAllMaster(): Promise<import("./models/inventory-master.model").InventoryMaster[]>;
+    findMaster(id: string): Promise<import("./models/inventory-master.model").InventoryMaster>;
     updateMaster(id: string, dto: UpdateInventoryMasterDto): Promise<import("./models/inventory-master.model").InventoryMaster>;
-    deleteMaster(id: string): Promise<void>;
-    findMaterials(): Promise<import("./models/materials.model").Material[]>;
-    findBrands(): Promise<import("./models/brand.model").Brand[]>;
+    deleteMaster(id: string): Promise<{
+        message: string;
+    }>;
+    findAllProjectMaterials(): Promise<import("./models/project-materials.model").ProjectMaterial[]>;
+    findAllBrands(): Promise<import("./models/brand.model").Brand[]>;
     createBrand(body: {
         name: string;
     }): Promise<import("./models/brand.model").Brand>;
-    deleteBrand(id: string): Promise<void>;
+    deleteBrand(id: string): Promise<{
+        message: string;
+    }>;
 }

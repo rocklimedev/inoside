@@ -317,12 +317,14 @@ export default function ClientsPage() {
                 <Card
                   key={client.id}
                   onClick={() => setActiveClient(client)}
-                  className="flex items-center gap-4 p-4 cursor-pointer hover:shadow-md transition"
+                  className="flex items-center gap-4 p-4 cursor-pointer hover:shadow-md transition group"
                 >
-                  <div className="h-12 w-12 rounded-2xl bg-orange-50 flex items-center justify-center font-bold text-2xl text-[#ef7f1b]">
+                  {/* Avatar */}
+                  <div className="h-12 w-12 rounded-2xl bg-orange-50 flex items-center justify-center font-bold text-2xl text-[#ef7f1b] flex-shrink-0">
                     {client.name?.[0] || "C"}
                   </div>
 
+                  {/* Info */}
                   <div className="flex-1 min-w-0">
                     <p className="font-bold truncate text-base">
                       {client.name}
@@ -332,9 +334,10 @@ export default function ClientsPage() {
                     </p>
                   </div>
 
+                  {/* Communication Badge */}
                   {client.preferred_communication && (
                     <span
-                      className={`text-xs px-3 py-1 rounded-full font-medium ${
+                      className={`text-xs px-3 py-1 rounded-full font-medium flex-shrink-0 ${
                         COMMUNICATION_COLORS[client.preferred_communication] ||
                         "bg-gray-100"
                       }`}
@@ -343,7 +346,57 @@ export default function ClientsPage() {
                     </span>
                   )}
 
-                  <ChevronRight className="h-5 w-5 text-gray-300" />
+                  {/* Actions */}
+                  <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="text-[#ef7f1b] hover:text-[#ef7f1b]/80 p-2 h-8 w-8"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setEditingClient(client);
+                      }}
+                    >
+                      <Pencil className="h-4 w-4" />
+                    </Button>
+
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-8 w-8"
+                          onClick={(e) => e.stopPropagation()}
+                        >
+                          <MoreVertical className="h-4 w-4" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end">
+                        <DropdownMenuItem
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setEditingClient(client);
+                          }}
+                        >
+                          <Pencil className="mr-2 h-4 w-4" />
+                          Edit
+                        </DropdownMenuItem>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem
+                          className="text-red-600 focus:text-red-600"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleDelete(client.id);
+                          }}
+                        >
+                          <Trash2 className="mr-2 h-4 w-4" />
+                          Delete
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+
+                    <ChevronRight className="h-5 w-5 text-gray-300 ml-2" />
+                  </div>
                 </Card>
               ))}
             </div>

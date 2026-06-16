@@ -9,6 +9,7 @@ import {
   Default,
 } from 'sequelize-typescript';
 
+import { InventoryCategory } from './inventory-category.model';
 import { Unit } from '@/modules/boq/models/unit.model';
 import { Brand } from './brand.model';
 
@@ -18,11 +19,11 @@ import { Brand } from './brand.model';
   createdAt: 'created_at',
   updatedAt: 'updated_at',
 })
-export class InventoryMaster extends Model<InventoryMaster> {
+export class InventoryMaster extends Model {
   @PrimaryKey
   @Column({
     type: DataType.CHAR(36),
-    defaultValue: DataType.UUIDV4, // Recommended
+    defaultValue: DataType.UUIDV4,
   })
   declare id: string;
 
@@ -39,61 +40,104 @@ export class InventoryMaster extends Model<InventoryMaster> {
   })
   declare item_name: string;
 
+  @ForeignKey(() => InventoryCategory)
+  @Column({
+    type: DataType.CHAR(36),
+    allowNull: true,
+  })
+  declare category_id: string | null;
+
+  @BelongsTo(() => InventoryCategory)
+  declare category?: InventoryCategory;
+
   @Column({
     type: DataType.TEXT,
     allowNull: true,
   })
-  declare description: string | null; // ← Fixed
+  declare description: string | null;
 
-  // ================= UNIT =================
   @ForeignKey(() => Unit)
   @Column({
     type: DataType.CHAR(36),
     allowNull: true,
   })
-  declare unit_id: string | null; // ← Fixed
+  declare unit_id: string | null;
 
   @BelongsTo(() => Unit)
   declare unit?: Unit;
 
-  // ================= BRAND =================
-  @ForeignKey(() => Brand)
-  @Column({
-    type: DataType.CHAR(36),
-    allowNull: true,
-  })
-  declare brand_id: string | null; // ← Fixed
-
-  @BelongsTo(() => Brand)
-  declare brand?: Brand;
-
-  // ================= PRICING =================
-  @Default(0)
+  @Default(0.0)
   @Column({
     type: DataType.DECIMAL(14, 2),
-    allowNull: false,
+    allowNull: true,
   })
   declare default_rate: number;
 
-  // ================= SPEC =================
+  @Default(18.0)
+  @Column({
+    type: DataType.DECIMAL(5, 2),
+    allowNull: true,
+  })
+  declare gst_percent: number;
+
+  @Column({
+    type: DataType.STRING(20),
+    allowNull: true,
+  })
+  declare hsn_code: string | null;
+
+  @Default(0.0)
+  @Column({
+    type: DataType.DECIMAL(12, 3),
+    allowNull: true,
+  })
+  declare min_stock_level: number;
+
   @Column({
     type: DataType.TEXT,
     allowNull: true,
   })
-  declare specification: string | null; // ← Fixed
+  declare specification: string | null;
 
-  // ================= STATUS =================
   @Default(true)
   @Column({
     type: DataType.BOOLEAN,
-    allowNull: false,
+    allowNull: true,
   })
   declare is_active: boolean;
 
-  // ================= TIMESTAMPS =================
+  @Default(false)
+  @Column({
+    type: DataType.BOOLEAN,
+    allowNull: true,
+  })
+  declare is_serialized: boolean;
+
   @Column({ type: DataType.DATE })
   declare created_at: Date;
 
   @Column({ type: DataType.DATE })
   declare updated_at: Date;
+
+  @Column({
+    type: DataType.CHAR(36),
+    allowNull: true,
+  })
+  declare created_by: string | null;
+
+  @Column({
+    type: DataType.CHAR(36),
+    allowNull: true,
+  })
+  declare updated_by: string | null;
+
+  @ForeignKey(() => Brand)
+  @Column({
+    type: DataType.CHAR(36),
+    allowNull: true,
+  })
+  declare brand_id: string | null;
+
+  @BelongsTo(() => Brand)
+  declare brand?: Brand;
 }

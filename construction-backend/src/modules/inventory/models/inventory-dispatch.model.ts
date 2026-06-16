@@ -3,6 +3,7 @@ import {
   Column,
   Model,
   DataType,
+  Default,
   PrimaryKey,
   ForeignKey,
   BelongsTo,
@@ -12,13 +13,13 @@ import { InventoryRequest } from './inventory-request.model';
 
 @Table({
   tableName: 'inventory_dispatches',
-  timestamps: false,
+  timestamps: true,
+  createdAt: 'created_at',
+  updatedAt: false, // only created_at
 })
-export class InventoryDispatch extends Model<InventoryDispatch> {
+export class InventoryDispatch extends Model {
   @PrimaryKey
-  @Column({
-    type: DataType.CHAR(36),
-  })
+  @Column(DataType.CHAR(36))
   declare id: string;
 
   @ForeignKey(() => InventoryRequest)
@@ -35,10 +36,10 @@ export class InventoryDispatch extends Model<InventoryDispatch> {
     type: DataType.DATE,
     allowNull: true,
   })
-  declare dispatch_date: Date;
+  declare dispatch_date: Date | null;
 
   @Column({
-    type: DataType.DECIMAL(12, 2),
+    type: DataType.DECIMAL(12, 3),
     allowNull: false,
   })
   declare dispatch_quantity: number;
@@ -47,20 +48,34 @@ export class InventoryDispatch extends Model<InventoryDispatch> {
     type: DataType.STRING(100),
     allowNull: true,
   })
-  declare vehicle_challan: string;
+  declare vehicle_challan: string | null;
+
+  @Column({
+    type: DataType.STRING(100),
+    allowNull: true,
+  })
+  declare driver_name: string | null;
 
   @Column({
     type: DataType.DECIMAL(12, 2),
     allowNull: true,
   })
-  declare received_quantity: number;
+  declare received_quantity: number | null;
 
+  @Default(false)
   @Column({
     type: DataType.BOOLEAN,
     allowNull: true,
   })
   declare damage_shortage: boolean;
 
+  @Column({
+    type: DataType.DECIMAL(12, 3),
+    allowNull: true,
+  })
+  declare shortage_quantity: number | null;
+
+  @Default(false)
   @Column({
     type: DataType.BOOLEAN,
     allowNull: true,
@@ -71,5 +86,14 @@ export class InventoryDispatch extends Model<InventoryDispatch> {
     type: DataType.STRING(500),
     allowNull: true,
   })
-  declare delivery_photo_url: string;
+  declare delivery_photo_url: string | null;
+
+  @Column({
+    type: DataType.TEXT,
+    allowNull: true,
+  })
+  declare remarks: string | null;
+
+  @Column({ type: DataType.DATE })
+  declare created_at: Date;
 }

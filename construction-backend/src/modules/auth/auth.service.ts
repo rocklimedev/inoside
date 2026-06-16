@@ -32,8 +32,9 @@ export class AuthService {
   ) {}
 
   // ================= REGISTER =================
+  // ================= REGISTER =================
   async register(createUserDto: CreateUserDto): Promise<AuthUserResponse> {
-    const { email, password, role_id, avatar_url, avatar_thumbnail, ...rest } =
+    const { email, password, avatar_url, avatar_thumbnail, ...rest } =
       createUserDto;
 
     const existingUser = await this.userModel.findOne({
@@ -44,10 +45,17 @@ export class AuthService {
       throw new ConflictException('User with this email already exists');
     }
 
-    const role = await this.roleModel.findByPk(role_id);
+    // Get default role
+    const defaultRole = await this.roleModel.findOne({
+      where: {
+        name: 'user', // change according to your system
+      },
+    });
 
-    if (!role) {
-      throw new BadRequestException('Invalid role_id provided');
+    if (!defaultRole) {
+      throw new BadRequestException(
+        'Default role not configured in the system',
+      );
     }
 
     const password_hash = await bcrypt.hash(password, 10);
@@ -55,14 +63,19 @@ export class AuthService {
     const user = await this.userModel.create({
       name: rest.name,
       email,
-      role_id,
+
+      // Assign default role automatically
+      role_id: defaultRole.id,
+
       password_hash,
 
-      // Avatar fields
       avatar_url: avatar_url ?? null,
       avatar_thumbnail: avatar_thumbnail ?? null,
 
-      is_active: rest.is_active ?? true,
+      // New users require approval
+      is_active: false,
+
+      // Email must be verified later
       is_email_verified: false,
     });
 
@@ -78,12 +91,14 @@ export class AuthService {
     if (!createdUser) {
       throw new BadRequestException('Failed to create user');
     }
+
     await this.authEngagement.userRegistered({
       id: createdUser.id,
       name: createdUser.name,
       email: createdUser.email,
       role: createdUser.role?.name,
     });
+
     return this.formatUserResponse(createdUser);
   }
 
