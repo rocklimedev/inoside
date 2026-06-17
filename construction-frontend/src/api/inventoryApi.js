@@ -5,7 +5,6 @@ export const inventoryApi = baseApi.injectEndpoints({
     // =========================
     // 📦 INVENTORY REQUESTS
     // =========================
-
     getInventoryRequests: builder.query({
       query: () => `/inventory/requests`,
       providesTags: ["InventoryRequest"],
@@ -45,9 +44,13 @@ export const inventoryApi = baseApi.injectEndpoints({
     // =========================
     // 🚚 DISPATCHES
     // =========================
-
     getDispatches: builder.query({
       query: () => `/inventory/dispatches`,
+      providesTags: ["InventoryDispatch"],
+    }),
+
+    getDispatchById: builder.query({
+      query: (id) => `/inventory/dispatches/${id}`,
       providesTags: ["InventoryDispatch"],
     }),
 
@@ -55,6 +58,7 @@ export const inventoryApi = baseApi.injectEndpoints({
       query: (body) => ({
         url: "/inventory/dispatches",
         method: "POST",
+        body, // ✅ FIXED
       }),
       invalidatesTags: ["InventoryDispatch", "InventoryRequest"],
     }),
@@ -68,10 +72,17 @@ export const inventoryApi = baseApi.injectEndpoints({
       invalidatesTags: ["InventoryDispatch"],
     }),
 
+    deleteDispatch: builder.mutation({
+      query: (id) => ({
+        url: `/inventory/dispatches/${id}`,
+        method: "DELETE",
+      }),
+      invalidatesTags: ["InventoryDispatch"],
+    }),
+
     // =========================
     // 📦 INVENTORY MASTER
     // =========================
-
     getInventoryMaster: builder.query({
       query: (params) => {
         const search = params?.search || "";
@@ -107,9 +118,8 @@ export const inventoryApi = baseApi.injectEndpoints({
     }),
 
     // =========================
-    // 🧱 UNITS (NEW)
+    // 🧱 UNITS
     // =========================
-
     getUnits: builder.query({
       query: () => `/inventory/units`,
       providesTags: ["Unit"],
@@ -149,7 +159,6 @@ export const inventoryApi = baseApi.injectEndpoints({
     // =========================
     // 🏷️ BRANDS
     // =========================
-
     getBrands: builder.query({
       query: () => `/inventory/brands`,
       providesTags: ["Brand"],
@@ -159,7 +168,7 @@ export const inventoryApi = baseApi.injectEndpoints({
       query: (body) => ({
         url: `/inventory/brands`,
         method: "POST",
-        body,
+        body, // { name: string }
       }),
       invalidatesTags: ["Brand"],
     }),
@@ -175,10 +184,101 @@ export const inventoryApi = baseApi.injectEndpoints({
     // =========================
     // 🧱 MATERIALS
     // =========================
-
     getMaterials: builder.query({
       query: () => `/inventory/materials`,
       providesTags: ["Material"],
+    }),
+    getProjectMaterials: builder.query({
+      query: (projectId) => `/inventory/projects/${projectId}/materials`,
+      providesTags: ["Material"],
+    }),
+
+    getProjectMaterialById: builder.query({
+      query: (id) => `/inventory/materials/${id}`,
+      providesTags: ["Material"],
+    }),
+
+    getProjectMaterialSummary: builder.query({
+      query: (projectId) =>
+        `/inventory/projects/${projectId}/materials/summary`,
+      providesTags: ["Material"],
+    }),
+
+    getProjectMaterialStatus: builder.query({
+      query: (projectId) => `/inventory/projects/${projectId}/materials/status`,
+      providesTags: ["Material"],
+    }),
+
+    getProjectMaterialConsumption: builder.query({
+      query: (projectId) =>
+        `/inventory/projects/${projectId}/materials/consumption`,
+      providesTags: ["Material"],
+    }),
+
+    getProjectInventoryValue: builder.query({
+      query: (projectId) => `/inventory/projects/${projectId}/materials/value`,
+      providesTags: ["Material"],
+    }),
+
+    getPendingMaterials: builder.query({
+      query: () => `/inventory/materials/pending`,
+      providesTags: ["Material"],
+    }),
+
+    getProjectPendingMaterials: builder.query({
+      query: (projectId) =>
+        `/inventory/projects/${projectId}/materials/pending`,
+      providesTags: ["Material"],
+    }),
+    getProjectRequests: builder.query({
+      query: (projectId) => `/inventory/projects/${projectId}/requests`,
+      providesTags: ["InventoryRequest"],
+    }),
+
+    getPendingRequests: builder.query({
+      query: () => `/inventory/requests/pending`,
+      providesTags: ["InventoryRequest"],
+    }),
+    getProjectDispatches: builder.query({
+      query: (projectId) => `/inventory/projects/${projectId}/dispatches`,
+      providesTags: ["InventoryDispatch"],
+    }),
+    searchInventory: builder.query({
+      query: (search) =>
+        `/inventory/master/search/${encodeURIComponent(search)}`,
+      providesTags: ["InventoryMaster"],
+    }),
+
+    getInventoryByCategory: builder.query({
+      query: (categoryId) => `/inventory/master/category/${categoryId}`,
+      providesTags: ["InventoryMaster"],
+    }),
+
+    getInventoryByBrand: builder.query({
+      query: (brandId) => `/inventory/master/brand/${brandId}`,
+      providesTags: ["InventoryMaster"],
+    }),
+    getInventoryDashboard: builder.query({
+      query: () => `/inventory/dashboard`,
+      providesTags: [
+        "InventoryMaster",
+        "InventoryRequest",
+        "InventoryDispatch",
+        "Material",
+      ],
+    }),
+
+    getProjectInventoryDashboard: builder.query({
+      query: (projectId) => `/inventory/dashboard/project/${projectId}`,
+      providesTags: [
+        "InventoryMaster",
+        "InventoryRequest",
+        "InventoryDispatch",
+        "Material",
+      ],
+    }),
+    getInventoryHealth: builder.query({
+      query: () => `/inventory/health`,
     }),
   }),
 });
@@ -191,15 +291,16 @@ export const {
   useDeleteInventoryRequestMutation,
 
   useGetDispatchesQuery,
+  useGetDispatchByIdQuery,
   useCreateDispatchMutation,
   useUpdateDispatchMutation,
+  useDeleteDispatchMutation,
 
   useGetInventoryMasterQuery,
   useCreateInventoryMasterMutation,
   useUpdateInventoryMasterMutation,
   useDeleteInventoryMasterMutation,
 
-  // === Units ===
   useGetUnitsQuery,
   useGetUnitByIdQuery,
   useCreateUnitMutation,
@@ -211,4 +312,26 @@ export const {
   useDeleteBrandMutation,
 
   useGetMaterialsQuery,
+  useGetProjectMaterialsQuery,
+  useGetProjectMaterialByIdQuery,
+  useGetProjectMaterialSummaryQuery,
+  useGetProjectMaterialStatusQuery,
+  useGetProjectMaterialConsumptionQuery,
+  useGetProjectInventoryValueQuery,
+  useGetPendingMaterialsQuery,
+  useGetProjectPendingMaterialsQuery,
+
+  useGetProjectRequestsQuery,
+  useGetPendingRequestsQuery,
+
+  useGetProjectDispatchesQuery,
+
+  useSearchInventoryQuery,
+  useGetInventoryByCategoryQuery,
+  useGetInventoryByBrandQuery,
+
+  useGetInventoryDashboardQuery,
+  useGetProjectInventoryDashboardQuery,
+
+  useGetInventoryHealthQuery,
 } = inventoryApi;

@@ -143,11 +143,51 @@ export class InventoryController {
   }
 
   // ====================== PROJECT MATERIALS ======================
+
   @Get('materials')
   findAllProjectMaterials() {
     return this.inventoryService.findAllProjectMaterials();
   }
 
+  @Get('materials/:id')
+  findProjectMaterial(@Param('id') id: string) {
+    return this.inventoryService.findProjectMaterialById(id);
+  }
+
+  @Get('projects/:projectId/materials')
+  findProjectMaterialsByProject(@Param('projectId') projectId: string) {
+    return this.inventoryService.findProjectMaterialsByProject(projectId);
+  }
+
+  @Get('projects/:projectId/materials/summary')
+  getProjectMaterialSummary(@Param('projectId') projectId: string) {
+    return this.inventoryService.getProjectMaterialSummary(projectId);
+  }
+
+  @Get('projects/:projectId/materials/status')
+  getProjectMaterialStatus(@Param('projectId') projectId: string) {
+    return this.inventoryService.getProjectMaterialStatus(projectId);
+  }
+
+  @Get('projects/:projectId/materials/consumption')
+  getMaterialConsumption(@Param('projectId') projectId: string) {
+    return this.inventoryService.getMaterialConsumption(projectId);
+  }
+
+  @Get('projects/:projectId/materials/value')
+  getProjectInventoryValue(@Param('projectId') projectId: string) {
+    return this.inventoryService.getProjectInventoryValue(projectId);
+  }
+
+  @Get('materials/pending')
+  getPendingMaterials() {
+    return this.inventoryService.getPendingMaterials();
+  }
+
+  @Get('projects/:projectId/materials/pending')
+  getProjectPendingMaterials(@Param('projectId') projectId: string) {
+    return this.inventoryService.getPendingMaterials(projectId);
+  }
   // ====================== BRANDS ======================
   @Get('brands')
   findAllBrands() {

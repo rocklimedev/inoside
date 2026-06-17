@@ -48,6 +48,56 @@ export declare class InventoryService {
         message: string;
     }>;
     findAllProjectMaterials(): Promise<ProjectMaterial[]>;
+    findProjectMaterialsByProject(projectId: string): Promise<ProjectMaterial[]>;
+    findProjectMaterialById(id: string): Promise<ProjectMaterial>;
+    getProjectMaterialSummary(projectId: string): Promise<{
+        totalMaterials: number;
+        estimatedQty: number;
+        requiredQty: number;
+        receivedQty: number;
+        usedQty: number;
+    }>;
+    getProjectInventoryValue(projectId: string): Promise<{
+        projectId: string;
+        totalValue: number;
+    }>;
+    getProjectMaterialStatus(projectId: string): Promise<{
+        planned: number;
+        ordered: number;
+        received: number;
+        inUse: number;
+        closed: number;
+    }>;
+    getPendingMaterials(projectId?: string): Promise<ProjectMaterial[]>;
+    getMaterialConsumption(projectId: string): Promise<{
+        id: string;
+        itemName: string;
+        estimated: number;
+        required: number;
+        received: number;
+        used: number;
+        balance: number;
+    }[]>;
+    findRequestsByProject(projectId: string): Promise<InventoryRequest[]>;
+    getPendingRequests(): Promise<InventoryRequest[]>;
+    findDispatchesByProject(projectId: string): Promise<InventoryDispatch[]>;
+    searchInventory(query: string): Promise<InventoryMaster[]>;
+    getInventoryByCategory(categoryId: string): Promise<InventoryMaster[]>;
+    getInventoryByBrand(brandId: string): Promise<InventoryMaster[]>;
+    getInventoryDashboard(): Promise<{
+        totalItems: number;
+        totalBrands: number;
+        totalUnits: number;
+        totalRequests: number;
+        totalDispatches: number;
+        totalProjectMaterials: number;
+    }>;
+    getProjectInventoryDashboard(projectId: string): Promise<{
+        projectId: string;
+        materials: number;
+        requests: number;
+        dispatches: number;
+    }>;
     findAllBrands(): Promise<Brand[]>;
     createBrand(name: string): Promise<Brand>;
     deleteBrand(id: string): Promise<{

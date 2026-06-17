@@ -44,6 +44,37 @@ export declare class InventoryController {
         message: string;
     }>;
     findAllProjectMaterials(): Promise<import("./models/project-materials.model").ProjectMaterial[]>;
+    findProjectMaterial(id: string): Promise<import("./models/project-materials.model").ProjectMaterial>;
+    findProjectMaterialsByProject(projectId: string): Promise<import("./models/project-materials.model").ProjectMaterial[]>;
+    getProjectMaterialSummary(projectId: string): Promise<{
+        totalMaterials: number;
+        estimatedQty: number;
+        requiredQty: number;
+        receivedQty: number;
+        usedQty: number;
+    }>;
+    getProjectMaterialStatus(projectId: string): Promise<{
+        planned: number;
+        ordered: number;
+        received: number;
+        inUse: number;
+        closed: number;
+    }>;
+    getMaterialConsumption(projectId: string): Promise<{
+        id: string;
+        itemName: string;
+        estimated: number;
+        required: number;
+        received: number;
+        used: number;
+        balance: number;
+    }[]>;
+    getProjectInventoryValue(projectId: string): Promise<{
+        projectId: string;
+        totalValue: number;
+    }>;
+    getPendingMaterials(): Promise<import("./models/project-materials.model").ProjectMaterial[]>;
+    getProjectPendingMaterials(projectId: string): Promise<import("./models/project-materials.model").ProjectMaterial[]>;
     findAllBrands(): Promise<import("./models/brand.model").Brand[]>;
     createBrand(body: {
         name: string;

@@ -92,6 +92,30 @@ let InventoryController = class InventoryController {
     findAllProjectMaterials() {
         return this.inventoryService.findAllProjectMaterials();
     }
+    findProjectMaterial(id) {
+        return this.inventoryService.findProjectMaterialById(id);
+    }
+    findProjectMaterialsByProject(projectId) {
+        return this.inventoryService.findProjectMaterialsByProject(projectId);
+    }
+    getProjectMaterialSummary(projectId) {
+        return this.inventoryService.getProjectMaterialSummary(projectId);
+    }
+    getProjectMaterialStatus(projectId) {
+        return this.inventoryService.getProjectMaterialStatus(projectId);
+    }
+    getMaterialConsumption(projectId) {
+        return this.inventoryService.getMaterialConsumption(projectId);
+    }
+    getProjectInventoryValue(projectId) {
+        return this.inventoryService.getProjectInventoryValue(projectId);
+    }
+    getPendingMaterials() {
+        return this.inventoryService.getPendingMaterials();
+    }
+    getProjectPendingMaterials(projectId) {
+        return this.inventoryService.getPendingMaterials(projectId);
+    }
     findAllBrands() {
         return this.inventoryService.findAllBrands();
     }
@@ -256,6 +280,61 @@ __decorate([
     __metadata("design:paramtypes", []),
     __metadata("design:returntype", void 0)
 ], InventoryController.prototype, "findAllProjectMaterials", null);
+__decorate([
+    (0, common_1.Get)('materials/:id'),
+    __param(0, (0, common_1.Param)('id')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String]),
+    __metadata("design:returntype", void 0)
+], InventoryController.prototype, "findProjectMaterial", null);
+__decorate([
+    (0, common_1.Get)('projects/:projectId/materials'),
+    __param(0, (0, common_1.Param)('projectId')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String]),
+    __metadata("design:returntype", void 0)
+], InventoryController.prototype, "findProjectMaterialsByProject", null);
+__decorate([
+    (0, common_1.Get)('projects/:projectId/materials/summary'),
+    __param(0, (0, common_1.Param)('projectId')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String]),
+    __metadata("design:returntype", void 0)
+], InventoryController.prototype, "getProjectMaterialSummary", null);
+__decorate([
+    (0, common_1.Get)('projects/:projectId/materials/status'),
+    __param(0, (0, common_1.Param)('projectId')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String]),
+    __metadata("design:returntype", void 0)
+], InventoryController.prototype, "getProjectMaterialStatus", null);
+__decorate([
+    (0, common_1.Get)('projects/:projectId/materials/consumption'),
+    __param(0, (0, common_1.Param)('projectId')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String]),
+    __metadata("design:returntype", void 0)
+], InventoryController.prototype, "getMaterialConsumption", null);
+__decorate([
+    (0, common_1.Get)('projects/:projectId/materials/value'),
+    __param(0, (0, common_1.Param)('projectId')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String]),
+    __metadata("design:returntype", void 0)
+], InventoryController.prototype, "getProjectInventoryValue", null);
+__decorate([
+    (0, common_1.Get)('materials/pending'),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", []),
+    __metadata("design:returntype", void 0)
+], InventoryController.prototype, "getPendingMaterials", null);
+__decorate([
+    (0, common_1.Get)('projects/:projectId/materials/pending'),
+    __param(0, (0, common_1.Param)('projectId')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String]),
+    __metadata("design:returntype", void 0)
+], InventoryController.prototype, "getProjectPendingMaterials", null);
 __decorate([
     (0, common_1.Get)('brands'),
     __metadata("design:type", Function),

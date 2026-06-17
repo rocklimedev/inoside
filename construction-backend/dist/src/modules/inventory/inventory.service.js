@@ -16,6 +16,7 @@ exports.InventoryService = void 0;
 const common_1 = require("@nestjs/common");
 const sequelize_1 = require("@nestjs/sequelize");
 const uuid_1 = require("uuid");
+const sequelize_2 = require("sequelize");
 const inventory_category_model_1 = require("./models/inventory-category.model");
 const inventory_request_model_1 = require("./models/inventory-request.model");
 const inventory_dispatch_model_1 = require("./models/inventory-dispatch.model");
@@ -191,6 +192,187 @@ let InventoryService = class InventoryService {
         return this.projectMaterialModel.findAll({
             include: ['project', 'inventoryMaster', 'unit', 'brand'],
         });
+    }
+    async findProjectMaterialsByProject(projectId) {
+        return this.projectMaterialModel.findAll({
+            where: { project_id: projectId },
+            include: ['project', 'inventoryMaster', 'unit', 'brand'],
+            order: [['item_name', 'ASC']],
+        });
+    }
+    async findProjectMaterialById(id) {
+        const material = await this.projectMaterialModel.findByPk(id, {
+            include: ['project', 'inventoryMaster', 'unit', 'brand'],
+        });
+        if (!material) {
+            throw new common_1.NotFoundException('Project material not found');
+        }
+        return material;
+    }
+    async getProjectMaterialSummary(projectId) {
+        const materials = await this.projectMaterialModel.findAll({
+            where: { project_id: projectId },
+        });
+        return {
+            totalMaterials: materials.length,
+            estimatedQty: materials.reduce((sum, m) => sum + Number(m.quantity_estimated || 0), 0),
+            requiredQty: materials.reduce((sum, m) => sum + Number(m.quantity_required || 0), 0),
+            receivedQty: materials.reduce((sum, m) => sum + Number(m.quantity_received || 0), 0),
+            usedQty: materials.reduce((sum, m) => sum + Number(m.quantity_used || 0), 0),
+        };
+    }
+    async getProjectInventoryValue(projectId) {
+        const materials = await this.projectMaterialModel.findAll({
+            where: { project_id: projectId },
+        });
+        const totalValue = materials.reduce((sum, item) => {
+            return sum + Number(item.quantity_required || 0) * Number(item.rate || 0);
+        }, 0);
+        return {
+            projectId,
+            totalValue,
+        };
+    }
+    async getProjectMaterialStatus(projectId) {
+        const materials = await this.projectMaterialModel.findAll({
+            where: { project_id: projectId },
+        });
+        return {
+            planned: materials.filter((m) => m.status === 'planned').length,
+            ordered: materials.filter((m) => m.status === 'ordered').length,
+            received: materials.filter((m) => m.status === 'received').length,
+            inUse: materials.filter((m) => m.status === 'in_use').length,
+            closed: materials.filter((m) => m.status === 'closed').length,
+        };
+    }
+    async getPendingMaterials(projectId) {
+        const where = {
+            status: {
+                [sequelize_2.Op.in]: ['planned', 'ordered'],
+            },
+        };
+        if (projectId) {
+            where.project_id = projectId;
+        }
+        return this.projectMaterialModel.findAll({
+            where,
+            include: ['project', 'inventoryMaster', 'unit', 'brand'],
+        });
+    }
+    async getMaterialConsumption(projectId) {
+        const materials = await this.projectMaterialModel.findAll({
+            where: { project_id: projectId },
+            include: ['inventoryMaster'],
+        });
+        return materials.map((m) => ({
+            id: m.id,
+            itemName: m.item_name,
+            estimated: m.quantity_estimated,
+            required: m.quantity_required,
+            received: m.quantity_received,
+            used: m.quantity_used,
+            balance: Number(m.quantity_received || 0) - Number(m.quantity_used || 0),
+        }));
+    }
+    async findRequestsByProject(projectId) {
+        return this.requestModel.findAll({
+            where: { project_id: projectId },
+            include: [{ all: true, nested: true }],
+            order: [['created_at', 'DESC']],
+        });
+    }
+    async getPendingRequests() {
+        return this.requestModel.findAll({
+            where: {
+                status: {
+                    [sequelize_2.Op.in]: ['draft', 'submitted', 'approved'],
+                },
+            },
+            include: [{ all: true, nested: true }],
+        });
+    }
+    async findDispatchesByProject(projectId) {
+        return this.dispatchModel.findAll({
+            where: { project_id: projectId },
+            include: [{ all: true, nested: true }],
+            order: [['created_at', 'DESC']],
+        });
+    }
+    async searchInventory(query) {
+        return this.masterModel.findAll({
+            where: {
+                [sequelize_2.Op.or]: [
+                    {
+                        item_name: {
+                            [sequelize_2.Op.like]: `%${query}%`,
+                        },
+                    },
+                    {
+                        item_code: {
+                            [sequelize_2.Op.like]: `%${query}%`,
+                        },
+                    },
+                ],
+            },
+            include: ['brand', 'unit', 'category'],
+            limit: 25,
+            order: [['item_name', 'ASC']],
+        });
+    }
+    async getInventoryByCategory(categoryId) {
+        return this.masterModel.findAll({
+            where: {
+                category_id: categoryId,
+                is_active: true,
+            },
+            include: ['brand', 'unit', 'category'],
+        });
+    }
+    async getInventoryByBrand(brandId) {
+        return this.masterModel.findAll({
+            where: {
+                brand_id: brandId,
+                is_active: true,
+            },
+            include: ['brand', 'unit', 'category'],
+        });
+    }
+    async getInventoryDashboard() {
+        const [totalItems, totalBrands, totalUnits, totalRequests, totalDispatches, totalProjectMaterials,] = await Promise.all([
+            this.masterModel.count(),
+            this.brandModel.count(),
+            this.unitModel.count(),
+            this.requestModel.count(),
+            this.dispatchModel.count(),
+            this.projectMaterialModel.count(),
+        ]);
+        return {
+            totalItems,
+            totalBrands,
+            totalUnits,
+            totalRequests,
+            totalDispatches,
+            totalProjectMaterials,
+        };
+    }
+    async getProjectInventoryDashboard(projectId) {
+        const [materials, requests, dispatches] = await Promise.all([
+            this.projectMaterialModel.count({
+                where: { project_id: projectId },
+            }),
+            this.requestModel.count({
+                where: { project_id: projectId },
+            }),
+            this.dispatchModel.count({
+                where: { project_id: projectId },
+            }),
+        ]);
+        return {
+            projectId,
+            materials,
+            requests,
+            dispatches,
+        };
     }
     async findAllBrands() {
         return this.brandModel.findAll({
