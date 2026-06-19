@@ -137,29 +137,49 @@ export default function UploadArea({ onUploaded }) {
     try {
       setProgress(0);
 
+      // Start fake progress (slower and more realistic)
       const interval = setInterval(() => {
-        setProgress((p) => Math.min(p + 10, 92));
-      }, 220);
+        setProgress((p) => Math.min(p + 8, 85)); // Don't reach 100% yet
+      }, 250);
 
-      // Upload file using CDN API
+      console.log(
+        "🚀 Uploading file:",
+        file.name,
+        `(${(file.size / 1024 / 1024).toFixed(2)} MB)`,
+      );
+
+      // 1. Upload file to CDN
       const uploadRes = await uploadFile(file).unwrap();
 
       clearInterval(interval);
-      setProgress(95);
+      setProgress(90);
 
-      // Create Pitch
+      console.log("✅ File uploaded successfully:", uploadRes);
+
+      const pitchUrl = uploadRes?.url || uploadRes?.data?.url;
+
+      if (!pitchUrl) {
+        throw new Error("No URL returned from CDN upload");
+      }
+
+      // 2. Create Pitch
       await createPitchGlobal({
         projectId: selectedProject.id,
-        preferred_design_style: preferredDesignStyle || null,
+
+        preferred_design_style: preferredDesignStyle?.trim() || null,
         color_tone: colorTone,
         luxury_level: luxuryLevel,
-        functional_vs_aesthetic: functionalVsAesthetic || null,
+        functional_vs_aesthetic: functionalVsAesthetic?.trim() || null,
         budget_flexibility: budgetFlexibility,
 
-        likes_dislikes: likesDislikes || null,
-        non_negotiables: nonNegotiables || null,
-        special_requirements: specialRequirements || null,
-        pitch_pdf_url: uploadRes.url || uploadRes.data?.url,
+        // Missing fields - Very Important!
+        priority_areas: priorityAreas.length > 0 ? priorityAreas : null,
+        likes_dislikes: likesDislikes?.trim() || null,
+        non_negotiables: nonNegotiables?.trim() || null,
+        special_requirements: specialRequirements?.trim() || null,
+
+        pitch_pdf_url: pitchUrl,
+        status: status, // Add this if your backend supports it
       }).unwrap();
 
       setProgress(100);
@@ -172,22 +192,23 @@ export default function UploadArea({ onUploaded }) {
       console.error("Full error:", err);
       console.error("Status:", err?.status);
       console.error("Data:", err?.data);
-      console.error("Original Error:", err?.error);
+
+      // Clear progress on error
+      setProgress(0);
 
       if (err?.status === 401 || err?.status === 403) {
-        toast.error("CDN Authentication failed - Check secret key");
-      } else if (err?.status === "FETCH_ERROR") {
-        toast.error(
-          "Cannot connect to server. Check if backend is running + CORS",
-        );
+        toast.error("Authentication failed - Check CDN secret key");
+      } else if (err?.status === "FETCH_ERROR" || err?.name === "TypeError") {
+        toast.error("Cannot connect to server. Check if backend is running.");
       } else if (err?.data?.message) {
         toast.error(err.data.message);
+      } else if (err?.message) {
+        toast.error(err.message);
       } else {
-        toast.error("Failed to upload pitch");
+        toast.error("Failed to upload pitch. Please try again.");
       }
     }
   };
-
   return (
     <div className="w-full">
       <ScrollArea className="h-[85vh] pr-4">

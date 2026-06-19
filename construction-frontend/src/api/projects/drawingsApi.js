@@ -4,7 +4,7 @@ export const drawingsApi = baseApi.injectEndpoints({
   endpoints: (builder) => ({
     uploadDrawing: builder.mutation({
       query: ({ projectId, body }) => ({
-        url: `/${projectId}/drawings`,
+        url: `/drawings/${projectId}`,
         method: "POST",
         body, // FormData
         // Important: Let the browser set the correct Content-Type for FormData

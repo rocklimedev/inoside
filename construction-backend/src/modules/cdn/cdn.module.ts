@@ -5,10 +5,9 @@ import { CdnController } from './cdn.controller';
 import { CdnService } from './services/cdn.service';
 
 import { CdnFile } from './models/cdn-file.model';
-import { EngagementModule } from '../engagement/engagement.module';
 
 @Module({
-  imports: [SequelizeModule.forFeature([CdnFile]), EngagementModule],
+  imports: [SequelizeModule.forFeature([CdnFile])],
 
   controllers: [CdnController],
 

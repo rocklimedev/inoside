@@ -38,9 +38,6 @@ var __importStar = (this && this.__importStar) || (function () {
         return result;
     };
 })();
-var __metadata = (this && this.__metadata) || function (k, v) {
-    if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
-};
 var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
@@ -50,45 +47,43 @@ const common_1 = require("@nestjs/common");
 const ssh2_sftp_client_1 = __importDefault(require("ssh2-sftp-client"));
 const uuid_1 = require("uuid");
 const path = __importStar(require("path"));
-const cdn_engagement_service_1 = require("../../engagement/services/cdn-engagement.service");
 let CdnService = class CdnService {
-    cdnEngagementService;
-    constructor(cdnEngagementService) {
-        this.cdnEngagementService = cdnEngagementService;
-    }
-    async uploadFile(file, actor) {
+    async uploadFile(file) {
         const sftp = new ssh2_sftp_client_1.default();
         try {
+            console.log('==========================');
+            console.log({
+                user: process.env.CDN_USERNAME,
+                pass: process.env.CDN_PASSWORD,
+            });
+            console.log('CDN Upload Started');
+            console.log('Host:', process.env.CDN_HOST);
+            console.log('Port:', process.env.CDN_PORT);
+            console.log('Upload Path:', process.env.CDN_UPLOAD_PATH);
+            console.log('Original Filename:', file.originalname);
             await sftp.connect({
                 host: process.env.CDN_HOST,
                 port: Number(process.env.CDN_PORT),
                 username: process.env.CDN_USERNAME,
                 password: process.env.CDN_PASSWORD,
             });
+            console.log('SFTP Connected');
             const ext = path.extname(file.originalname);
             const filename = `${(0, uuid_1.v4)()}${ext}`;
             const remotePath = `${process.env.CDN_UPLOAD_PATH}/${filename}`;
+            console.log('Remote Path:', remotePath);
             await sftp.put(file.buffer, remotePath);
+            console.log('Upload Success');
             const url = `${process.env.CDN_BASE_URL}/${filename}`;
-            if (actor) {
-                await this.cdnEngagementService.fileUploaded(actor, {
-                    filename,
-                    originalName: file.originalname,
-                    url,
-                    size: file.size,
-                    mimeType: file.mimetype,
-                });
-            }
             return {
                 filename,
                 url,
             };
         }
         catch (err) {
+            console.error('==========================');
+            console.error('CDN UPLOAD ERROR');
             console.error(err);
-            if (actor) {
-                await this.cdnEngagementService.uploadFailed(actor, file.originalname, err instanceof Error ? err.message : String(err));
-            }
             throw err;
         }
         finally {
@@ -98,7 +93,6 @@ let CdnService = class CdnService {
 };
 exports.CdnService = CdnService;
 exports.CdnService = CdnService = __decorate([
-    (0, common_1.Injectable)(),
-    __metadata("design:paramtypes", [cdn_engagement_service_1.CdnEngagementService])
+    (0, common_1.Injectable)()
 ], CdnService);
 //# sourceMappingURL=cdn.service.js.map

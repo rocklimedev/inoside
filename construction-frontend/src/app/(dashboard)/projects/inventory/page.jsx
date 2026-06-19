@@ -401,39 +401,59 @@ function ItemsTable({ items, onEdit, onDelete, onRequest }) {
   );
 }
 
-function RequestsTable({ requests }) {
+function RequestsTable({ requests = [] }) {
   return (
     <Card>
       <Table>
         <TableHeader>
           <TableRow>
             <TableHead>Request ID</TableHead>
-            <TableHead>Item</TableHead>
+            <TableHead>Project</TableHead>
+            <TableHead>Source</TableHead>
             <TableHead>Requested Qty</TableHead>
             <TableHead>Status</TableHead>
+            <TableHead>Requested By</TableHead>
             <TableHead>Date</TableHead>
           </TableRow>
         </TableHeader>
+
         <TableBody>
           {requests.map((req) => (
             <TableRow key={req.id}>
+              {/* Request ID */}
               <TableCell className="font-mono">
                 {req.request_code || req.id}
               </TableCell>
-              <TableCell>
-                {req.inventoryMaster?.item_name || req.item_name}
-              </TableCell>
-              <TableCell>{req.quantity_requested}</TableCell>
+
+              {/* Project Name */}
+              <TableCell>{req.project?.name || "N/A"}</TableCell>
+
+              {/* Source Type (Warehouse / Vendor / Site Stock) */}
+              <TableCell>{req.source_type || "-"}</TableCell>
+
+              {/* Quantity */}
+              <TableCell>{req.quantity_required}</TableCell>
+
+              {/* Status */}
               <TableCell>
                 <Badge
-                  variant={req.status === "approved" ? "default" : "secondary"}
+                  variant={
+                    req.status === "approved"
+                      ? "default"
+                      : req.status === "dispatched"
+                        ? "secondary"
+                        : "outline"
+                  }
                 >
                   {req.status}
                 </Badge>
               </TableCell>
-              <TableCell>
-                {new Date(req.created_at).toLocaleDateString()}
-              </TableCell>
+
+              {/* Requested By */}
+              <TableCell>{req.requester?.name || "System"}</TableCell>
+
+              {/* Date */}
+              <TableCell>{new Date(req.created_at).toLocaleString()}</TableCell>
             </TableRow>
           ))}
         </TableBody>

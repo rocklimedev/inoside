@@ -6,12 +6,13 @@ import helmet from 'helmet';
 import compression from 'compression';
 import { MetricsInterceptor } from './common/enterceptor/metrics.enterceptor';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
+import * as dotenv from 'dotenv';
 
 import { AppModule } from './app.module';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
-
+  dotenv.config();
   app.useGlobalInterceptors(new MetricsInterceptor());
   // =================================================
   // TRUST PROXY (NGINX / CLOUDFLARE)
@@ -50,12 +51,14 @@ async function bootstrap() {
       'https://buildcon-api.rippotaiarchitecture.com',
       'https://media-buildcon.rippotaiarchitecture.com',
     ],
-
     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
-
-    allowedHeaders: ['Content-Type', 'Authorization', 'x-cdn-secret'],
+    allowedHeaders: [
+      'Content-Type',
+      'Authorization',
+      'x-cdn-token', // ← Add this
+      'x-cdn-secret', // ← Keep if needed
+    ],
     credentials: true,
-
     exposedHeaders: ['Set-Cookie'],
   });
 

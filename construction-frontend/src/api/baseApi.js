@@ -51,6 +51,7 @@ export const baseApi = createApi({
     "Boq",
     "Sites",
     "Vendors",
+    "ActivityLogs",
     "System",
     "Project",
     "Brand",

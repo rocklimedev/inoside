@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useRef } from "react";
 import { useParams, useSearchParams } from "next/navigation";
-
+import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -244,7 +244,7 @@ const normalizeBrief = (brief) => {
 export default function BriefForm({ onBack, onGenerated }) {
   const params = useParams();
   const searchParams = useSearchParams();
-
+  const router = useRouter();
   const urlProjectId = params?.id;
 
   // ✅ /brief/add?briefId=xxxx
@@ -416,33 +416,25 @@ export default function BriefForm({ onBack, onGenerated }) {
     }, 1200);
   };
 
-  /* =================================================
-     PAYLOAD
-  ================================================= */
-
-  /* =================================================
-   PAYLOAD BUILDER (Clean)
-================================================= */
-  /* =================================================
-   PAYLOAD BUILDER
-================================================= */
   const buildBriefPayload = (data) => {
-    if (
-      !selectedProjectId ||
-      selectedProjectId.trim() === "" ||
-      selectedProjectId === "undefined"
-    ) {
+    if (!selectedProjectId || typeof selectedProjectId !== "string") {
       throw new Error("Valid Project ID is required");
     }
 
-    // Optional: UUID format basic check
+    const trimmed = selectedProjectId.trim();
+    if (trimmed === "" || trimmed === "undefined" || trimmed === "null") {
+      throw new Error("Valid Project ID is required");
+    }
+
     const uuidRegex =
       /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/;
-    if (!uuidRegex.test(selectedProjectId)) {
-      throw new Error("Invalid Project ID format");
+    if (!uuidRegex.test(trimmed)) {
+      console.error("Invalid Project ID:", trimmed); // ← helpful for debugging
+      throw new Error(`Invalid Project ID format: ${trimmed}`);
     }
 
     return {
+      project_id: trimmed, // ← explicitly add it
       rooms_spaces_required: data.rooms_spaces_required
         ? typeof data.rooms_spaces_required === "string"
           ? { description: data.rooms_spaces_required }
@@ -520,14 +512,19 @@ export default function BriefForm({ onBack, onGenerated }) {
           projectId: selectedProjectId,
           ...payload,
         }).unwrap();
+
         toast.success("Brief created successfully");
       } else {
         await updateBrief({
           projectId: selectedProjectId,
           ...payload,
         }).unwrap();
+
         toast.success("Brief updated successfully");
       }
+
+      // ✅ Next.js navigation
+      router.push("/brief");
     } catch (err) {
       console.error(err);
       toast.error(
