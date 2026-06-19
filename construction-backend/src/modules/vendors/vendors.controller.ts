@@ -9,6 +9,7 @@ import {
   Param,
   Delete,
   UseGuards,
+  Req,
 } from '@nestjs/common';
 
 import { VendorsService } from './vendors.service';
@@ -31,8 +32,11 @@ export class VendorsController {
   @Post()
   @UseGuards(RolesGuard)
   @Roles('admin', 'project_manager')
-  create(@Body() createVendorDto: CreateVendorDto) {
-    return this.vendorsService.createVendor(createVendorDto);
+  create(@Body() createVendorDto: CreateVendorDto, @Req() req: any) {
+    return this.vendorsService.createVendor(createVendorDto, {
+      id: req.user.id,
+      name: req.user.name,
+    });
   }
 
   @Get()
@@ -48,15 +52,25 @@ export class VendorsController {
   @Patch(':id')
   @UseGuards(RolesGuard)
   @Roles('admin', 'project_manager')
-  update(@Param('id') id: string, @Body() updateVendorDto: UpdateVendorDto) {
-    return this.vendorsService.updateVendor(id, updateVendorDto);
+  update(
+    @Param('id') id: string,
+    @Body() updateVendorDto: UpdateVendorDto,
+    @Req() req: any,
+  ) {
+    return this.vendorsService.updateVendor(id, updateVendorDto, {
+      id: req.user.id,
+      name: req.user.name,
+    });
   }
 
   @Delete(':id')
   @UseGuards(RolesGuard)
   @Roles('admin')
-  remove(@Param('id') id: string) {
-    return this.vendorsService.deleteVendor(id);
+  remove(@Param('id') id: string, @Req() req: any) {
+    return this.vendorsService.deleteVendor(id, {
+      id: req.user.id,
+      name: req.user.name,
+    });
   }
 
   // ====================== Vendor Types ======================
@@ -78,8 +92,11 @@ export class VendorsController {
   @Post('assign')
   @UseGuards(RolesGuard)
   @Roles('admin', 'project_manager')
-  assignToProject(@Body() assignVendorDto: AssignVendorDto) {
-    return this.vendorsService.assignVendorToProject(assignVendorDto);
+  assignToProject(@Body() assignVendorDto: AssignVendorDto, @Req() req: any) {
+    return this.vendorsService.assignVendorToProject(assignVendorDto, {
+      id: req.user.id,
+      name: req.user.name,
+    });
   }
 
   @Get('project/:projectId')
@@ -100,7 +117,10 @@ export class VendorsController {
   @Delete('project-assignment/:id')
   @UseGuards(RolesGuard)
   @Roles('admin', 'project_manager')
-  removeVendorFromProject(@Param('id') id: string) {
-    return this.vendorsService.removeVendorFromProject(id);
+  removeVendorFromProject(@Param('id') id: string, @Req() req: any) {
+    return this.vendorsService.removeVendorFromProject(id, {
+      id: req.user.id,
+      name: req.user.name,
+    });
   }
 }

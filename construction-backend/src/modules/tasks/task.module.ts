@@ -7,9 +7,13 @@ import { User } from '@/modules/users/models/user.model';
 
 import { TaskService } from './task.service';
 import { TaskController } from './task.controller';
+import { EngagementModule } from '../engagement/engagement.module';
 
 @Module({
-  imports: [SequelizeModule.forFeature([Task, Project, User])],
+  imports: [
+    SequelizeModule.forFeature([Task, Project, User]),
+    EngagementModule,
+  ],
   controllers: [TaskController],
   providers: [TaskService],
   exports: [TaskService],

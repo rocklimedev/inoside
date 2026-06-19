@@ -26,8 +26,11 @@ let VendorsController = class VendorsController {
     constructor(vendorsService) {
         this.vendorsService = vendorsService;
     }
-    create(createVendorDto) {
-        return this.vendorsService.createVendor(createVendorDto);
+    create(createVendorDto, req) {
+        return this.vendorsService.createVendor(createVendorDto, {
+            id: req.user.id,
+            name: req.user.name,
+        });
     }
     findAll() {
         return this.vendorsService.findAllVendors();
@@ -35,11 +38,17 @@ let VendorsController = class VendorsController {
     findOne(id) {
         return this.vendorsService.findVendorById(id);
     }
-    update(id, updateVendorDto) {
-        return this.vendorsService.updateVendor(id, updateVendorDto);
+    update(id, updateVendorDto, req) {
+        return this.vendorsService.updateVendor(id, updateVendorDto, {
+            id: req.user.id,
+            name: req.user.name,
+        });
     }
-    remove(id) {
-        return this.vendorsService.deleteVendor(id);
+    remove(id, req) {
+        return this.vendorsService.deleteVendor(id, {
+            id: req.user.id,
+            name: req.user.name,
+        });
     }
     createVendorType(name) {
         return this.vendorsService.createVendorType(name);
@@ -47,8 +56,11 @@ let VendorsController = class VendorsController {
     getVendorTypes() {
         return this.vendorsService.getVendorTypes();
     }
-    assignToProject(assignVendorDto) {
-        return this.vendorsService.assignVendorToProject(assignVendorDto);
+    assignToProject(assignVendorDto, req) {
+        return this.vendorsService.assignVendorToProject(assignVendorDto, {
+            id: req.user.id,
+            name: req.user.name,
+        });
     }
     getByProject(projectId) {
         return this.vendorsService.getVendorsByProject(projectId);
@@ -56,8 +68,11 @@ let VendorsController = class VendorsController {
     updateProjectVendor(id, updateData) {
         return this.vendorsService.updateProjectVendor(id, updateData);
     }
-    removeVendorFromProject(id) {
-        return this.vendorsService.removeVendorFromProject(id);
+    removeVendorFromProject(id, req) {
+        return this.vendorsService.removeVendorFromProject(id, {
+            id: req.user.id,
+            name: req.user.name,
+        });
     }
 };
 exports.VendorsController = VendorsController;
@@ -66,8 +81,9 @@ __decorate([
     (0, common_1.UseGuards)(roles_guard_1.RolesGuard),
     (0, roles_decorator_1.Roles)('admin', 'project_manager'),
     __param(0, (0, common_1.Body)()),
+    __param(1, (0, common_1.Req)()),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [create_vendor_dto_1.CreateVendorDto]),
+    __metadata("design:paramtypes", [create_vendor_dto_1.CreateVendorDto, Object]),
     __metadata("design:returntype", void 0)
 ], VendorsController.prototype, "create", null);
 __decorate([
@@ -89,8 +105,9 @@ __decorate([
     (0, roles_decorator_1.Roles)('admin', 'project_manager'),
     __param(0, (0, common_1.Param)('id')),
     __param(1, (0, common_1.Body)()),
+    __param(2, (0, common_1.Req)()),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [String, update_vendor_dto_1.UpdateVendorDto]),
+    __metadata("design:paramtypes", [String, update_vendor_dto_1.UpdateVendorDto, Object]),
     __metadata("design:returntype", void 0)
 ], VendorsController.prototype, "update", null);
 __decorate([
@@ -98,8 +115,9 @@ __decorate([
     (0, common_1.UseGuards)(roles_guard_1.RolesGuard),
     (0, roles_decorator_1.Roles)('admin'),
     __param(0, (0, common_1.Param)('id')),
+    __param(1, (0, common_1.Req)()),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [String]),
+    __metadata("design:paramtypes", [String, Object]),
     __metadata("design:returntype", void 0)
 ], VendorsController.prototype, "remove", null);
 __decorate([
@@ -122,8 +140,9 @@ __decorate([
     (0, common_1.UseGuards)(roles_guard_1.RolesGuard),
     (0, roles_decorator_1.Roles)('admin', 'project_manager'),
     __param(0, (0, common_1.Body)()),
+    __param(1, (0, common_1.Req)()),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [assign_vendor_dto_1.AssignVendorDto]),
+    __metadata("design:paramtypes", [assign_vendor_dto_1.AssignVendorDto, Object]),
     __metadata("design:returntype", void 0)
 ], VendorsController.prototype, "assignToProject", null);
 __decorate([
@@ -148,8 +167,9 @@ __decorate([
     (0, common_1.UseGuards)(roles_guard_1.RolesGuard),
     (0, roles_decorator_1.Roles)('admin', 'project_manager'),
     __param(0, (0, common_1.Param)('id')),
+    __param(1, (0, common_1.Req)()),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [String]),
+    __metadata("design:paramtypes", [String, Object]),
     __metadata("design:returntype", void 0)
 ], VendorsController.prototype, "removeVendorFromProject", null);
 exports.VendorsController = VendorsController = __decorate([

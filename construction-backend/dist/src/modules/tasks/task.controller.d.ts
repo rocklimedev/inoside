@@ -7,8 +7,8 @@ export declare class TaskController {
     findAll(projectId?: string): Promise<import("./models/task.model").Task[]>;
     findOne(taskId: string, projectId?: string): Promise<import("./models/task.model").Task>;
     create(dto: CreateTaskDto, req: any): Promise<import("./models/task.model").Task>;
-    update(taskId: string, dto: UpdateTaskDto, projectId?: string): Promise<import("./models/task.model").Task>;
-    remove(taskId: string, projectId?: string): Promise<{
+    update(taskId: string, dto: UpdateTaskDto, req: any, projectId?: string): Promise<import("./models/task.model").Task>;
+    remove(taskId: string, req: any, projectId?: string): Promise<{
         message: string;
     }>;
 }

@@ -9,19 +9,112 @@ var __metadata = (this && this.__metadata) || function (k, v) {
     if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.UpdateMaterialDto = void 0;
+exports.UpdateProjectMaterialDto = void 0;
 const class_validator_1 = require("class-validator");
-class UpdateMaterialDto {
-    name;
+const class_transformer_1 = require("class-transformer");
+class UpdateProjectMaterialDto {
+    item_name;
+    inventory_master_id;
+    item_code;
+    description;
+    specification;
+    unit_id;
+    brand_id;
+    quantity_estimated;
+    quantity_required;
+    quantity_received;
+    quantity_used;
+    rate;
+    gst_percent;
+    status;
+    remarks;
     category;
 }
-exports.UpdateMaterialDto = UpdateMaterialDto;
+exports.UpdateProjectMaterialDto = UpdateProjectMaterialDto;
 __decorate([
     (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsString)(),
     __metadata("design:type", String)
-], UpdateMaterialDto.prototype, "name", void 0);
+], UpdateProjectMaterialDto.prototype, "item_name", void 0);
 __decorate([
     (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsString)(),
     __metadata("design:type", String)
-], UpdateMaterialDto.prototype, "category", void 0);
+], UpdateProjectMaterialDto.prototype, "inventory_master_id", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsString)(),
+    __metadata("design:type", String)
+], UpdateProjectMaterialDto.prototype, "item_code", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsString)(),
+    __metadata("design:type", String)
+], UpdateProjectMaterialDto.prototype, "description", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsString)(),
+    __metadata("design:type", String)
+], UpdateProjectMaterialDto.prototype, "specification", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsString)(),
+    __metadata("design:type", String)
+], UpdateProjectMaterialDto.prototype, "unit_id", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsString)(),
+    __metadata("design:type", String)
+], UpdateProjectMaterialDto.prototype, "brand_id", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, class_transformer_1.Type)(() => Number),
+    (0, class_validator_1.IsNumber)(),
+    __metadata("design:type", Number)
+], UpdateProjectMaterialDto.prototype, "quantity_estimated", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, class_transformer_1.Type)(() => Number),
+    (0, class_validator_1.IsNumber)(),
+    __metadata("design:type", Number)
+], UpdateProjectMaterialDto.prototype, "quantity_required", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, class_transformer_1.Type)(() => Number),
+    (0, class_validator_1.IsNumber)(),
+    __metadata("design:type", Number)
+], UpdateProjectMaterialDto.prototype, "quantity_received", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, class_transformer_1.Type)(() => Number),
+    (0, class_validator_1.IsNumber)(),
+    __metadata("design:type", Number)
+], UpdateProjectMaterialDto.prototype, "quantity_used", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, class_transformer_1.Type)(() => Number),
+    (0, class_validator_1.IsNumber)(),
+    __metadata("design:type", Number)
+], UpdateProjectMaterialDto.prototype, "rate", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, class_transformer_1.Type)(() => Number),
+    (0, class_validator_1.IsNumber)(),
+    __metadata("design:type", Number)
+], UpdateProjectMaterialDto.prototype, "gst_percent", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsEnum)(['planned', 'ordered', 'received', 'in_use', 'closed']),
+    __metadata("design:type", String)
+], UpdateProjectMaterialDto.prototype, "status", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsString)(),
+    __metadata("design:type", String)
+], UpdateProjectMaterialDto.prototype, "remarks", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsString)(),
+    __metadata("design:type", String)
+], UpdateProjectMaterialDto.prototype, "category", void 0);
 //# sourceMappingURL=update-material.js.map

@@ -18,14 +18,17 @@ const sequelize_1 = require("@nestjs/sequelize");
 const task_model_1 = require("./models/task.model");
 const project_model_1 = require("../projects/models/project.model");
 const user_model_1 = require("../users/models/user.model");
+const task_engagement_service_1 = require("../engagement/services/task-engagement.service");
 let TaskService = class TaskService {
     taskModel;
     projectModel;
     userModel;
-    constructor(taskModel, projectModel, userModel) {
+    taskEngagementService;
+    constructor(taskModel, projectModel, userModel, taskEngagementService) {
         this.taskModel = taskModel;
         this.projectModel = projectModel;
         this.userModel = userModel;
+        this.taskEngagementService = taskEngagementService;
     }
     async findAll() {
         return this.taskModel.findAll({
@@ -94,7 +97,7 @@ let TaskService = class TaskService {
         }
         return task;
     }
-    async create(dto, createdByUserId) {
+    async create(dto, createdByUserId, actor) {
         const project = await this.projectModel.findByPk(dto.project_id);
         if (!project) {
             throw new common_1.NotFoundException('Project not found');
@@ -113,10 +116,18 @@ let TaskService = class TaskService {
             ...dto,
             created_by_user_id: createdByUserId,
         });
-        return this.findOne(task.id);
+        const createdTask = await this.findOne(task.id);
+        await this.taskEngagementService.taskCreated(actor, {
+            id: task.id,
+            title: task.title,
+            projectId: task.project_id,
+            assignedToUserId: task.assigned_to_user_id,
+        });
+        return createdTask;
     }
-    async update(id, dto, projectId) {
+    async update(id, dto, actor, projectId) {
         const task = await this.findOne(id, projectId);
+        const oldValues = task.toJSON();
         if (dto.assigned_to_user_id) {
             const assignedUser = await this.userModel.findByPk(dto.assigned_to_user_id);
             if (!assignedUser) {
@@ -124,10 +135,19 @@ let TaskService = class TaskService {
             }
         }
         await task.update(dto);
-        return this.findOne(id, projectId);
+        const updatedTask = await this.findOne(id, projectId);
+        await this.taskEngagementService.taskUpdated(actor, {
+            id: task.id,
+            title: task.title,
+        }, oldValues, updatedTask.toJSON());
+        return updatedTask;
     }
-    async remove(id, projectId) {
+    async remove(id, actor, projectId) {
         const task = await this.findOne(id, projectId);
+        await this.taskEngagementService.taskDeleted(actor, {
+            id: task.id,
+            title: task.title,
+        });
         await task.destroy();
         return {
             message: 'Task deleted successfully',
@@ -140,6 +160,6 @@ exports.TaskService = TaskService = __decorate([
     __param(0, (0, sequelize_1.InjectModel)(task_model_1.Task)),
     __param(1, (0, sequelize_1.InjectModel)(project_model_1.Project)),
     __param(2, (0, sequelize_1.InjectModel)(user_model_1.User)),
-    __metadata("design:paramtypes", [Object, Object, Object])
+    __metadata("design:paramtypes", [Object, Object, Object, task_engagement_service_1.TaskEngagementService])
 ], TaskService);
 //# sourceMappingURL=task.service.js.map

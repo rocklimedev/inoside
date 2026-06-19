@@ -13,6 +13,12 @@ const notifications_module_1 = require("../notifications/notifications.module");
 const engagement_service_1 = require("./engagement.service");
 const auth_engagement_service_1 = require("./services/auth-engagement.service");
 const client_engagement_service_1 = require("./services/client-engagement.service");
+const cdn_engagement_service_1 = require("./services/cdn-engagement.service");
+const rbac_engagement_service_1 = require("./services/rbac-engagement.service");
+const site_engagement_service_1 = require("./services/site-engagement.service");
+const task_engagement_service_1 = require("./services/task-engagement.service");
+const user_engagement_service_1 = require("./services/user-engagement.service");
+const vendor_engagement_service_1 = require("./services/vendor-engagement.service");
 let EngagementModule = class EngagementModule {
 };
 exports.EngagementModule = EngagementModule;
@@ -23,8 +29,24 @@ exports.EngagementModule = EngagementModule = __decorate([
             engagement_service_1.EngagementService,
             auth_engagement_service_1.AuthEngagementService,
             client_engagement_service_1.ClientEngagementService,
+            cdn_engagement_service_1.CdnEngagementService,
+            rbac_engagement_service_1.RbacEngagementService,
+            site_engagement_service_1.SiteEngagementService,
+            task_engagement_service_1.TaskEngagementService,
+            user_engagement_service_1.UserEngagementService,
+            vendor_engagement_service_1.VendorEngagementService,
         ],
-        exports: [engagement_service_1.EngagementService, auth_engagement_service_1.AuthEngagementService, client_engagement_service_1.ClientEngagementService],
+        exports: [
+            engagement_service_1.EngagementService,
+            auth_engagement_service_1.AuthEngagementService,
+            client_engagement_service_1.ClientEngagementService,
+            cdn_engagement_service_1.CdnEngagementService,
+            site_engagement_service_1.SiteEngagementService,
+            task_engagement_service_1.TaskEngagementService,
+            user_engagement_service_1.UserEngagementService,
+            vendor_engagement_service_1.VendorEngagementService,
+            rbac_engagement_service_1.RbacEngagementService,
+        ],
     })
 ], EngagementModule);
 //# sourceMappingURL=engagement.module.js.map

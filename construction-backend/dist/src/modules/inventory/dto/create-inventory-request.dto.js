@@ -13,7 +13,7 @@ exports.CreateInventoryRequestDto = void 0;
 const class_validator_1 = require("class-validator");
 class CreateInventoryRequestDto {
     project_id;
-    material_id;
+    project_material_id;
     quantity_required;
     required_date;
     vendor_id;
@@ -26,11 +26,11 @@ __decorate([
     __metadata("design:type", String)
 ], CreateInventoryRequestDto.prototype, "project_id", void 0);
 __decorate([
-    (0, class_validator_1.IsOptional)(),
-    __metadata("design:type", String)
-], CreateInventoryRequestDto.prototype, "material_id", void 0);
-__decorate([
     (0, class_validator_1.IsNotEmpty)(),
+    __metadata("design:type", String)
+], CreateInventoryRequestDto.prototype, "project_material_id", void 0);
+__decorate([
+    (0, class_validator_1.IsNumber)(),
     __metadata("design:type", Number)
 ], CreateInventoryRequestDto.prototype, "quantity_required", void 0);
 __decorate([
@@ -43,6 +43,7 @@ __decorate([
 ], CreateInventoryRequestDto.prototype, "vendor_id", void 0);
 __decorate([
     (0, class_validator_1.IsNotEmpty)(),
+    (0, class_validator_1.IsEnum)(['Vendor', 'Warehouse']),
     __metadata("design:type", String)
 ], CreateInventoryRequestDto.prototype, "source_type", void 0);
 __decorate([

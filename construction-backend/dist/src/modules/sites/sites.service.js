@@ -19,14 +19,17 @@ const uuid_1 = require("uuid");
 const site_model_1 = require("./models/site.model");
 const address_model_1 = require("../address/models/address.model");
 const client_model_1 = require("../clients/models/client.model");
+const site_engagement_service_1 = require("../engagement/services/site-engagement.service");
 let SitesService = class SitesService {
     siteModel;
     addressModel;
-    constructor(siteModel, addressModel) {
+    siteEngagementService;
+    constructor(siteModel, addressModel, siteEngagementService) {
         this.siteModel = siteModel;
         this.addressModel = addressModel;
+        this.siteEngagementService = siteEngagementService;
     }
-    async create(createSiteDto) {
+    async create(createSiteDto, actor) {
         const address = await this.addressModel.create({
             id: (0, uuid_1.v4)(),
             ...createSiteDto.address,
@@ -39,9 +42,14 @@ let SitesService = class SitesService {
             access_available: createSiteDto.access_available,
             existing_structure: createSiteDto.existing_structure,
         });
-        return this.siteModel.findByPk(site.id, {
+        const createdSite = await this.siteModel.findByPk(site.id, {
             include: [address_model_1.Address, client_model_1.Client],
         });
+        await this.siteEngagementService.siteCreated(actor, {
+            id: site.id,
+            clientId: site.client_id,
+        });
+        return createdSite;
     }
     async findAll() {
         return this.siteModel.findAll({
@@ -67,8 +75,9 @@ let SitesService = class SitesService {
             order: [['created_at', 'DESC']],
         });
     }
-    async update(id, updateSiteDto) {
+    async update(id, updateSiteDto, actor) {
         const site = await this.findOne(id);
+        const oldValues = site.toJSON();
         if (updateSiteDto.address) {
             const address = await this.addressModel.findByPk(site.address_id);
             if (address) {
@@ -81,10 +90,19 @@ let SitesService = class SitesService {
             access_available: updateSiteDto.access_available,
             existing_structure: updateSiteDto.existing_structure,
         });
-        return this.findOne(id);
+        const updatedSite = await this.findOne(id);
+        await this.siteEngagementService.siteUpdated(actor, {
+            id: site.id,
+            clientId: site.client_id,
+        }, oldValues, updatedSite.toJSON());
+        return updatedSite;
     }
-    async remove(id) {
+    async remove(id, actor) {
         const site = await this.findOne(id);
+        await this.siteEngagementService.siteDeleted(actor, {
+            id: site.id,
+            clientId: site.client_id,
+        });
         const addressId = site.address_id;
         await site.destroy();
         if (addressId) {
@@ -104,6 +122,6 @@ exports.SitesService = SitesService = __decorate([
     (0, common_1.Injectable)(),
     __param(0, (0, sequelize_1.InjectModel)(site_model_1.Site)),
     __param(1, (0, sequelize_1.InjectModel)(address_model_1.Address)),
-    __metadata("design:paramtypes", [Object, Object])
+    __metadata("design:paramtypes", [Object, Object, site_engagement_service_1.SiteEngagementService])
 ], SitesService);
 //# sourceMappingURL=sites.service.js.map

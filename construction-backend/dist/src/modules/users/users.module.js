@@ -14,6 +14,7 @@ const users_controller_1 = require("./users.controller");
 const user_model_1 = require("./models/user.model");
 const role_model_1 = require("../rbac/models/role.model");
 const cdn_module_1 = require("../cdn/cdn.module");
+const engagement_module_1 = require("../engagement/engagement.module");
 let UsersModule = class UsersModule {
 };
 exports.UsersModule = UsersModule;
@@ -22,6 +23,7 @@ exports.UsersModule = UsersModule = __decorate([
         imports: [
             sequelize_1.SequelizeModule.forFeature([user_model_1.User, role_model_1.Role]),
             cdn_module_1.CdnModule,
+            engagement_module_1.EngagementModule,
         ],
         controllers: [users_controller_1.UsersController],
         providers: [users_service_1.UsersService],

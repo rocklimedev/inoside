@@ -14,12 +14,16 @@ const role_model_1 = require("./models/role.model");
 const permission_model_1 = require("./models/permission.model");
 const role_permission_model_1 = require("./models/role-permission.model");
 const rbac_controller_1 = require("./rbac.controller");
+const engagement_module_1 = require("../engagement/engagement.module");
 let RbacModule = class RbacModule {
 };
 exports.RbacModule = RbacModule;
 exports.RbacModule = RbacModule = __decorate([
     (0, common_1.Module)({
-        imports: [sequelize_1.SequelizeModule.forFeature([role_model_1.Role, permission_model_1.Permission, role_permission_model_1.RolePermission])],
+        imports: [
+            sequelize_1.SequelizeModule.forFeature([role_model_1.Role, permission_model_1.Permission, role_permission_model_1.RolePermission]),
+            engagement_module_1.EngagementModule,
+        ],
         controllers: [rbac_controller_1.RbacController],
         providers: [roles_service_1.RbacService],
         exports: [roles_service_1.RbacService],

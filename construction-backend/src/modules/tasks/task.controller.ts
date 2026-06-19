@@ -55,7 +55,10 @@ export class TaskController {
 
   @Post()
   create(@Body() dto: CreateTaskDto, @Req() req: any) {
-    return this.taskService.create(dto, req.user.id);
+    return this.taskService.create(dto, req.user.id, {
+      id: req.user.id,
+      name: req.user.name,
+    });
   }
 
   // ======================================================
@@ -66,9 +69,18 @@ export class TaskController {
   update(
     @Param('taskId') taskId: string,
     @Body() dto: UpdateTaskDto,
+    @Req() req: any,
     @Query('projectId') projectId?: string,
   ) {
-    return this.taskService.update(taskId, dto, projectId);
+    return this.taskService.update(
+      taskId,
+      dto,
+      {
+        id: req.user.id,
+        name: req.user.name,
+      },
+      projectId, // ← now in correct position (last)
+    );
   }
 
   // ======================================================
@@ -79,8 +91,16 @@ export class TaskController {
   @HttpCode(204)
   remove(
     @Param('taskId') taskId: string,
+    @Req() req: any,
     @Query('projectId') projectId?: string,
   ) {
-    return this.taskService.remove(taskId, projectId);
+    return this.taskService.remove(
+      taskId,
+      {
+        id: req.user.id,
+        name: req.user.name,
+      },
+      projectId, // ← now in correct position
+    );
   }
 }

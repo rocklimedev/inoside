@@ -24,11 +24,17 @@ let UsersController = class UsersController {
     constructor(usersService) {
         this.usersService = usersService;
     }
-    create(dto) {
-        return this.usersService.create(dto);
+    create(dto, req) {
+        return this.usersService.create(dto, {
+            id: req.user.id,
+            name: req.user.name,
+        });
     }
-    update(id, dto, file) {
-        return this.usersService.update(id, dto, file);
+    update(id, dto, file, req) {
+        return this.usersService.update(id, dto, {
+            id: req.user.id,
+            name: req.user.name,
+        }, file);
     }
     findAll() {
         return this.usersService.findAll();
@@ -36,19 +42,26 @@ let UsersController = class UsersController {
     findOne(id) {
         return this.usersService.findOne(id);
     }
-    remove(id) {
-        return this.usersService.remove(id);
+    remove(id, req) {
+        return this.usersService.remove(id, {
+            id: req.user.id,
+            name: req.user.name,
+        });
     }
-    toggleActive(id) {
-        return this.usersService.toggleActive(id);
+    toggleActive(id, req) {
+        return this.usersService.toggleActive(id, {
+            id: req.user.id,
+            name: req.user.name,
+        });
     }
 };
 exports.UsersController = UsersController;
 __decorate([
     (0, common_1.Post)(),
     __param(0, (0, common_1.Body)()),
+    __param(1, (0, common_1.Req)()),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [create_user_dto_1.CreateUserDto]),
+    __metadata("design:paramtypes", [create_user_dto_1.CreateUserDto, Object]),
     __metadata("design:returntype", void 0)
 ], UsersController.prototype, "create", null);
 __decorate([
@@ -57,8 +70,9 @@ __decorate([
     __param(0, (0, common_1.Param)('id')),
     __param(1, (0, common_1.Body)()),
     __param(2, (0, common_1.UploadedFile)()),
+    __param(3, (0, common_1.Req)()),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [String, update_user_dto_1.UpdateUserDto, Object]),
+    __metadata("design:paramtypes", [String, update_user_dto_1.UpdateUserDto, Object, Object]),
     __metadata("design:returntype", void 0)
 ], UsersController.prototype, "update", null);
 __decorate([
@@ -77,15 +91,17 @@ __decorate([
 __decorate([
     (0, common_1.Delete)(':id'),
     __param(0, (0, common_1.Param)('id')),
+    __param(1, (0, common_1.Req)()),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [String]),
+    __metadata("design:paramtypes", [String, Object]),
     __metadata("design:returntype", void 0)
 ], UsersController.prototype, "remove", null);
 __decorate([
     (0, common_1.Patch)(':id/toggle-active'),
     __param(0, (0, common_1.Param)('id')),
+    __param(1, (0, common_1.Req)()),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [String]),
+    __metadata("design:paramtypes", [String, Object]),
     __metadata("design:returntype", void 0)
 ], UsersController.prototype, "toggleActive", null);
 exports.UsersController = UsersController = __decorate([

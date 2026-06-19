@@ -10,6 +10,8 @@ import { CreateInventoryDispatchDto } from './dto/create-inventory-dispatch.dto'
 import { UpdateInventoryDispatchDto } from './dto/update-inventory-dispatch.dto';
 import { CreateInventoryMasterDto } from './dto/create-inventory-master.dto';
 import { UpdateInventoryMasterDto } from './dto/update-inventory-master.dto';
+import { CreateProjectMaterialDto } from './dto/create-material.dto';
+import { UpdateProjectMaterialDto } from './dto/update-material';
 export declare class InventoryService {
     private requestModel;
     private dispatchModel;
@@ -28,6 +30,7 @@ export declare class InventoryService {
     }>;
     createRequest(dto: CreateInventoryRequestDto): Promise<InventoryRequest>;
     findAllRequests(): Promise<InventoryRequest[]>;
+    getRequestsByProject(projectId: string): Promise<InventoryRequest[]>;
     findRequestById(id: string): Promise<InventoryRequest>;
     updateRequest(id: string, dto: UpdateInventoryRequestDto): Promise<InventoryRequest>;
     deleteRequest(id: string): Promise<{
@@ -45,6 +48,11 @@ export declare class InventoryService {
     findMasterById(id: string): Promise<InventoryMaster>;
     updateMaster(id: string, dto: UpdateInventoryMasterDto): Promise<InventoryMaster>;
     deleteMaster(id: string): Promise<{
+        message: string;
+    }>;
+    createProjectMaterial(dto: CreateProjectMaterialDto): Promise<ProjectMaterial>;
+    updateProjectMaterial(id: string, dto: UpdateProjectMaterialDto): Promise<ProjectMaterial>;
+    deleteProjectMaterial(id: string): Promise<{
         message: string;
     }>;
     findAllProjectMaterials(): Promise<ProjectMaterial[]>;

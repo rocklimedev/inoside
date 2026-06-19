@@ -6,6 +6,7 @@ import {
 } from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
 import { v4 as uuid } from 'uuid';
+
 import { Op } from 'sequelize';
 import { InventoryCategory } from './models/inventory-category.model';
 import { InventoryRequest } from './models/inventory-request.model';
@@ -21,7 +22,8 @@ import { CreateInventoryDispatchDto } from './dto/create-inventory-dispatch.dto'
 import { UpdateInventoryDispatchDto } from './dto/update-inventory-dispatch.dto';
 import { CreateInventoryMasterDto } from './dto/create-inventory-master.dto';
 import { UpdateInventoryMasterDto } from './dto/update-inventory-master.dto';
-
+import { CreateProjectMaterialDto } from './dto/create-material.dto';
+import { UpdateProjectMaterialDto } from './dto/update-material';
 @Injectable()
 export class InventoryService {
   constructor(
@@ -128,21 +130,72 @@ export class InventoryService {
   async createRequest(dto: CreateInventoryRequestDto) {
     return this.requestModel.create({
       id: uuid(),
-      ...dto,
+
+      project_id: dto.project_id,
+      project_material_id: dto.project_material_id,
+      quantity_required: dto.quantity_required,
+      required_date: dto.required_date ?? null,
+      vendor_id: dto.vendor_id ?? null,
+      source_type: dto.source_type,
+      requested_by: dto.requested_by ?? null,
     });
   }
 
   async findAllRequests() {
     return this.requestModel.findAll({
       include: [
-        { all: true, nested: true },
-        // or explicitly:
-        // 'project', 'projectMaterial', 'vendor', 'requester', 'approver'
+        {
+          association: 'project',
+          include: [
+            {
+              association: 'client',
+            },
+            {
+              association: 'site',
+            },
+            {
+              association: 'creator',
+            },
+            {
+              association: 'assignedUser',
+            },
+          ],
+        },
+        {
+          association: 'vendor',
+        },
+        {
+          association: 'requester',
+        },
+        {
+          association: 'approver',
+        },
       ],
       order: [['created_at', 'DESC']],
     });
   }
-
+  async getRequestsByProject(projectId: string) {
+    return this.requestModel.findAll({
+      where: {
+        project_id: projectId,
+      },
+      include: [
+        {
+          association: 'project',
+          include: [
+            { association: 'client' },
+            { association: 'site' },
+            { association: 'creator' },
+            { association: 'assignedUser' },
+          ],
+        },
+        { association: 'vendor' },
+        { association: 'requester' },
+        { association: 'approver' },
+      ],
+      order: [['created_at', 'DESC']],
+    });
+  }
   async findRequestById(id: string) {
     const request = await this.requestModel.findByPk(id, {
       include: { all: true, nested: true },
@@ -174,7 +227,21 @@ export class InventoryService {
 
   async findAllDispatches() {
     return this.dispatchModel.findAll({
-      include: [{ all: true, nested: true }],
+      include: [
+        {
+          association: 'request',
+          include: [
+            {
+              association: 'project',
+              include: [
+                { association: 'client' },
+                { association: 'site' },
+                { association: 'creator' },
+              ],
+            },
+          ],
+        },
+      ],
       order: [['created_at', 'DESC']],
     });
   }
@@ -240,7 +307,140 @@ export class InventoryService {
   }
 
   // ====================== PROJECT MATERIALS & BRANDS ======================
+  // ====================== PROJECT MATERIALS ======================
 
+  async createProjectMaterial(dto: CreateProjectMaterialDto) {
+    const itemName = dto.item_name?.trim();
+
+    const existing = await this.projectMaterialModel.findOne({
+      where: {
+        project_id: dto.project_id,
+        item_name: itemName,
+      },
+    });
+
+    if (existing) {
+      throw new ConflictException(
+        `Material "${itemName}" already exists for this project`,
+      );
+    }
+
+    return this.projectMaterialModel.create({
+      id: uuid(),
+      item_name: itemName,
+      project_id: dto.project_id,
+
+      inventory_master_id: dto.inventory_master_id ?? null,
+      item_code: dto.item_code?.trim() || null,
+      description: dto.description?.trim() || null,
+      specification: dto.specification?.trim() || null,
+
+      unit_id: dto.unit_id ?? null,
+      brand_id: dto.brand_id ?? null,
+
+      quantity_estimated: dto.quantity_estimated ?? 0,
+      quantity_required: dto.quantity_required ?? 0,
+      quantity_received: dto.quantity_received ?? 0,
+      quantity_used: dto.quantity_used ?? 0,
+
+      rate: dto.rate ?? null,
+      gst_percent: dto.gst_percent ?? 18,
+      status: dto.status ?? 'planned',
+
+      remarks: dto.remarks?.trim() || null,
+      category: dto.category?.trim() || null,
+    });
+  }
+  async updateProjectMaterial(id: string, dto: UpdateProjectMaterialDto) {
+    const material = await this.findProjectMaterialById(id);
+
+    if (dto.item_name) {
+      const itemName = dto.item_name.trim();
+
+      const existing = await this.projectMaterialModel.findOne({
+        where: {
+          project_id: material.project_id,
+          item_name: itemName,
+          id: { [Op.ne]: id },
+        },
+      });
+
+      if (existing) {
+        throw new ConflictException(
+          `Material "${itemName}" already exists for this project`,
+        );
+      }
+    }
+
+    return material.update({
+      ...(dto.item_name && { item_name: dto.item_name.trim() }),
+
+      ...(dto.inventory_master_id !== undefined && {
+        inventory_master_id: dto.inventory_master_id,
+      }),
+
+      ...(dto.item_code !== undefined && {
+        item_code: dto.item_code?.trim() ?? null,
+      }),
+
+      ...(dto.description !== undefined && {
+        description: dto.description?.trim() ?? null,
+      }),
+
+      ...(dto.specification !== undefined && {
+        specification: dto.specification?.trim() ?? null,
+      }),
+
+      ...(dto.unit_id !== undefined && { unit_id: dto.unit_id }),
+      ...(dto.brand_id !== undefined && { brand_id: dto.brand_id }),
+
+      ...(dto.quantity_estimated !== undefined && {
+        quantity_estimated: dto.quantity_estimated,
+      }),
+
+      ...(dto.quantity_required !== undefined && {
+        quantity_required: dto.quantity_required,
+      }),
+
+      ...(dto.quantity_received !== undefined && {
+        quantity_received: dto.quantity_received,
+      }),
+
+      ...(dto.quantity_used !== undefined && {
+        quantity_used: dto.quantity_used,
+      }),
+
+      ...(dto.rate !== undefined && { rate: dto.rate }),
+      ...(dto.gst_percent !== undefined && { gst_percent: dto.gst_percent }),
+
+      ...(dto.status !== undefined && { status: dto.status }),
+
+      ...(dto.remarks !== undefined && {
+        remarks: dto.remarks?.trim() ?? null,
+      }),
+
+      ...(dto.category !== undefined && {
+        category: dto.category?.trim() ?? null,
+      }),
+    });
+  }
+  async deleteProjectMaterial(id: string) {
+    const material = await this.findProjectMaterialById(id);
+
+    // Check if it's being used in requests
+    const usedInRequests = await this.requestModel.count({
+      where: { project_material_id: id },
+    });
+
+    if (usedInRequests > 0) {
+      throw new BadRequestException(
+        'Cannot delete material: It is referenced by inventory requests',
+      );
+    }
+
+    await material.destroy();
+    return { message: 'Project material deleted successfully' };
+  }
   async findAllProjectMaterials() {
     return this.projectMaterialModel.findAll({
       include: ['project', 'inventoryMaster', 'unit', 'brand'],

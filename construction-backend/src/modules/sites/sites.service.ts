@@ -14,6 +14,8 @@ import { CreateSiteDto } from './dto/create-site.dto';
 
 import { UpdateSiteDto } from './dto/update-site.dto';
 
+import { SiteEngagementService } from '../engagement/services/site-engagement.service';
+
 @Injectable()
 export class SitesService {
   constructor(
@@ -22,13 +24,21 @@ export class SitesService {
 
     @InjectModel(Address)
     private addressModel: typeof Address,
+
+    private readonly siteEngagementService: SiteEngagementService,
   ) {}
 
   // ======================================================
   // CREATE SITE
   // ======================================================
 
-  async create(createSiteDto: CreateSiteDto) {
+  async create(
+    createSiteDto: CreateSiteDto,
+    actor: {
+      id: string;
+      name: string;
+    },
+  ) {
     const address = await this.addressModel.create({
       id: uuid(),
 
@@ -49,9 +59,16 @@ export class SitesService {
       existing_structure: createSiteDto.existing_structure,
     });
 
-    return this.siteModel.findByPk(site.id, {
+    const createdSite = await this.siteModel.findByPk(site.id, {
       include: [Address, Client],
     });
+
+    await this.siteEngagementService.siteCreated(actor, {
+      id: site.id,
+      clientId: site.client_id,
+    });
+
+    return createdSite;
   }
 
   // ======================================================
@@ -102,8 +119,17 @@ export class SitesService {
   // UPDATE SITE
   // ======================================================
 
-  async update(id: string, updateSiteDto: UpdateSiteDto) {
+  async update(
+    id: string,
+    updateSiteDto: UpdateSiteDto,
+    actor: {
+      id: string;
+      name: string;
+    },
+  ) {
     const site = await this.findOne(id);
+
+    const oldValues = site.toJSON();
 
     // ======================================================
     // UPDATE ADDRESS
@@ -131,23 +157,42 @@ export class SitesService {
       existing_structure: updateSiteDto.existing_structure,
     });
 
-    return this.findOne(id);
+    const updatedSite = await this.findOne(id);
+
+    await this.siteEngagementService.siteUpdated(
+      actor,
+      {
+        id: site.id,
+        clientId: site.client_id,
+      },
+      oldValues,
+      updatedSite.toJSON(),
+    );
+
+    return updatedSite;
   }
 
   // ======================================================
   // DELETE SITE
   // ======================================================
 
-  async remove(id: string) {
+  async remove(
+    id: string,
+    actor: {
+      id: string;
+      name: string;
+    },
+  ) {
     const site = await this.findOne(id);
+
+    await this.siteEngagementService.siteDeleted(actor, {
+      id: site.id,
+      clientId: site.client_id,
+    });
 
     const addressId = site.address_id;
 
     await site.destroy();
-
-    // OPTIONAL:
-    // DELETE UNUSED ADDRESS
-    // ======================================================
 
     if (addressId) {
       await this.addressModel.destroy({

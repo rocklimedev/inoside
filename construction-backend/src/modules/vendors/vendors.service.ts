@@ -17,6 +17,8 @@ import { CreateVendorDto } from './dto/create-vendor.dto';
 import { UpdateVendorDto } from './dto/update-vendor.dto';
 import { AssignVendorDto } from './dto/assign-vendor.dto';
 
+import { VendorEngagementService } from '@/modules/engagement/services/vendor-engagement.service';
+
 @Injectable()
 export class VendorsService {
   constructor(
@@ -31,16 +33,23 @@ export class VendorsService {
 
     @InjectModel(ProjectVendor)
     private projectVendorModel: typeof ProjectVendor,
+
+    private readonly vendorEngagementService: VendorEngagementService,
   ) {}
 
   // ====================== Vendors ======================
 
-  async createVendor(dto: CreateVendorDto) {
+  async createVendor(
+    dto: CreateVendorDto,
+    actor: {
+      id: string;
+      name: string;
+    },
+  ) {
     const { type_ids, ...vendorData } = dto;
 
     const vendor = await this.vendorModel.create(vendorData as any);
 
-    // assign vendor types
     if (type_ids?.length) {
       const mappings = type_ids.map((type_id) => ({
         vendor_id: vendor.id,
@@ -49,6 +58,11 @@ export class VendorsService {
 
       await this.vendorTypeVendorModel.bulkCreate(mappings);
     }
+
+    await this.vendorEngagementService.vendorCreated(actor, {
+      id: vendor.id,
+      name: vendor.name,
+    });
 
     return this.findVendorById(vendor.id);
   }
@@ -82,8 +96,17 @@ export class VendorsService {
     return vendor;
   }
 
-  async updateVendor(id: string, dto: UpdateVendorDto) {
+  async updateVendor(
+    id: string,
+    dto: UpdateVendorDto,
+    actor: {
+      id: string;
+      name: string;
+    },
+  ) {
     const vendor = await this.findVendorById(id);
+
+    const oldValues = vendor.toJSON();
 
     const { type_ids, dob, ...vendorData } = dto;
 
@@ -93,10 +116,12 @@ export class VendorsService {
         dob: dob ? new Date(dob) : null,
       }),
     });
-    // update vendor types
+
     if (type_ids) {
       await this.vendorTypeVendorModel.destroy({
-        where: { vendor_id: id },
+        where: {
+          vendor_id: id,
+        },
       });
 
       if (type_ids.length) {
@@ -109,14 +134,39 @@ export class VendorsService {
       }
     }
 
-    return this.findVendorById(id);
+    const updatedVendor = await this.findVendorById(id);
+
+    await this.vendorEngagementService.vendorUpdated(
+      actor,
+      {
+        id: vendor.id,
+        name: vendor.name,
+      },
+      oldValues,
+      updatedVendor.toJSON(),
+    );
+
+    return updatedVendor;
   }
 
-  async deleteVendor(id: string) {
+  async deleteVendor(
+    id: string,
+    actor: {
+      id: string;
+      name: string;
+    },
+  ) {
     const vendor = await this.findVendorById(id);
 
+    await this.vendorEngagementService.vendorDeleted(actor, {
+      id: vendor.id,
+      name: vendor.name,
+    });
+
     await this.vendorTypeVendorModel.destroy({
-      where: { vendor_id: id },
+      where: {
+        vendor_id: id,
+      },
     });
 
     await vendor.destroy();
@@ -148,7 +198,13 @@ export class VendorsService {
 
   // ====================== Project Vendors ======================
 
-  async assignVendorToProject(dto: AssignVendorDto) {
+  async assignVendorToProject(
+    dto: AssignVendorDto,
+    actor: {
+      id: string;
+      name: string;
+    },
+  ) {
     const exists = await this.projectVendorModel.findOne({
       where: {
         project_id: dto.project_id,
@@ -160,20 +216,33 @@ export class VendorsService {
       throw new ConflictException('Vendor already assigned to this project');
     }
 
-    return this.projectVendorModel.create(dto as any);
+    const assignment = await this.projectVendorModel.create(dto as any);
+
+    await this.vendorEngagementService.vendorAssignedToProject(
+      actor,
+      dto.project_id,
+      dto.vendor_id,
+    );
+
+    return assignment;
   }
 
   async getVendorsByProject(projectId: string) {
     return this.projectVendorModel.findAll({
-      where: { project_id: projectId },
+      where: {
+        project_id: projectId,
+      },
 
       include: [
         {
           model: Vendor,
+
           include: [
             {
               model: VendorType,
-              through: { attributes: [] },
+              through: {
+                attributes: [],
+              },
             },
           ],
         },
@@ -195,13 +264,24 @@ export class VendorsService {
     return pv;
   }
 
-  async removeVendorFromProject(id: string) {
+  async removeVendorFromProject(
+    id: string,
+    actor: {
+      id: string;
+      name: string;
+    },
+  ) {
     const pv = await this.projectVendorModel.findByPk(id);
 
     if (!pv) {
       throw new NotFoundException('Project-Vendor record not found');
     }
 
+    await this.vendorEngagementService.vendorRemovedFromProject(
+      actor,
+      pv.project_id!,
+      pv.vendor_id!,
+    );
     await pv.destroy();
 
     return {

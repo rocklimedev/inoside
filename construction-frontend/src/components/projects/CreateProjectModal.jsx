@@ -503,26 +503,29 @@ export function CreateProjectModal({ open, onClose, onProjectCreated }) {
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label>Timeline</Label>
+                  <Label>Timeline Expectation</Label>
 
-                  <Input
-                    type="date"
-                    value={form.timeline_expectation}
+                  <select
+                    value={form.timeline_expectation || ""}
                     onChange={(e) =>
                       setForm({
                         ...form,
                         timeline_expectation: e.target.value,
                       })
                     }
-                    className="h-11 rounded-xl"
-                  />
+                    className="h-11 w-full rounded-xl border border-gray-300 px-4 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  >
+                    <option value="">Select Timeline</option>
+                    <option value="Immediate">Immediate</option>
+                    <option value="Flexible">Flexible</option>
+                    <option value="Fixed Date">Fixed Date</option>
+                  </select>
                 </div>
 
                 <div className="space-y-2">
                   <Label>Design Preference</Label>
-
                   <Input
-                    value={form.design_preference}
+                    value={form.design_preference || ""}
                     onChange={(e) =>
                       setForm({
                         ...form,

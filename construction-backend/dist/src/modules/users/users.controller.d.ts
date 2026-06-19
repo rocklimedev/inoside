@@ -4,7 +4,7 @@ import { UpdateUserDto } from './dto/update-user.dto';
 export declare class UsersController {
     private readonly usersService;
     constructor(usersService: UsersService);
-    create(dto: CreateUserDto): Promise<{
+    create(dto: CreateUserDto, req: any): Promise<{
         message: string;
         data: {
             id: import("sequelize").CreationOptional<string>;
@@ -23,16 +23,16 @@ export declare class UsersController {
             version?: number | any;
         };
     }>;
-    update(id: string, dto: UpdateUserDto, file: Express.Multer.File): Promise<{
+    update(id: string, dto: UpdateUserDto, file: Express.Multer.File, req: any): Promise<{
         message: string;
         data: import("./models/user.model").User;
     }>;
     findAll(): Promise<import("./models/user.model").User[]>;
     findOne(id: string): Promise<import("./models/user.model").User>;
-    remove(id: string): Promise<{
+    remove(id: string, req: any): Promise<{
         message: string;
     }>;
-    toggleActive(id: string): Promise<{
+    toggleActive(id: string, req: any): Promise<{
         message: string;
         data: import("./models/user.model").User;
     }>;

@@ -6,16 +6,20 @@ import {
 } from '@nestjs/common';
 
 import { InjectModel } from '@nestjs/sequelize';
-import { User } from './models/user.model';
-import { Role } from '../rbac/models/role.model';
 
 import * as bcrypt from 'bcryptjs';
+
+import { User } from './models/user.model';
+import { Role } from '../rbac/models/role.model';
 
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 
 import { USER_MESSAGES } from '@/common/messages/user.messages';
+
 import { CdnService } from '../cdn/services/cdn.service';
+import { UserEngagementService } from '@/modules/engagement/services/user-engagement.service';
+
 @Injectable()
 export class UsersService {
   constructor(
@@ -26,11 +30,19 @@ export class UsersService {
     private roleModel: typeof Role,
 
     private readonly cdnService: CdnService,
+
+    private readonly userEngagementService: UserEngagementService,
   ) {}
 
   // ================= CREATE =================
-  // ================= CREATE =================
-  async create(createUserDto: CreateUserDto) {
+
+  async create(
+    createUserDto: CreateUserDto,
+    actor: {
+      id: string;
+      name: string;
+    },
+  ) {
     const { email, password, ...rest } = createUserDto;
 
     const existingUser = await this.userModel.findOne({
@@ -41,10 +53,9 @@ export class UsersService {
       throw new ConflictException(USER_MESSAGES.EMAIL_EXISTS);
     }
 
-    // Default role assigned automatically
     const defaultRole = await this.roleModel.findOne({
       where: {
-        name: 'employee', // change according to your seed data
+        name: 'employee',
       },
     });
 
@@ -62,11 +73,15 @@ export class UsersService {
 
       password_hash,
 
-      // Requires admin approval
       is_active: false,
 
-      // Requires email verification
       is_email_verified: false,
+    });
+
+    await this.userEngagementService.userCreated(actor, {
+      id: user.id,
+      name: user.name,
+      email: user.email,
     });
 
     const { password_hash: _, ...result } = user.toJSON();
@@ -78,23 +93,32 @@ export class UsersService {
   }
 
   // ================= READ ALL =================
+
   async findAll() {
     return this.userModel.findAll({
-      attributes: { exclude: ['password_hash'] },
+      attributes: {
+        exclude: ['password_hash'],
+      },
+
       include: [
         {
           model: Role,
           attributes: ['id', 'name', 'display_name'],
         },
       ],
+
       order: [['created_at', 'DESC']],
     });
   }
 
   // ================= READ ONE =================
+
   async findOne(id: string) {
     const user = await this.userModel.findByPk(id, {
-      attributes: { exclude: ['password_hash'] },
+      attributes: {
+        exclude: ['password_hash'],
+      },
+
       include: [
         {
           model: Role,
@@ -110,36 +134,73 @@ export class UsersService {
     return user;
   }
 
+  // ================= UPDATE =================
+
   async update(
     id: string,
     updateUserDto: UpdateUserDto,
+    actor: {
+      id: string;
+      name: string;
+    },
     file?: Express.Multer.File,
   ) {
     const user = await this.findOne(id);
 
-    const updatePayload: any = { ...updateUserDto };
+    const oldValues = user.toJSON();
+
+    const updatePayload: any = {
+      ...updateUserDto,
+    };
 
     if (file) {
       const uploaded = await this.cdnService.uploadFile(file);
+
       updatePayload.avatar_url = uploaded.url;
-      updatePayload.avatar_thumbnail = uploaded.url; // TODO: generate real thumbnail
+      updatePayload.avatar_thumbnail = uploaded.url;
     }
 
-    // Remove undefined values
     Object.keys(updatePayload).forEach((key) => {
-      if (updatePayload[key] === undefined) delete updatePayload[key];
+      if (updatePayload[key] === undefined) {
+        delete updatePayload[key];
+      }
     });
 
     await user.update(updatePayload);
 
+    const updatedUser = await this.findOne(id);
+
+    await this.userEngagementService.userUpdated(
+      actor,
+      {
+        id: user.id,
+        name: user.name,
+      },
+      oldValues,
+      updatedUser.toJSON(),
+    );
+
     return {
       message: USER_MESSAGES.UPDATED,
-      data: await this.findOne(id),
+      data: updatedUser,
     };
   }
+
   // ================= DELETE =================
-  async remove(id: string) {
+
+  async remove(
+    id: string,
+    actor: {
+      id: string;
+      name: string;
+    },
+  ) {
     const user = await this.findOne(id);
+
+    await this.userEngagementService.userDeleted(actor, {
+      id: user.id,
+      name: user.name,
+    });
 
     await user.destroy();
 
@@ -149,11 +210,26 @@ export class UsersService {
   }
 
   // ================= TOGGLE ACTIVE =================
-  async toggleActive(id: string) {
+
+  async toggleActive(
+    id: string,
+    actor: {
+      id: string;
+      name: string;
+    },
+  ) {
     const user = await this.findOne(id);
 
+    const newStatus = !user.is_active;
+
     await user.update({
-      is_active: !user.is_active,
+      is_active: newStatus,
+    });
+
+    await this.userEngagementService.userStatusChanged(actor, {
+      id: user.id,
+      name: user.name,
+      isActive: newStatus,
     });
 
     return {

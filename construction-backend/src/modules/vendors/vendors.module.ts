@@ -12,6 +12,7 @@ import { VendorTypeVendor } from './models/vendor-type-vendor.model';
 import { ProjectVendor } from './models/project-vendor.model';
 
 import { Project } from '../projects/models/project.model';
+import { EngagementModule } from '../engagement/engagement.module';
 
 @Module({
   imports: [
@@ -22,6 +23,7 @@ import { Project } from '../projects/models/project.model';
       ProjectVendor,
       Project,
     ]),
+    EngagementModule,
   ],
 
   controllers: [VendorsController],

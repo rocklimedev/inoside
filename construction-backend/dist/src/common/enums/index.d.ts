@@ -57,7 +57,9 @@ export declare enum ContextTag {
     SITE = "SITE",
     TASK = "TASK",
     DRAWING = "DRAWING",
-    COST_ESTIMATE = "COST_ESTIMATE"
+    COST_ESTIMATE = "COST_ESTIMATE",
+    CDN = "CDN",
+    RBAC = "RBAC"
 }
 export declare enum ActivityAction {
     CREATE = "CREATE",

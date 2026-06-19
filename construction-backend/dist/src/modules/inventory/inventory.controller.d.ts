@@ -5,6 +5,8 @@ import { CreateInventoryDispatchDto } from './dto/create-inventory-dispatch.dto'
 import { UpdateInventoryDispatchDto } from './dto/update-inventory-dispatch.dto';
 import { CreateInventoryMasterDto } from './dto/create-inventory-master.dto';
 import { UpdateInventoryMasterDto } from './dto/update-inventory-master.dto';
+import { CreateProjectMaterialDto } from './dto/create-material.dto';
+import { UpdateProjectMaterialDto } from './dto/update-material';
 export declare class InventoryController {
     private readonly inventoryService;
     constructor(inventoryService: InventoryService);
@@ -24,6 +26,7 @@ export declare class InventoryController {
     }>;
     createRequest(dto: CreateInventoryRequestDto): Promise<import("./models/inventory-request.model").InventoryRequest>;
     findAllRequests(): Promise<import("./models/inventory-request.model").InventoryRequest[]>;
+    getRequestsByProject(projectId: string): Promise<import("./models/inventory-request.model").InventoryRequest[]>;
     findRequest(id: string): Promise<import("./models/inventory-request.model").InventoryRequest>;
     updateRequest(id: string, dto: UpdateInventoryRequestDto): Promise<import("./models/inventory-request.model").InventoryRequest>;
     deleteRequest(id: string): Promise<{
@@ -45,6 +48,11 @@ export declare class InventoryController {
     }>;
     findAllProjectMaterials(): Promise<import("./models/project-materials.model").ProjectMaterial[]>;
     findProjectMaterial(id: string): Promise<import("./models/project-materials.model").ProjectMaterial>;
+    createProjectMaterial(dto: CreateProjectMaterialDto): Promise<import("./models/project-materials.model").ProjectMaterial>;
+    updateProjectMaterial(id: string, dto: UpdateProjectMaterialDto): Promise<import("./models/project-materials.model").ProjectMaterial>;
+    deleteProjectMaterial(id: string): Promise<{
+        message: string;
+    }>;
     findProjectMaterialsByProject(projectId: string): Promise<import("./models/project-materials.model").ProjectMaterial[]>;
     getProjectMaterialSummary(projectId: string): Promise<{
         totalMaterials: number;

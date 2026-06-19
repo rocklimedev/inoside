@@ -6,12 +6,12 @@ export declare class RbacController {
     private readonly rbacService;
     constructor(rbacService: RbacService);
     findAllRoles(): Promise<import("./models/role.model").Role[]>;
-    createRole(dto: CreateRoleDto): Promise<import("./models/role.model").Role>;
+    createRole(dto: CreateRoleDto, req: any): Promise<import("./models/role.model").Role>;
     findRoleById(id: string): Promise<import("./models/role.model").Role>;
-    getRoleWithPermissions(id: string): Promise<import("./models/role.model").Role | null>;
-    createPermission(dto: CreatePermissionDto): Promise<import("./models/permission.model").Permission>;
+    getRoleWithPermissions(id: string): Promise<import("./models/role.model").Role>;
+    createPermission(dto: CreatePermissionDto, req: any): Promise<import("./models/permission.model").Permission>;
     findAllPermissions(): Promise<import("./models/permission.model").Permission[]>;
-    assignPermissions(roleId: string, dto: AssignPermissionsDto): Promise<{
+    assignPermissions(roleId: string, dto: AssignPermissionsDto, req: any): Promise<{
         message: string;
     }>;
     getMyPermissions(req: any): {

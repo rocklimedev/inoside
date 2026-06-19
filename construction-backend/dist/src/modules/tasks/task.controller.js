@@ -33,13 +33,22 @@ let TaskController = class TaskController {
         return this.taskService.findOne(taskId, projectId);
     }
     create(dto, req) {
-        return this.taskService.create(dto, req.user.id);
+        return this.taskService.create(dto, req.user.id, {
+            id: req.user.id,
+            name: req.user.name,
+        });
     }
-    update(taskId, dto, projectId) {
-        return this.taskService.update(taskId, dto, projectId);
+    update(taskId, dto, req, projectId) {
+        return this.taskService.update(taskId, dto, {
+            id: req.user.id,
+            name: req.user.name,
+        }, projectId);
     }
-    remove(taskId, projectId) {
-        return this.taskService.remove(taskId, projectId);
+    remove(taskId, req, projectId) {
+        return this.taskService.remove(taskId, {
+            id: req.user.id,
+            name: req.user.name,
+        }, projectId);
     }
 };
 exports.TaskController = TaskController;
@@ -70,18 +79,20 @@ __decorate([
     (0, common_1.Put)(':taskId'),
     __param(0, (0, common_1.Param)('taskId')),
     __param(1, (0, common_1.Body)()),
-    __param(2, (0, common_1.Query)('projectId')),
+    __param(2, (0, common_1.Req)()),
+    __param(3, (0, common_1.Query)('projectId')),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [String, update_task_dto_1.UpdateTaskDto, String]),
+    __metadata("design:paramtypes", [String, update_task_dto_1.UpdateTaskDto, Object, String]),
     __metadata("design:returntype", void 0)
 ], TaskController.prototype, "update", null);
 __decorate([
     (0, common_1.Delete)(':taskId'),
     (0, common_1.HttpCode)(204),
     __param(0, (0, common_1.Param)('taskId')),
-    __param(1, (0, common_1.Query)('projectId')),
+    __param(1, (0, common_1.Req)()),
+    __param(2, (0, common_1.Query)('projectId')),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [String, String]),
+    __metadata("design:paramtypes", [String, Object, String]),
     __metadata("design:returntype", void 0)
 ], TaskController.prototype, "remove", null);
 exports.TaskController = TaskController = __decorate([

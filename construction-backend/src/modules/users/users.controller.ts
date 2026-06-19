@@ -9,6 +9,7 @@ import {
   UseGuards,
   UseInterceptors,
   UploadedFile,
+  Req,
 } from '@nestjs/common';
 
 import { FileInterceptor } from '@nestjs/platform-express';
@@ -28,23 +29,39 @@ export class UsersController {
   constructor(private readonly usersService: UsersService) {}
 
   // ================= CREATE =================
+
   @Post()
-  create(@Body() dto: CreateUserDto) {
-    return this.usersService.create(dto);
+  create(@Body() dto: CreateUserDto, @Req() req: any) {
+    return this.usersService.create(dto, {
+      id: req.user.id,
+      name: req.user.name,
+    });
   }
 
   // ================= UPDATE =================
+
   @Patch(':id')
   @UseInterceptors(FileInterceptor('avatar'))
+  // ================= UPDATE =================
   update(
     @Param('id') id: string,
     @Body() dto: UpdateUserDto,
     @UploadedFile() file: Express.Multer.File,
+    @Req() req: any,
   ) {
-    return this.usersService.update(id, dto, file);
+    return this.usersService.update(
+      id,
+      dto,
+      {
+        id: req.user.id,
+        name: req.user.name,
+      },
+      file, // ← file goes last (as 4th parameter)
+    );
   }
 
   // ================= OTHER ROUTES =================
+
   @Get()
   findAll() {
     return this.usersService.findAll();
@@ -56,12 +73,18 @@ export class UsersController {
   }
 
   @Delete(':id')
-  remove(@Param('id') id: string) {
-    return this.usersService.remove(id);
+  remove(@Param('id') id: string, @Req() req: any) {
+    return this.usersService.remove(id, {
+      id: req.user.id,
+      name: req.user.name,
+    });
   }
 
   @Patch(':id/toggle-active')
-  toggleActive(@Param('id') id: string) {
-    return this.usersService.toggleActive(id);
+  toggleActive(@Param('id') id: string, @Req() req: any) {
+    return this.usersService.toggleActive(id, {
+      id: req.user.id,
+      name: req.user.name,
+    });
   }
 }

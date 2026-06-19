@@ -13,12 +13,13 @@ const sites_service_1 = require("./sites.service");
 const sites_controller_1 = require("./sites.controller");
 const site_model_1 = require("./models/site.model");
 const address_model_1 = require("../address/models/address.model");
+const engagement_module_1 = require("../engagement/engagement.module");
 let SitesModule = class SitesModule {
 };
 exports.SitesModule = SitesModule;
 exports.SitesModule = SitesModule = __decorate([
     (0, common_1.Module)({
-        imports: [sequelize_1.SequelizeModule.forFeature([site_model_1.Site, address_model_1.Address])],
+        imports: [sequelize_1.SequelizeModule.forFeature([site_model_1.Site, address_model_1.Address]), engagement_module_1.EngagementModule],
         controllers: [sites_controller_1.SitesController],
         providers: [sites_service_1.SitesService],
         exports: [sites_service_1.SitesService],

@@ -21,6 +21,8 @@ const create_inventory_dispatch_dto_1 = require("./dto/create-inventory-dispatch
 const update_inventory_dispatch_dto_1 = require("./dto/update-inventory-dispatch.dto");
 const create_inventory_master_dto_1 = require("./dto/create-inventory-master.dto");
 const update_inventory_master_dto_1 = require("./dto/update-inventory-master.dto");
+const create_material_dto_1 = require("./dto/create-material.dto");
+const update_material_1 = require("./dto/update-material");
 let InventoryController = class InventoryController {
     inventoryService;
     constructor(inventoryService) {
@@ -49,6 +51,9 @@ let InventoryController = class InventoryController {
     }
     findAllRequests() {
         return this.inventoryService.findAllRequests();
+    }
+    getRequestsByProject(projectId) {
+        return this.inventoryService.getRequestsByProject(projectId);
     }
     findRequest(id) {
         return this.inventoryService.findRequestById(id);
@@ -94,6 +99,15 @@ let InventoryController = class InventoryController {
     }
     findProjectMaterial(id) {
         return this.inventoryService.findProjectMaterialById(id);
+    }
+    createProjectMaterial(dto) {
+        return this.inventoryService.createProjectMaterial(dto);
+    }
+    updateProjectMaterial(id, dto) {
+        return this.inventoryService.updateProjectMaterial(id, dto);
+    }
+    deleteProjectMaterial(id) {
+        return this.inventoryService.deleteProjectMaterial(id);
     }
     findProjectMaterialsByProject(projectId) {
         return this.inventoryService.findProjectMaterialsByProject(projectId);
@@ -182,6 +196,13 @@ __decorate([
     __metadata("design:paramtypes", []),
     __metadata("design:returntype", void 0)
 ], InventoryController.prototype, "findAllRequests", null);
+__decorate([
+    (0, common_1.Get)('project/:projectId/requests'),
+    __param(0, (0, common_1.Param)('projectId')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String]),
+    __metadata("design:returntype", void 0)
+], InventoryController.prototype, "getRequestsByProject", null);
 __decorate([
     (0, common_1.Get)('requests/:id'),
     __param(0, (0, common_1.Param)('id')),
@@ -287,6 +308,28 @@ __decorate([
     __metadata("design:paramtypes", [String]),
     __metadata("design:returntype", void 0)
 ], InventoryController.prototype, "findProjectMaterial", null);
+__decorate([
+    (0, common_1.Post)('projects/materials'),
+    __param(0, (0, common_1.Body)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [create_material_dto_1.CreateProjectMaterialDto]),
+    __metadata("design:returntype", void 0)
+], InventoryController.prototype, "createProjectMaterial", null);
+__decorate([
+    (0, common_1.Put)('projects/materials/:id'),
+    __param(0, (0, common_1.Param)('id')),
+    __param(1, (0, common_1.Body)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String, update_material_1.UpdateProjectMaterialDto]),
+    __metadata("design:returntype", void 0)
+], InventoryController.prototype, "updateProjectMaterial", null);
+__decorate([
+    (0, common_1.Delete)('projects/materials/:id'),
+    __param(0, (0, common_1.Param)('id')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String]),
+    __metadata("design:returntype", void 0)
+], InventoryController.prototype, "deleteProjectMaterial", null);
 __decorate([
     (0, common_1.Get)('projects/:projectId/materials'),
     __param(0, (0, common_1.Param)('projectId')),

@@ -23,8 +23,11 @@ let SitesController = class SitesController {
     constructor(sitesService) {
         this.sitesService = sitesService;
     }
-    create(createSiteDto) {
-        return this.sitesService.create(createSiteDto);
+    create(createSiteDto, req) {
+        return this.sitesService.create(createSiteDto, {
+            id: req.user.id,
+            name: req.user.name,
+        });
     }
     findAll() {
         return this.sitesService.findAll();
@@ -35,19 +38,26 @@ let SitesController = class SitesController {
     findOne(id) {
         return this.sitesService.findOne(id);
     }
-    update(id, updateSiteDto) {
-        return this.sitesService.update(id, updateSiteDto);
+    update(id, updateSiteDto, req) {
+        return this.sitesService.update(id, updateSiteDto, {
+            id: req.user.id,
+            name: req.user.name,
+        });
     }
-    remove(id) {
-        return this.sitesService.remove(id);
+    remove(id, req) {
+        return this.sitesService.remove(id, {
+            id: req.user.id,
+            name: req.user.name,
+        });
     }
 };
 exports.SitesController = SitesController;
 __decorate([
     (0, common_1.Post)(),
     __param(0, (0, common_1.Body)()),
+    __param(1, (0, common_1.Request)()),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [create_site_dto_1.CreateSiteDto]),
+    __metadata("design:paramtypes", [create_site_dto_1.CreateSiteDto, Object]),
     __metadata("design:returntype", void 0)
 ], SitesController.prototype, "create", null);
 __decorate([
@@ -74,15 +84,17 @@ __decorate([
     (0, common_1.Patch)(':id'),
     __param(0, (0, common_1.Param)('id')),
     __param(1, (0, common_1.Body)()),
+    __param(2, (0, common_1.Request)()),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [String, update_site_dto_1.UpdateSiteDto]),
+    __metadata("design:paramtypes", [String, update_site_dto_1.UpdateSiteDto, Object]),
     __metadata("design:returntype", void 0)
 ], SitesController.prototype, "update", null);
 __decorate([
     (0, common_1.Delete)(':id'),
     __param(0, (0, common_1.Param)('id')),
+    __param(1, (0, common_1.Request)()),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [String]),
+    __metadata("design:paramtypes", [String, Object]),
     __metadata("design:returntype", void 0)
 ], SitesController.prototype, "remove", null);
 exports.SitesController = SitesController = __decorate([

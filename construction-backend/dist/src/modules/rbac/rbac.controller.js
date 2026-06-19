@@ -29,8 +29,11 @@ let RbacController = class RbacController {
     findAllRoles() {
         return this.rbacService.findAllRoles();
     }
-    createRole(dto) {
-        return this.rbacService.createRole(dto);
+    createRole(dto, req) {
+        return this.rbacService.createRole(dto, {
+            id: req.user.id,
+            name: req.user.name,
+        });
     }
     findRoleById(id) {
         return this.rbacService.findRoleById(id);
@@ -38,14 +41,20 @@ let RbacController = class RbacController {
     getRoleWithPermissions(id) {
         return this.rbacService.getRoleWithPermissions(id);
     }
-    createPermission(dto) {
-        return this.rbacService.createPermission(dto);
+    createPermission(dto, req) {
+        return this.rbacService.createPermission(dto, {
+            id: req.user.id,
+            name: req.user.name,
+        });
     }
     findAllPermissions() {
         return this.rbacService.findAllPermissions();
     }
-    assignPermissions(roleId, dto) {
-        return this.rbacService.assignPermissions(roleId, dto);
+    assignPermissions(roleId, dto, req) {
+        return this.rbacService.assignPermissions(roleId, dto, {
+            id: req.user.id,
+            name: req.user.name,
+        });
     }
     getMyPermissions(req) {
         return {
@@ -66,8 +75,9 @@ __decorate([
     (0, common_1.UseGuards)(jwt_auth_guard_1.JwtAuthGuard, roles_guard_1.RolesGuard),
     (0, roles_decorator_1.Roles)('admin'),
     __param(0, (0, common_1.Body)()),
+    __param(1, (0, common_1.Request)()),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [create_role_dto_1.CreateRoleDto]),
+    __metadata("design:paramtypes", [create_role_dto_1.CreateRoleDto, Object]),
     __metadata("design:returntype", void 0)
 ], RbacController.prototype, "createRole", null);
 __decorate([
@@ -93,8 +103,9 @@ __decorate([
     (0, common_1.UseGuards)(jwt_auth_guard_1.JwtAuthGuard, roles_guard_1.RolesGuard),
     (0, roles_decorator_1.Roles)('admin'),
     __param(0, (0, common_1.Body)()),
+    __param(1, (0, common_1.Request)()),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [create_permission_dto_1.CreatePermissionDto]),
+    __metadata("design:paramtypes", [create_permission_dto_1.CreatePermissionDto, Object]),
     __metadata("design:returntype", void 0)
 ], RbacController.prototype, "createPermission", null);
 __decorate([
@@ -111,8 +122,9 @@ __decorate([
     (0, roles_decorator_1.Roles)('admin'),
     __param(0, (0, common_1.Param)('id')),
     __param(1, (0, common_1.Body)()),
+    __param(2, (0, common_1.Request)()),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [String, assign_permission_dto_1.AssignPermissionsDto]),
+    __metadata("design:paramtypes", [String, assign_permission_dto_1.AssignPermissionsDto, Object]),
     __metadata("design:returntype", void 0)
 ], RbacController.prototype, "assignPermissions", null);
 __decorate([

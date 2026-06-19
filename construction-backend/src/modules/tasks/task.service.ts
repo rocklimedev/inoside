@@ -9,6 +9,8 @@ import { User } from '@/modules/users/models/user.model';
 import { CreateTaskDto } from './dto/create-task.dto';
 import { UpdateTaskDto } from './dto/update-task.dto';
 
+import { TaskEngagementService } from '@/modules/engagement/services/task-engagement.service';
+
 @Injectable()
 export class TaskService {
   constructor(
@@ -20,6 +22,8 @@ export class TaskService {
 
     @InjectModel(User)
     private readonly userModel: typeof User,
+
+    private readonly taskEngagementService: TaskEngagementService,
   ) {}
 
   // ======================================================
@@ -114,7 +118,14 @@ export class TaskService {
   // CREATE TASK
   // ======================================================
 
-  async create(dto: CreateTaskDto, createdByUserId: string): Promise<Task> {
+  async create(
+    dto: CreateTaskDto,
+    createdByUserId: string,
+    actor: {
+      id: string;
+      name: string;
+    },
+  ): Promise<Task> {
     const project = await this.projectModel.findByPk(dto.project_id);
 
     if (!project) {
@@ -142,7 +153,16 @@ export class TaskService {
       created_by_user_id: createdByUserId,
     });
 
-    return this.findOne(task.id);
+    const createdTask = await this.findOne(task.id);
+
+    await this.taskEngagementService.taskCreated(actor, {
+      id: task.id,
+      title: task.title,
+      projectId: task.project_id,
+      assignedToUserId: task.assigned_to_user_id,
+    });
+
+    return createdTask;
   }
 
   // ======================================================
@@ -152,9 +172,15 @@ export class TaskService {
   async update(
     id: string,
     dto: UpdateTaskDto,
+    actor: {
+      id: string;
+      name: string;
+    },
     projectId?: string,
   ): Promise<Task> {
     const task = await this.findOne(id, projectId);
+
+    const oldValues = task.toJSON();
 
     if (dto.assigned_to_user_id) {
       const assignedUser = await this.userModel.findByPk(
@@ -168,7 +194,19 @@ export class TaskService {
 
     await task.update(dto);
 
-    return this.findOne(id, projectId);
+    const updatedTask = await this.findOne(id, projectId);
+
+    await this.taskEngagementService.taskUpdated(
+      actor,
+      {
+        id: task.id,
+        title: task.title,
+      },
+      oldValues,
+      updatedTask.toJSON(),
+    );
+
+    return updatedTask;
   }
 
   // ======================================================
@@ -177,11 +215,20 @@ export class TaskService {
 
   async remove(
     id: string,
+    actor: {
+      id: string;
+      name: string;
+    },
     projectId?: string,
   ): Promise<{
     message: string;
   }> {
     const task = await this.findOne(id, projectId);
+
+    await this.taskEngagementService.taskDeleted(actor, {
+      id: task.id,
+      title: task.title,
+    });
 
     await task.destroy();
 

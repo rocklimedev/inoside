@@ -16,6 +16,7 @@ const vendor_type_model_1 = require("./models/vendor-type.model");
 const vendor_type_vendor_model_1 = require("./models/vendor-type-vendor.model");
 const project_vendor_model_1 = require("./models/project-vendor.model");
 const project_model_1 = require("../projects/models/project.model");
+const engagement_module_1 = require("../engagement/engagement.module");
 let VendorsModule = class VendorsModule {
 };
 exports.VendorsModule = VendorsModule;
@@ -29,6 +30,7 @@ exports.VendorsModule = VendorsModule = __decorate([
                 project_vendor_model_1.ProjectVendor,
                 project_model_1.Project,
             ]),
+            engagement_module_1.EngagementModule,
         ],
         controllers: [vendors_controller_1.VendorsController],
         providers: [vendors_service_1.VendorsService],

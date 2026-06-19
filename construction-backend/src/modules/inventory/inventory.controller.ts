@@ -19,7 +19,8 @@ import { UpdateInventoryDispatchDto } from './dto/update-inventory-dispatch.dto'
 
 import { CreateInventoryMasterDto } from './dto/create-inventory-master.dto';
 import { UpdateInventoryMasterDto } from './dto/update-inventory-master.dto';
-
+import { CreateProjectMaterialDto } from './dto/create-material.dto';
+import { UpdateProjectMaterialDto } from './dto/update-material';
 @Controller('inventory')
 export class InventoryController {
   constructor(private readonly inventoryService: InventoryService) {}
@@ -68,7 +69,10 @@ export class InventoryController {
   findAllRequests() {
     return this.inventoryService.findAllRequests();
   }
-
+  @Get('project/:projectId/requests')
+  getRequestsByProject(@Param('projectId') projectId: string) {
+    return this.inventoryService.getRequestsByProject(projectId);
+  }
   @Get('requests/:id')
   findRequest(@Param('id') id: string) {
     return this.inventoryService.findRequestById(id);
@@ -153,7 +157,21 @@ export class InventoryController {
   findProjectMaterial(@Param('id') id: string) {
     return this.inventoryService.findProjectMaterialById(id);
   }
-
+  @Post('projects/materials')
+  createProjectMaterial(@Body() dto: CreateProjectMaterialDto) {
+    return this.inventoryService.createProjectMaterial(dto);
+  }
+  @Put('projects/materials/:id')
+  updateProjectMaterial(
+    @Param('id') id: string,
+    @Body() dto: UpdateProjectMaterialDto,
+  ) {
+    return this.inventoryService.updateProjectMaterial(id, dto);
+  }
+  @Delete('projects/materials/:id')
+  deleteProjectMaterial(@Param('id') id: string) {
+    return this.inventoryService.deleteProjectMaterial(id);
+  }
   @Get('projects/:projectId/materials')
   findProjectMaterialsByProject(@Param('projectId') projectId: string) {
     return this.inventoryService.findProjectMaterialsByProject(projectId);

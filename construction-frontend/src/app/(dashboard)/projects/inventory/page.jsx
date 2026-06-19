@@ -15,6 +15,8 @@ import {
   useCreateInventoryRequestMutation,
   useGetProjectDispatchesQuery,
   useCreateDispatchMutation,
+  useGetInventoryMasterQuery, // ← Added for "Add from Master"
+  useCreateProjectMaterialMutation,
 } from "@/api/inventoryApi";
 
 import { Card } from "@/components/ui/card";
@@ -49,13 +51,8 @@ import {
   Loader2,
   Truck,
   FileText,
+  PlusCircle,
 } from "lucide-react";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
 
 const fmt = (n) => {
   const num = Number(n);
@@ -77,7 +74,7 @@ export default function ProjectInventoryPage() {
 
   const [openForm, setOpenForm] = useState(false);
   const [openRequest, setOpenRequest] = useState(false);
-  const [openDispatch, setOpenDispatch] = useState(false);
+  const [openAddFromMaster, setOpenAddFromMaster] = useState(false);
 
   const [selectedItem, setSelectedItem] = useState(null);
   const [editItem, setEditItem] = useState(null);
@@ -85,6 +82,9 @@ export default function ProjectInventoryPage() {
   // Queries
   const { data: items = [], isLoading: itemsLoading } =
     useGetProjectMaterialsQuery(projectId, { skip: !projectId });
+
+  const { data: masters = [], isLoading: mastersLoading } =
+    useGetInventoryMasterQuery();
 
   const { data: requests = [], isLoading: requestsLoading } =
     useGetProjectRequestsQuery(projectId, { skip: !projectId });
@@ -94,8 +94,7 @@ export default function ProjectInventoryPage() {
 
   const [deleteInventory] = useDeleteInventoryMasterMutation();
   const [createRequest] = useCreateInventoryRequestMutation();
-  const [createDispatchMut] = useCreateDispatchMutation();
-
+  const [createMaterial] = useCreateProjectMaterialMutation();
   // Filtered Items
   const filteredItems = useMemo(() => {
     let result = [...items];
@@ -131,6 +130,10 @@ export default function ProjectInventoryPage() {
     setOpenRequest(true);
   };
 
+  const openAddFromMasterModal = () => {
+    setOpenAddFromMaster(true);
+  };
+
   const handleDelete = async (id) => {
     if (!confirm("Delete this item?")) return;
     try {
@@ -164,13 +167,24 @@ export default function ProjectInventoryPage() {
           </div>
 
           {activeTab === "items" && (
-            <Button
-              onClick={openCreate}
-              className="bg-[#ef7f1b] hover:bg-[#d96f18]"
-            >
-              <Plus className="mr-2 h-4 w-4" />
-              Add Item
-            </Button>
+            <div className="flex gap-3">
+              <Button
+                onClick={openAddFromMasterModal}
+                variant="outline"
+                className="border-[#ef7f1b] text-[#ef7f1b] hover:bg-[#fef4eb]"
+              >
+                <PlusCircle className="mr-2 h-4 w-4" />
+                Add from Master
+              </Button>
+
+              <Button
+                onClick={openCreate}
+                className="bg-[#ef7f1b] hover:bg-[#d96f18]"
+              >
+                <Plus className="mr-2 h-4 w-4" />
+                New Item
+              </Button>
+            </div>
           )}
         </div>
 
@@ -281,10 +295,16 @@ export default function ProjectInventoryPage() {
         onClose={() => setOpenRequest(false)}
         item={selectedItem}
         projectId={projectId}
-        createRequest={createRequest}
+        createRequest={createRequest} // ✅ FIXED
       />
 
-      {/* You can add Dispatch Modal similarly */}
+      <AddFromMasterModal
+        open={openAddFromMaster}
+        onClose={() => setOpenAddFromMaster(false)}
+        masters={masters}
+        projectId={projectId}
+        createProjectMaterial={createMaterial} // ✅ FIXED
+      />
     </div>
   );
 }
@@ -471,18 +491,25 @@ function RequestModal({ open, onClose, item, projectId, createRequest }) {
 
   const handleSubmit = async () => {
     if (!quantity || !item) return;
+
     setLoading(true);
+
     try {
       await createRequest({
         project_id: projectId,
-        inventory_master_id: item.inventoryMaster?.id || item.id,
-        quantity_requested: Number(quantity),
-        request_type: "project",
+
+        // ✅ FIXED: must be project_materials.id
+        project_material_id: item.id,
+
+        quantity_required: Number(quantity),
+        source_type: "Warehouse",
       }).unwrap();
+
       toast.success("Request created successfully");
       onClose();
       setQuantity("");
-    } catch {
+    } catch (err) {
+      console.error(err);
       toast.error("Failed to create request");
     } finally {
       setLoading(false);
@@ -493,6 +520,7 @@ function RequestModal({ open, onClose, item, projectId, createRequest }) {
     <Dialog open={open} onOpenChange={onClose}>
       <DialogContent>
         <DialogTitle>Request {item?.item_name}</DialogTitle>
+
         <div className="space-y-4 py-4">
           <Input
             type="number"
@@ -500,6 +528,7 @@ function RequestModal({ open, onClose, item, projectId, createRequest }) {
             value={quantity}
             onChange={(e) => setQuantity(e.target.value)}
           />
+
           <Button
             onClick={handleSubmit}
             disabled={loading}
@@ -512,9 +541,100 @@ function RequestModal({ open, onClose, item, projectId, createRequest }) {
     </Dialog>
   );
 }
+function AddFromMasterModal({
+  open,
+  onClose,
+  masters,
+  projectId,
+  createProjectMaterial, // ✅ FIXED (NOT createRequest)
+}) {
+  const [searchTerm, setSearchTerm] = useState("");
+  const [selectedMaster, setSelectedMaster] = useState(null);
+  const [loading, setLoading] = useState(false);
 
-/* Keep your existing InventoryForm component */
-/* ====================== INVENTORY FORM ====================== */
+  const filteredMasters = useMemo(() => {
+    if (!searchTerm.trim()) return masters;
+
+    const term = searchTerm.toLowerCase();
+
+    return masters.filter(
+      (m) =>
+        m.item_name?.toLowerCase().includes(term) ||
+        m.item_code?.toLowerCase().includes(term),
+    );
+  }, [masters, searchTerm]);
+
+  const handleSubmit = async () => {
+    if (!selectedMaster) {
+      toast.error("Please select an item");
+      return;
+    }
+
+    setLoading(true);
+
+    try {
+      await createProjectMaterial({
+        project_id: projectId,
+
+        // ✅ FIXED: master ID goes here
+        inventory_master_id: selectedMaster.id,
+      }).unwrap();
+
+      toast.success("Added to project");
+      onClose();
+      setSelectedMaster(null);
+    } catch (err) {
+      console.error(err);
+      toast.error("Failed to add item");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={onClose}>
+      <DialogContent className="max-w-2xl w-full h-[90vh] flex flex-col p-0 overflow-hidden">
+        {/* HEADER */}
+        <div className="px-4 sm:px-6 py-4 border-b">
+          <DialogTitle className="text-lg font-semibold">
+            Add Item from Master
+          </DialogTitle>
+        </div>
+
+        {/* LIST */}
+        <div className="flex-1 overflow-y-auto p-3 space-y-2 bg-gray-50">
+          {masters.map((master) => {
+            const isSelected = selectedMaster?.id === master.id;
+
+            return (
+              <div
+                key={master.id}
+                onClick={() => setSelectedMaster(master)}
+                className={`p-3 border cursor-pointer rounded-xl ${
+                  isSelected ? "bg-orange-50 border-orange-400" : "bg-white"
+                }`}
+              >
+                <div className="font-medium">{master.item_name}</div>
+                <div className="text-sm text-gray-500">{master.item_code}</div>
+              </div>
+            );
+          })}
+        </div>
+
+        {/* FOOTER */}
+        <div className="border-t p-4">
+          <Button
+            onClick={handleSubmit}
+            disabled={loading}
+            className="w-full bg-[#ef7f1b]"
+          >
+            {loading ? <Loader2 className="animate-spin" /> : "Add to Project"}
+          </Button>
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+}
 function InventoryForm({ editItem, projectId, onClose }) {
   const isEdit = !!editItem;
 
@@ -565,6 +685,7 @@ function InventoryForm({ editItem, projectId, onClose }) {
         await createInventory(payload).unwrap();
         toast.success("Item created successfully");
       }
+
       onClose();
     } catch {
       toast.error("Operation failed. Please try again.");
@@ -572,68 +693,94 @@ function InventoryForm({ editItem, projectId, onClose }) {
   };
 
   return (
-    <div className="space-y-4 py-2">
-      <Input
-        placeholder="Item Code"
-        value={form.item_code}
-        onChange={(e) => update("item_code", e.target.value)}
-      />
+    <div className="w-full max-w-3xl mx-auto bg-white rounded-xl">
+      {/* Header */}
+      <div className="border-b px-4 sm:px-6 py-4">
+        <h2 className="text-lg sm:text-xl font-semibold">
+          {isEdit ? "Update Inventory Item" : "Create Inventory Item"}
+        </h2>
+        <p className="text-sm text-gray-500">Fill in the details below</p>
+      </div>
 
-      <Input
-        placeholder="Item Name *"
-        value={form.item_name}
-        onChange={(e) => update("item_name", e.target.value)}
-      />
+      {/* Body */}
+      <div className="p-4 sm:p-6 space-y-5">
+        {/* GRID SECTION */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <Input
+            placeholder="Item Code"
+            value={form.item_code}
+            onChange={(e) => update("item_code", e.target.value)}
+          />
 
-      <Select
-        value={form.brand_id || "none"}
-        onValueChange={(v) => update("brand_id", v === "none" ? "" : v)}
-      >
-        <SelectTrigger>
-          <SelectValue placeholder="Select Brand" />
-        </SelectTrigger>
-        <SelectContent>
-          <SelectItem value="none">No Brand</SelectItem>
-          {brands.map((b) => (
-            <SelectItem key={b.id} value={String(b.id)}>
-              {b.name}
-            </SelectItem>
-          ))}
-        </SelectContent>
-      </Select>
+          <Input
+            placeholder="Item Name *"
+            value={form.item_name}
+            onChange={(e) => update("item_name", e.target.value)}
+          />
 
-      <Input
-        placeholder="Description"
-        value={form.description}
-        onChange={(e) => update("description", e.target.value)}
-      />
+          <Select
+            value={form.brand_id || "none"}
+            onValueChange={(v) => update("brand_id", v === "none" ? "" : v)}
+          >
+            <SelectTrigger>
+              <SelectValue placeholder="Select Brand" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="none">No Brand</SelectItem>
+              {brands.map((b) => (
+                <SelectItem key={b.id} value={String(b.id)}>
+                  {b.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
 
-      <Input
-        placeholder="Specification"
-        value={form.specification}
-        onChange={(e) => update("specification", e.target.value)}
-      />
+          <Input
+            type="number"
+            placeholder="Default Rate (₹)"
+            value={form.default_rate}
+            onChange={(e) => update("default_rate", e.target.value)}
+          />
+        </div>
 
-      <Input
-        type="number"
-        placeholder="Default Rate (₹)"
-        value={form.default_rate}
-        onChange={(e) => update("default_rate", e.target.value)}
-      />
+        {/* FULL WIDTH FIELDS */}
+        <Input
+          placeholder="Description"
+          value={form.description}
+          onChange={(e) => update("description", e.target.value)}
+        />
 
-      <Button
-        onClick={handleSubmit}
-        disabled={loading}
-        className="w-full bg-[#ef7f1b] hover:bg-[#d96f18] h-11"
-      >
-        {loading ? (
-          <Loader2 className="animate-spin" />
-        ) : isEdit ? (
-          "Update Item"
-        ) : (
-          "Create Item"
-        )}
-      </Button>
+        <Input
+          placeholder="Specification"
+          value={form.specification}
+          onChange={(e) => update("specification", e.target.value)}
+        />
+      </div>
+
+      {/* FOOTER ACTION (sticky feel) */}
+      <div className="border-t px-4 sm:px-6 py-4 flex flex-col sm:flex-row gap-3 sm:justify-end">
+        <Button
+          variant="outline"
+          onClick={onClose}
+          className="w-full sm:w-auto"
+        >
+          Cancel
+        </Button>
+
+        <Button
+          onClick={handleSubmit}
+          disabled={loading}
+          className="w-full sm:w-auto bg-[#ef7f1b] hover:bg-[#d96f18]"
+        >
+          {loading ? (
+            <Loader2 className="animate-spin" />
+          ) : isEdit ? (
+            "Update Item"
+          ) : (
+            "Create Item"
+          )}
+        </Button>
+      </div>
     </div>
   );
 }

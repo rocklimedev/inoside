@@ -14,18 +14,32 @@ import { CreateRoleDto } from './dto/create-role.dto';
 import { CreatePermissionDto } from './dto/create-permission.dto';
 import { AssignPermissionsDto } from './dto/assign-permission.dto';
 
+import { RbacEngagementService } from '../engagement/services/rbac-engagement.service';
+
 @Injectable()
 export class RbacService {
   constructor(
-    @InjectModel(Role) private roleModel: typeof Role,
-    @InjectModel(Permission) private permissionModel: typeof Permission,
+    @InjectModel(Role)
+    private roleModel: typeof Role,
+
+    @InjectModel(Permission)
+    private permissionModel: typeof Permission,
+
     @InjectModel(RolePermission)
     private rolePermissionModel: typeof RolePermission,
+
+    private readonly rbacEngagementService: RbacEngagementService,
   ) {}
 
   // ================= ROLES =================
 
-  async createRole(dto: CreateRoleDto) {
+  async createRole(
+    dto: CreateRoleDto,
+    actor: {
+      id: string;
+      name: string;
+    },
+  ) {
     const existing = await this.roleModel.findOne({
       where: { name: dto.name },
     });
@@ -34,7 +48,11 @@ export class RbacService {
       throw new ConflictException('Role name already exists');
     }
 
-    return this.roleModel.create(dto);
+    const role = await this.roleModel.create(dto);
+
+    await this.rbacEngagementService.roleCreated(actor, role);
+
+    return role;
   }
 
   async findAllRoles() {
@@ -55,7 +73,13 @@ export class RbacService {
 
   // ================= PERMISSIONS =================
 
-  async createPermission(dto: CreatePermissionDto) {
+  async createPermission(
+    dto: CreatePermissionDto,
+    actor: {
+      id: string;
+      name: string;
+    },
+  ) {
     const existing = await this.permissionModel.findOne({
       where: { name: dto.name },
     });
@@ -64,7 +88,11 @@ export class RbacService {
       throw new ConflictException('Permission name already exists');
     }
 
-    return this.permissionModel.create(dto);
+    const permission = await this.permissionModel.create(dto);
+
+    await this.rbacEngagementService.permissionCreated(actor, permission);
+
+    return permission;
   }
 
   async findAllPermissions() {
@@ -78,8 +106,15 @@ export class RbacService {
 
   // ================= ASSIGN PERMISSIONS =================
 
-  async assignPermissions(roleId: string, dto: AssignPermissionsDto) {
-    await this.findRoleById(roleId);
+  async assignPermissions(
+    roleId: string,
+    dto: AssignPermissionsDto,
+    actor: {
+      id: string;
+      name: string;
+    },
+  ) {
+    const role = await this.findRoleById(roleId);
 
     await this.rolePermissionModel.destroy({
       where: { role_id: roleId },
@@ -92,6 +127,12 @@ export class RbacService {
 
     await this.rolePermissionModel.bulkCreate(assignments);
 
+    await this.rbacEngagementService.permissionsAssigned(
+      actor,
+      role,
+      dto.permission_ids,
+    );
+
     return {
       message: 'Permissions assigned successfully',
     };
@@ -100,7 +141,7 @@ export class RbacService {
   // ================= ROLE WITH PERMISSIONS =================
 
   async getRoleWithPermissions(roleId: string) {
-    return this.roleModel.findByPk(roleId, {
+    const role = await this.roleModel.findByPk(roleId, {
       include: [
         {
           model: Permission,
@@ -108,5 +149,11 @@ export class RbacService {
         },
       ],
     });
+
+    if (!role) {
+      throw new NotFoundException('Role not found');
+    }
+
+    return role;
   }
 }

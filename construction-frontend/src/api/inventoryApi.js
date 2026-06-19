@@ -203,7 +203,29 @@ export const inventoryApi = baseApi.injectEndpoints({
         `/inventory/projects/${projectId}/materials/summary`,
       providesTags: ["Material"],
     }),
-
+    createProjectMaterial: builder.mutation({
+      query: (body) => ({
+        url: "/inventory/projects/materials",
+        method: "POST",
+        body,
+      }),
+      invalidatesTags: ["Material"],
+    }),
+    updateProjectMaterial: builder.mutation({
+      query: ({ id, ...body }) => ({
+        url: `/inventory/projects/materials/${id}`,
+        method: "PUT",
+        body,
+      }),
+      invalidatesTags: ["Material"],
+    }),
+    deleteProjectMaterial: builder.mutation({
+      query: (id) => ({
+        url: `/inventory/projects/materials/${id}`,
+        method: "DELETE",
+      }),
+      invalidatesTags: ["Material"],
+    }),
     getProjectMaterialStatus: builder.query({
       query: (projectId) => `/inventory/projects/${projectId}/materials/status`,
       providesTags: ["Material"],
@@ -226,12 +248,11 @@ export const inventoryApi = baseApi.injectEndpoints({
     }),
 
     getProjectPendingMaterials: builder.query({
-      query: (projectId) =>
-        `/inventory/projects/${projectId}/materials/pending`,
+      query: (projectId) => `/inventory/project/${projectId}/materials/pending`,
       providesTags: ["Material"],
     }),
     getProjectRequests: builder.query({
-      query: (projectId) => `/inventory/projects/${projectId}/requests`,
+      query: (projectId) => `/inventory/project/${projectId}/requests`,
       providesTags: ["InventoryRequest"],
     }),
 
@@ -316,6 +337,9 @@ export const {
   useGetProjectMaterialByIdQuery,
   useGetProjectMaterialSummaryQuery,
   useGetProjectMaterialStatusQuery,
+  useCreateProjectMaterialMutation,
+  useUpdateProjectMaterialMutation,
+  useDeleteProjectMaterialMutation,
   useGetProjectMaterialConsumptionQuery,
   useGetProjectInventoryValueQuery,
   useGetPendingMaterialsQuery,

@@ -3,12 +3,17 @@ import { Role } from '../rbac/models/role.model';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { CdnService } from '../cdn/services/cdn.service';
+import { UserEngagementService } from '@/modules/engagement/services/user-engagement.service';
 export declare class UsersService {
     private userModel;
     private roleModel;
     private readonly cdnService;
-    constructor(userModel: typeof User, roleModel: typeof Role, cdnService: CdnService);
-    create(createUserDto: CreateUserDto): Promise<{
+    private readonly userEngagementService;
+    constructor(userModel: typeof User, roleModel: typeof Role, cdnService: CdnService, userEngagementService: UserEngagementService);
+    create(createUserDto: CreateUserDto, actor: {
+        id: string;
+        name: string;
+    }): Promise<{
         message: string;
         data: {
             id: import("sequelize").CreationOptional<string>;
@@ -29,14 +34,23 @@ export declare class UsersService {
     }>;
     findAll(): Promise<User[]>;
     findOne(id: string): Promise<User>;
-    update(id: string, updateUserDto: UpdateUserDto, file?: Express.Multer.File): Promise<{
+    update(id: string, updateUserDto: UpdateUserDto, actor: {
+        id: string;
+        name: string;
+    }, file?: Express.Multer.File): Promise<{
         message: string;
         data: User;
     }>;
-    remove(id: string): Promise<{
+    remove(id: string, actor: {
+        id: string;
+        name: string;
+    }): Promise<{
         message: string;
     }>;
-    toggleActive(id: string): Promise<{
+    toggleActive(id: string, actor: {
+        id: string;
+        name: string;
+    }): Promise<{
         message: string;
         data: User;
     }>;

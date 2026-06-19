@@ -65,6 +65,8 @@ export enum ContextTag {
   TASK = 'TASK',
   DRAWING = 'DRAWING',
   COST_ESTIMATE = 'COST_ESTIMATE',
+  CDN = 'CDN',
+  RBAC = 'RBAC',
 }
 // enums/activity-action.enum.ts
 

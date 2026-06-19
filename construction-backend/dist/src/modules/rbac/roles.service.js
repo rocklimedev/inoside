@@ -18,23 +18,28 @@ const sequelize_1 = require("@nestjs/sequelize");
 const role_model_1 = require("./models/role.model");
 const permission_model_1 = require("./models/permission.model");
 const role_permission_model_1 = require("./models/role-permission.model");
+const rbac_engagement_service_1 = require("../engagement/services/rbac-engagement.service");
 let RbacService = class RbacService {
     roleModel;
     permissionModel;
     rolePermissionModel;
-    constructor(roleModel, permissionModel, rolePermissionModel) {
+    rbacEngagementService;
+    constructor(roleModel, permissionModel, rolePermissionModel, rbacEngagementService) {
         this.roleModel = roleModel;
         this.permissionModel = permissionModel;
         this.rolePermissionModel = rolePermissionModel;
+        this.rbacEngagementService = rbacEngagementService;
     }
-    async createRole(dto) {
+    async createRole(dto, actor) {
         const existing = await this.roleModel.findOne({
             where: { name: dto.name },
         });
         if (existing) {
             throw new common_1.ConflictException('Role name already exists');
         }
-        return this.roleModel.create(dto);
+        const role = await this.roleModel.create(dto);
+        await this.rbacEngagementService.roleCreated(actor, role);
+        return role;
     }
     async findAllRoles() {
         return this.roleModel.findAll({
@@ -48,14 +53,16 @@ let RbacService = class RbacService {
         }
         return role;
     }
-    async createPermission(dto) {
+    async createPermission(dto, actor) {
         const existing = await this.permissionModel.findOne({
             where: { name: dto.name },
         });
         if (existing) {
             throw new common_1.ConflictException('Permission name already exists');
         }
-        return this.permissionModel.create(dto);
+        const permission = await this.permissionModel.create(dto);
+        await this.rbacEngagementService.permissionCreated(actor, permission);
+        return permission;
     }
     async findAllPermissions() {
         return this.permissionModel.findAll({
@@ -65,8 +72,8 @@ let RbacService = class RbacService {
             ],
         });
     }
-    async assignPermissions(roleId, dto) {
-        await this.findRoleById(roleId);
+    async assignPermissions(roleId, dto, actor) {
+        const role = await this.findRoleById(roleId);
         await this.rolePermissionModel.destroy({
             where: { role_id: roleId },
         });
@@ -75,12 +82,13 @@ let RbacService = class RbacService {
             permission_id,
         }));
         await this.rolePermissionModel.bulkCreate(assignments);
+        await this.rbacEngagementService.permissionsAssigned(actor, role, dto.permission_ids);
         return {
             message: 'Permissions assigned successfully',
         };
     }
     async getRoleWithPermissions(roleId) {
-        return this.roleModel.findByPk(roleId, {
+        const role = await this.roleModel.findByPk(roleId, {
             include: [
                 {
                     model: permission_model_1.Permission,
@@ -88,6 +96,10 @@ let RbacService = class RbacService {
                 },
             ],
         });
+        if (!role) {
+            throw new common_1.NotFoundException('Role not found');
+        }
+        return role;
     }
 };
 exports.RbacService = RbacService;
@@ -96,6 +108,6 @@ exports.RbacService = RbacService = __decorate([
     __param(0, (0, sequelize_1.InjectModel)(role_model_1.Role)),
     __param(1, (0, sequelize_1.InjectModel)(permission_model_1.Permission)),
     __param(2, (0, sequelize_1.InjectModel)(role_permission_model_1.RolePermission)),
-    __metadata("design:paramtypes", [Object, Object, Object])
+    __metadata("design:paramtypes", [Object, Object, Object, rbac_engagement_service_1.RbacEngagementService])
 ], RbacService);
 //# sourceMappingURL=roles.service.js.map

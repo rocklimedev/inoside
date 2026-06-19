@@ -37,8 +37,11 @@ export class RbacController {
   @Post('roles')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('admin')
-  createRole(@Body() dto: CreateRoleDto) {
-    return this.rbacService.createRole(dto);
+  createRole(@Body() dto: CreateRoleDto, @Request() req) {
+    return this.rbacService.createRole(dto, {
+      id: req.user.id,
+      name: req.user.name,
+    });
   }
 
   // ADMIN ONLY
@@ -65,8 +68,11 @@ export class RbacController {
   @Post('permissions')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('admin')
-  createPermission(@Body() dto: CreatePermissionDto) {
-    return this.rbacService.createPermission(dto);
+  createPermission(@Body() dto: CreatePermissionDto, @Request() req) {
+    return this.rbacService.createPermission(dto, {
+      id: req.user.id,
+      name: req.user.name,
+    });
   }
 
   // ADMIN ONLY
@@ -88,8 +94,12 @@ export class RbacController {
   assignPermissions(
     @Param('id') roleId: string,
     @Body() dto: AssignPermissionsDto,
+    @Request() req,
   ) {
-    return this.rbacService.assignPermissions(roleId, dto);
+    return this.rbacService.assignPermissions(roleId, dto, {
+      id: req.user.id,
+      name: req.user.name,
+    });
   }
 
   // =========================================================

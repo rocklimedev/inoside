@@ -14,12 +14,16 @@ const project_model_1 = require("../projects/models/project.model");
 const user_model_1 = require("../users/models/user.model");
 const task_service_1 = require("./task.service");
 const task_controller_1 = require("./task.controller");
+const engagement_module_1 = require("../engagement/engagement.module");
 let TaskModule = class TaskModule {
 };
 exports.TaskModule = TaskModule;
 exports.TaskModule = TaskModule = __decorate([
     (0, common_1.Module)({
-        imports: [sequelize_1.SequelizeModule.forFeature([task_model_1.Task, project_model_1.Project, user_model_1.User])],
+        imports: [
+            sequelize_1.SequelizeModule.forFeature([task_model_1.Task, project_model_1.Project, user_model_1.User]),
+            engagement_module_1.EngagementModule,
+        ],
         controllers: [task_controller_1.TaskController],
         providers: [task_service_1.TaskService],
         exports: [task_service_1.TaskService],

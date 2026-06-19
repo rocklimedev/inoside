@@ -19,18 +19,21 @@ const vendor_model_1 = require("./models/vendor.model");
 const vendor_type_model_1 = require("./models/vendor-type.model");
 const vendor_type_vendor_model_1 = require("./models/vendor-type-vendor.model");
 const project_vendor_model_1 = require("./models/project-vendor.model");
+const vendor_engagement_service_1 = require("../engagement/services/vendor-engagement.service");
 let VendorsService = class VendorsService {
     vendorModel;
     vendorTypeModel;
     vendorTypeVendorModel;
     projectVendorModel;
-    constructor(vendorModel, vendorTypeModel, vendorTypeVendorModel, projectVendorModel) {
+    vendorEngagementService;
+    constructor(vendorModel, vendorTypeModel, vendorTypeVendorModel, projectVendorModel, vendorEngagementService) {
         this.vendorModel = vendorModel;
         this.vendorTypeModel = vendorTypeModel;
         this.vendorTypeVendorModel = vendorTypeVendorModel;
         this.projectVendorModel = projectVendorModel;
+        this.vendorEngagementService = vendorEngagementService;
     }
-    async createVendor(dto) {
+    async createVendor(dto, actor) {
         const { type_ids, ...vendorData } = dto;
         const vendor = await this.vendorModel.create(vendorData);
         if (type_ids?.length) {
@@ -40,6 +43,10 @@ let VendorsService = class VendorsService {
             }));
             await this.vendorTypeVendorModel.bulkCreate(mappings);
         }
+        await this.vendorEngagementService.vendorCreated(actor, {
+            id: vendor.id,
+            name: vendor.name,
+        });
         return this.findVendorById(vendor.id);
     }
     async findAllVendors() {
@@ -67,8 +74,9 @@ let VendorsService = class VendorsService {
         }
         return vendor;
     }
-    async updateVendor(id, dto) {
+    async updateVendor(id, dto, actor) {
         const vendor = await this.findVendorById(id);
+        const oldValues = vendor.toJSON();
         const { type_ids, dob, ...vendorData } = dto;
         await vendor.update({
             ...vendorData,
@@ -78,7 +86,9 @@ let VendorsService = class VendorsService {
         });
         if (type_ids) {
             await this.vendorTypeVendorModel.destroy({
-                where: { vendor_id: id },
+                where: {
+                    vendor_id: id,
+                },
             });
             if (type_ids.length) {
                 const mappings = type_ids.map((type_id) => ({
@@ -88,12 +98,23 @@ let VendorsService = class VendorsService {
                 await this.vendorTypeVendorModel.bulkCreate(mappings);
             }
         }
-        return this.findVendorById(id);
+        const updatedVendor = await this.findVendorById(id);
+        await this.vendorEngagementService.vendorUpdated(actor, {
+            id: vendor.id,
+            name: vendor.name,
+        }, oldValues, updatedVendor.toJSON());
+        return updatedVendor;
     }
-    async deleteVendor(id) {
+    async deleteVendor(id, actor) {
         const vendor = await this.findVendorById(id);
+        await this.vendorEngagementService.vendorDeleted(actor, {
+            id: vendor.id,
+            name: vendor.name,
+        });
         await this.vendorTypeVendorModel.destroy({
-            where: { vendor_id: id },
+            where: {
+                vendor_id: id,
+            },
         });
         await vendor.destroy();
         return {
@@ -114,7 +135,7 @@ let VendorsService = class VendorsService {
             order: [['name', 'ASC']],
         });
     }
-    async assignVendorToProject(dto) {
+    async assignVendorToProject(dto, actor) {
         const exists = await this.projectVendorModel.findOne({
             where: {
                 project_id: dto.project_id,
@@ -124,18 +145,24 @@ let VendorsService = class VendorsService {
         if (exists) {
             throw new common_1.ConflictException('Vendor already assigned to this project');
         }
-        return this.projectVendorModel.create(dto);
+        const assignment = await this.projectVendorModel.create(dto);
+        await this.vendorEngagementService.vendorAssignedToProject(actor, dto.project_id, dto.vendor_id);
+        return assignment;
     }
     async getVendorsByProject(projectId) {
         return this.projectVendorModel.findAll({
-            where: { project_id: projectId },
+            where: {
+                project_id: projectId,
+            },
             include: [
                 {
                     model: vendor_model_1.Vendor,
                     include: [
                         {
                             model: vendor_type_model_1.VendorType,
-                            through: { attributes: [] },
+                            through: {
+                                attributes: [],
+                            },
                         },
                     ],
                 },
@@ -151,11 +178,12 @@ let VendorsService = class VendorsService {
         await pv.update(updateData);
         return pv;
     }
-    async removeVendorFromProject(id) {
+    async removeVendorFromProject(id, actor) {
         const pv = await this.projectVendorModel.findByPk(id);
         if (!pv) {
             throw new common_1.NotFoundException('Project-Vendor record not found');
         }
+        await this.vendorEngagementService.vendorRemovedFromProject(actor, pv.project_id, pv.vendor_id);
         await pv.destroy();
         return {
             message: 'Vendor removed from project successfully',
@@ -169,6 +197,6 @@ exports.VendorsService = VendorsService = __decorate([
     __param(1, (0, sequelize_1.InjectModel)(vendor_type_model_1.VendorType)),
     __param(2, (0, sequelize_1.InjectModel)(vendor_type_vendor_model_1.VendorTypeVendor)),
     __param(3, (0, sequelize_1.InjectModel)(project_vendor_model_1.ProjectVendor)),
-    __metadata("design:paramtypes", [Object, Object, Object, Object])
+    __metadata("design:paramtypes", [Object, Object, Object, Object, vendor_engagement_service_1.VendorEngagementService])
 ], VendorsService);
 //# sourceMappingURL=vendors.service.js.map

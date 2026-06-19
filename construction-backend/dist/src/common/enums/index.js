@@ -70,6 +70,8 @@ var ContextTag;
     ContextTag["TASK"] = "TASK";
     ContextTag["DRAWING"] = "DRAWING";
     ContextTag["COST_ESTIMATE"] = "COST_ESTIMATE";
+    ContextTag["CDN"] = "CDN";
+    ContextTag["RBAC"] = "RBAC";
 })(ContextTag || (exports.ContextTag = ContextTag = {}));
 var ActivityAction;
 (function (ActivityAction) {
