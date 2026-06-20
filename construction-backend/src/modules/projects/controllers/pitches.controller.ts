@@ -7,11 +7,13 @@ import {
   Param,
   Body,
   Req,
+  UploadedFile,
   UseGuards,
+  UseInterceptors,
 } from '@nestjs/common';
 
 import type { Request } from 'express';
-
+import { FileInterceptor } from '@nestjs/platform-express';
 import { JwtAuthGuard } from '@/common/guards/jwt-auth.guard';
 
 import { ProjectPitchService } from '../services/project-pitch.service';
@@ -23,17 +25,20 @@ import { UpdateProjectPitchDto } from '../dto/update-project-pitch.dto';
 @UseGuards(JwtAuthGuard)
 export class PitchesController {
   constructor(private readonly pitchService: ProjectPitchService) {}
-
   @Post(':id/pitch')
-  create(
+  @UseInterceptors(FileInterceptor('file'))
+  async create(
     @Param('id') projectId: string,
-    @Body() dto: CreateProjectPitchDto,
+    @Body() dto: CreateProjectPitchDto, // This will be parsed
+    @UploadedFile() file: Express.Multer.File,
     @Req() req: Request,
   ) {
-    return this.pitchService.createPitch(projectId, {
-      ...dto,
-      created_by: (req.user as any).id,
-    });
+    return this.pitchService.createPitch(
+      projectId,
+      dto,
+      file,
+      (req.user as any).id,
+    );
   }
 
   @Get(':id/pitch')

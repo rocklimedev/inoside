@@ -137,76 +137,56 @@ export default function UploadArea({ onUploaded }) {
     try {
       setProgress(0);
 
-      // Start fake progress (slower and more realistic)
-      const interval = setInterval(() => {
-        setProgress((p) => Math.min(p + 8, 85)); // Don't reach 100% yet
-      }, 250);
+      const formData = new FormData();
 
-      console.log(
-        "🚀 Uploading file:",
-        file.name,
-        `(${(file.size / 1024 / 1024).toFixed(2)} MB)`,
-      );
+      formData.append("file", file);
 
-      // 1. Upload file to CDN
-      const uploadRes = await uploadFile(file).unwrap();
+      // Send all fields properly
+      if (preferredDesignStyle?.trim())
+        formData.append("preferred_design_style", preferredDesignStyle.trim());
 
-      clearInterval(interval);
-      setProgress(90);
+      formData.append("color_tone", colorTone);
+      formData.append("luxury_level", luxuryLevel);
 
-      console.log("✅ File uploaded successfully:", uploadRes);
+      if (functionalVsAesthetic?.trim())
+        formData.append(
+          "functional_vs_aesthetic",
+          functionalVsAesthetic.trim(),
+        );
 
-      const pitchUrl = uploadRes?.url || uploadRes?.data?.url;
+      formData.append("budget_flexibility", String(budgetFlexibility));
+      formData.append("status", status);
 
-      if (!pitchUrl) {
-        throw new Error("No URL returned from CDN upload");
+      if (priorityAreas.length > 0) {
+        formData.append("priority_areas", JSON.stringify(priorityAreas));
       }
 
-      // 2. Create Pitch
+      if (likesDislikes?.trim())
+        formData.append("likes_dislikes", likesDislikes.trim());
+      if (nonNegotiables?.trim())
+        formData.append("non_negotiables", nonNegotiables.trim());
+      if (specialRequirements?.trim())
+        formData.append("special_requirements", specialRequirements.trim());
+
+      const interval = setInterval(() => {
+        setProgress((p) => Math.min(p + 12, 85));
+      }, 280);
+
       await createPitchGlobal({
         projectId: selectedProject.id,
-
-        preferred_design_style: preferredDesignStyle?.trim() || null,
-        color_tone: colorTone,
-        luxury_level: luxuryLevel,
-        functional_vs_aesthetic: functionalVsAesthetic?.trim() || null,
-        budget_flexibility: budgetFlexibility,
-
-        // Missing fields - Very Important!
-        priority_areas: priorityAreas.length > 0 ? priorityAreas : null,
-        likes_dislikes: likesDislikes?.trim() || null,
-        non_negotiables: nonNegotiables?.trim() || null,
-        special_requirements: specialRequirements?.trim() || null,
-
-        pitch_pdf_url: pitchUrl,
-        status: status, // Add this if your backend supports it
+        body: formData,
       }).unwrap();
 
+      clearInterval(interval);
       setProgress(100);
-      toast.success("Project Pitch uploaded successfully!");
 
+      toast.success("Pitch uploaded successfully!");
       resetForm();
-      if (onUploaded) onUploaded();
+      onUploaded?.();
     } catch (err) {
-      console.error("=== UPLOAD ERROR ===");
-      console.error("Full error:", err);
-      console.error("Status:", err?.status);
-      console.error("Data:", err?.data);
-
-      // Clear progress on error
+      console.error(err);
       setProgress(0);
-
-      if (err?.status === 401 || err?.status === 403) {
-        toast.error("Authentication failed - Check CDN secret key");
-      } else if (err?.status === "FETCH_ERROR" || err?.name === "TypeError") {
-        toast.error("Cannot connect to server. Check if backend is running.");
-      } else if (err?.data?.message) {
-        toast.error(err.data.message);
-      } else if (err?.message) {
-        toast.error(err.message);
-      } else {
-        toast.error("Failed to upload pitch. Please try again.");
-      }
+      toast.error(err?.data?.message || "Failed to upload pitch");
     }
   };
   return (

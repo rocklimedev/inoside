@@ -76,7 +76,6 @@ let BoqController = class BoqController {
         return this.boqService.createItem(dto);
     }
     updateItem(id, dto) {
-        console.log('PATCH ITEM HIT:', id);
         return this.boqService.updateItem(id, dto);
     }
     deleteItem(id) {
@@ -87,6 +86,9 @@ let BoqController = class BoqController {
     }
     findBoq(id) {
         return this.boqService.getBoqWithDetails(id);
+    }
+    deleteBoq(id) {
+        return this.boqService.deleteBoq(id);
     }
 };
 exports.BoqController = BoqController;
@@ -235,6 +237,13 @@ __decorate([
     __metadata("design:paramtypes", [String]),
     __metadata("design:returntype", void 0)
 ], BoqController.prototype, "findBoq", null);
+__decorate([
+    (0, common_1.Delete)(':id'),
+    __param(0, (0, common_1.Param)('id')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String]),
+    __metadata("design:returntype", void 0)
+], BoqController.prototype, "deleteBoq", null);
 exports.BoqController = BoqController = __decorate([
     (0, common_1.Controller)('boq'),
     (0, common_1.UseGuards)(jwt_auth_guard_1.JwtAuthGuard),

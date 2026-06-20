@@ -1,5 +1,6 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
+
 import { BoqCategory } from '../models/boq-category.model';
 import { Boq } from '../models/boq.model';
 import { CreateBoqCategoryDto } from '../dto/create-boq-category.dto';
@@ -11,14 +12,14 @@ export class BoqCategoryService {
     private boqCategoryModel: typeof BoqCategory,
   ) {}
 
-  async findAll() {
+  async findAllCategories() {
     return this.boqCategoryModel.findAll({
       order: [['sort_order', 'ASC']],
       include: [{ model: Boq }],
     });
   }
 
-  async create(data: CreateBoqCategoryDto) {
+  async createCategory(data: CreateBoqCategoryDto) {
     return this.boqCategoryModel.create({
       name: data.name,
       code: data.code,
@@ -26,5 +27,9 @@ export class BoqCategoryService {
       sort_order: data.sort_order ?? 0,
       is_active: true,
     });
+  }
+
+  async findById(id: string) {
+    return this.boqCategoryModel.findByPk(id);
   }
 }

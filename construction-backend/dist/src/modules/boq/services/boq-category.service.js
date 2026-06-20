@@ -22,13 +22,13 @@ let BoqCategoryService = class BoqCategoryService {
     constructor(boqCategoryModel) {
         this.boqCategoryModel = boqCategoryModel;
     }
-    async findAll() {
+    async findAllCategories() {
         return this.boqCategoryModel.findAll({
             order: [['sort_order', 'ASC']],
             include: [{ model: boq_model_1.Boq }],
         });
     }
-    async create(data) {
+    async createCategory(data) {
         return this.boqCategoryModel.create({
             name: data.name,
             code: data.code,
@@ -36,6 +36,9 @@ let BoqCategoryService = class BoqCategoryService {
             sort_order: data.sort_order ?? 0,
             is_active: true,
         });
+    }
+    async findById(id) {
+        return this.boqCategoryModel.findByPk(id);
     }
 };
 exports.BoqCategoryService = BoqCategoryService;

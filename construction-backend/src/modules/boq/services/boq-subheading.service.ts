@@ -1,10 +1,12 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
+
 import { BoqSubHeading } from '../models/boq-subheading.model';
 import { BoqItem } from '../models/boq-item.model';
 import { Unit } from '../models/unit.model';
 import { InventoryMaster } from '@/modules/inventory/models/inventory-master.model';
 import { Brand } from '@/modules/inventory/models/brand.model';
+
 import { CreateBoqSubHeadingDto } from '../dto/create-boq-subheading.dto';
 
 @Injectable()
@@ -14,7 +16,7 @@ export class BoqSubHeadingService {
     private boqSubHeadingModel: typeof BoqSubHeading,
   ) {}
 
-  async create(data: CreateBoqSubHeadingDto) {
+  async createSubHeading(data: CreateBoqSubHeadingDto) {
     return this.boqSubHeadingModel.create({
       boq_id: data.boq_id,
       section_id: data.section_id,
@@ -24,7 +26,7 @@ export class BoqSubHeadingService {
     });
   }
 
-  async update(id: string, dto: Partial<CreateBoqSubHeadingDto>) {
+  async updateSubHeading(id: string, dto: Partial<CreateBoqSubHeadingDto>) {
     const subheading = await this.boqSubHeadingModel.findByPk(id);
     if (!subheading) throw new NotFoundException('Subheading not found');
 
@@ -37,7 +39,7 @@ export class BoqSubHeadingService {
     return subheading;
   }
 
-  async delete(id: string) {
+  async deleteSubHeading(id: string) {
     const subheading = await this.boqSubHeadingModel.findByPk(id);
     if (!subheading) throw new NotFoundException('Subheading not found');
 
@@ -45,7 +47,7 @@ export class BoqSubHeadingService {
     return { message: 'Subheading deleted successfully' };
   }
 
-  async findBySection(sectionId: string) {
+  async findSubHeadingsBySection(sectionId: string) {
     return this.boqSubHeadingModel.findAll({
       where: { section_id: sectionId },
       include: [
@@ -56,5 +58,9 @@ export class BoqSubHeadingService {
       ],
       order: [['sort_order', 'ASC']],
     });
+  }
+
+  async findById(id: string) {
+    return this.boqSubHeadingModel.findByPk(id);
   }
 }

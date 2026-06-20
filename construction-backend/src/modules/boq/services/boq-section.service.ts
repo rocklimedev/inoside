@@ -1,11 +1,13 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
+
 import { BoqSection } from '../models/boq-section.model';
 import { BoqSubHeading } from '../models/boq-subheading.model';
 import { BoqItem } from '../models/boq-item.model';
 import { Unit } from '../models/unit.model';
 import { InventoryMaster } from '@/modules/inventory/models/inventory-master.model';
 import { Brand } from '@/modules/inventory/models/brand.model';
+
 import { CreateBoqSectionDto } from '../dto/create-boq-section.dto';
 
 @Injectable()
@@ -15,11 +17,11 @@ export class BoqSectionService {
     private boqSectionModel: typeof BoqSection,
   ) {}
 
-  async create(dto: CreateBoqSectionDto) {
+  async createSection(dto: CreateBoqSectionDto) {
     return this.boqSectionModel.create(dto);
   }
 
-  async update(id: string, dto: Partial<CreateBoqSectionDto>) {
+  async updateSection(id: string, dto: Partial<CreateBoqSectionDto>) {
     const section = await this.boqSectionModel.findByPk(id);
     if (!section) throw new NotFoundException('Section not found');
 
@@ -32,7 +34,7 @@ export class BoqSectionService {
     return section;
   }
 
-  async delete(id: string) {
+  async deleteSection(id: string) {
     const section = await this.boqSectionModel.findByPk(id);
     if (!section) throw new NotFoundException('Section not found');
 
@@ -40,7 +42,7 @@ export class BoqSectionService {
     return { message: 'Section deleted successfully' };
   }
 
-  async findByBoq(boqId: string) {
+  async findSectionsByBoq(boqId: string) {
     return this.boqSectionModel.findAll({
       where: { boq_id: boqId },
       include: [
@@ -56,5 +58,9 @@ export class BoqSectionService {
       ],
       order: [['sort_order', 'ASC']],
     });
+  }
+
+  async findById(id: string) {
+    return this.boqSectionModel.findByPk(id);
   }
 }

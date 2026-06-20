@@ -9,17 +9,6 @@ export class CdnService {
     const sftp = new SftpClient();
 
     try {
-      console.log('==========================');
-      console.log({
-        user: process.env.CDN_USERNAME,
-        pass: process.env.CDN_PASSWORD,
-      });
-      console.log('CDN Upload Started');
-      console.log('Host:', process.env.CDN_HOST);
-      console.log('Port:', process.env.CDN_PORT);
-      console.log('Upload Path:', process.env.CDN_UPLOAD_PATH);
-      console.log('Original Filename:', file.originalname);
-
       await sftp.connect({
         host: process.env.CDN_HOST,
         port: Number(process.env.CDN_PORT),
@@ -40,11 +29,7 @@ export class CdnService {
 
       const remotePath = `${process.env.CDN_UPLOAD_PATH}/${filename}`;
 
-      console.log('Remote Path:', remotePath);
-
       await sftp.put(file.buffer, remotePath);
-
-      console.log('Upload Success');
 
       const url = `${process.env.CDN_BASE_URL}/${filename}`;
 
@@ -53,10 +38,6 @@ export class CdnService {
         url,
       };
     } catch (err) {
-      console.error('==========================');
-      console.error('CDN UPLOAD ERROR');
-      console.error(err);
-
       throw err;
     } finally {
       await sftp.end().catch(() => {});

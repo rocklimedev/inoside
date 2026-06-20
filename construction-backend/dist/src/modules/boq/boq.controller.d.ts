@@ -27,7 +27,7 @@ export declare class BoqController {
         message: string;
     }>;
     findSubHeadings(sectionId: string): Promise<import("./models/boq-subheading.model").BoqSubHeading[]>;
-    createItem(dto: CreateBoqItemDto): Promise<import("./models/boq-item.model").BoqItem | null>;
+    createItem(dto: CreateBoqItemDto): Promise<import("./models/boq-item.model").BoqItem>;
     updateItem(id: string, dto: Partial<CreateBoqItemDto>): Promise<import("./models/boq-item.model").BoqItem | null>;
     deleteItem(id: string): Promise<{
         message: string;
@@ -37,4 +37,7 @@ export declare class BoqController {
         grand_total: number;
     }>;
     findBoq(id: string): Promise<import("./models/boq.model").Boq>;
+    deleteBoq(id: string): Promise<{
+        message: string;
+    }>;
 }

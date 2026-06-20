@@ -9,8 +9,13 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.InventoryModule = void 0;
 const common_1 = require("@nestjs/common");
 const sequelize_1 = require("@nestjs/sequelize");
-const inventory_service_1 = require("./inventory.service");
 const inventory_controller_1 = require("./inventory.controller");
+const inventory_service_1 = require("./inventory.service");
+const unit_service_1 = require("./services/unit.service");
+const brand_service_1 = require("./services/brand.service");
+const inventory_request_service_1 = require("./services/inventory-request.service");
+const inventory_dispatch_service_1 = require("./services/inventory-dispatch.service");
+const project_material_service_1 = require("./services/project-material.service");
 const inventory_request_model_1 = require("./models/inventory-request.model");
 const inventory_dispatch_model_1 = require("./models/inventory-dispatch.model");
 const inventory_master_model_1 = require("./models/inventory-master.model");
@@ -29,14 +34,28 @@ exports.InventoryModule = InventoryModule = __decorate([
                 inventory_dispatch_model_1.InventoryDispatch,
                 inventory_master_model_1.InventoryMaster,
                 project_materials_model_1.ProjectMaterial,
-                unit_model_1.Unit,
-                brand_model_1.Brand,
                 inventory_category_model_1.InventoryCategory,
+                brand_model_1.Brand,
+                unit_model_1.Unit,
             ]),
         ],
         controllers: [inventory_controller_1.InventoryController],
-        providers: [inventory_service_1.InventoryService],
-        exports: [inventory_service_1.InventoryService],
+        providers: [
+            inventory_service_1.InventoryService,
+            unit_service_1.UnitService,
+            brand_service_1.BrandService,
+            inventory_request_service_1.InventoryRequestService,
+            inventory_dispatch_service_1.InventoryDispatchService,
+            project_material_service_1.ProjectMaterialService,
+        ],
+        exports: [
+            inventory_service_1.InventoryService,
+            unit_service_1.UnitService,
+            brand_service_1.BrandService,
+            inventory_request_service_1.InventoryRequestService,
+            inventory_dispatch_service_1.InventoryDispatchService,
+            project_material_service_1.ProjectMaterialService,
+        ],
     })
 ], InventoryModule);
 //# sourceMappingURL=inventory.module.js.map

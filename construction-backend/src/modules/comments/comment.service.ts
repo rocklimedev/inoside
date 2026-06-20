@@ -21,8 +21,6 @@ export class CommentsService {
       createdByUserId: userId,
     } as CreationAttributes<Comment>);
 
-    // ❌ Removed CommentMention logic
-
     return this.findOne(comment.id);
   }
 

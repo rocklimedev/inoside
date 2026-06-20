@@ -26,10 +26,10 @@ let BoqSectionService = class BoqSectionService {
     constructor(boqSectionModel) {
         this.boqSectionModel = boqSectionModel;
     }
-    async create(dto) {
+    async createSection(dto) {
         return this.boqSectionModel.create(dto);
     }
-    async update(id, dto) {
+    async updateSection(id, dto) {
         const section = await this.boqSectionModel.findByPk(id);
         if (!section)
             throw new common_1.NotFoundException('Section not found');
@@ -40,14 +40,14 @@ let BoqSectionService = class BoqSectionService {
         });
         return section;
     }
-    async delete(id) {
+    async deleteSection(id) {
         const section = await this.boqSectionModel.findByPk(id);
         if (!section)
             throw new common_1.NotFoundException('Section not found');
         await section.destroy();
         return { message: 'Section deleted successfully' };
     }
-    async findByBoq(boqId) {
+    async findSectionsByBoq(boqId) {
         return this.boqSectionModel.findAll({
             where: { boq_id: boqId },
             include: [
@@ -63,6 +63,9 @@ let BoqSectionService = class BoqSectionService {
             ],
             order: [['sort_order', 'ASC']],
         });
+    }
+    async findById(id) {
+        return this.boqSectionModel.findByPk(id);
     }
 };
 exports.BoqSectionService = BoqSectionService;

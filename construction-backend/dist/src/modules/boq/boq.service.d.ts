@@ -3,22 +3,22 @@ import { BoqCategory } from './models/boq-category.model';
 import { BoqSection } from './models/boq-section.model';
 import { BoqSubHeading } from './models/boq-subheading.model';
 import { BoqItem } from './models/boq-item.model';
-import { Unit } from './models/unit.model';
-import { InventoryMaster } from '@/modules/inventory/models/inventory-master.model';
 import { CreateBoqDto } from './dto/create-boq.dto';
 import { CreateBoqSectionDto } from './dto/create-boq-section.dto';
-import { CreateBoqItemDto } from './dto/create-boq-item.dto';
 import { CreateBoqSubHeadingDto } from './dto/create-boq-subheading.dto';
+import { CreateBoqItemDto } from './dto/create-boq-item.dto';
 import { CreateBoqCategoryDto } from './dto/create-boq-category.dto';
+import { BoqCategoryService } from './services/boq-category.service';
+import { BoqSectionService } from './services/boq-section.service';
+import { BoqSubHeadingService } from './services/boq-subheading.service';
+import { BoqItemService } from './services/boq-item.service';
 export declare class BoqService {
     private boqModel;
-    private boqCategoryModel;
-    private boqSectionModel;
-    private boqSubHeadingModel;
-    private boqItemModel;
-    private unitModel;
-    private inventoryMasterModel;
-    constructor(boqModel: typeof Boq, boqCategoryModel: typeof BoqCategory, boqSectionModel: typeof BoqSection, boqSubHeadingModel: typeof BoqSubHeading, boqItemModel: typeof BoqItem, unitModel: typeof Unit, inventoryMasterModel: typeof InventoryMaster);
+    private readonly categoryService;
+    private readonly sectionService;
+    private readonly subHeadingService;
+    private readonly itemService;
+    constructor(boqModel: typeof Boq, categoryService: BoqCategoryService, sectionService: BoqSectionService, subHeadingService: BoqSubHeadingService, itemService: BoqItemService);
     findAllCategories(): Promise<BoqCategory[]>;
     createCategory(data: CreateBoqCategoryDto): Promise<BoqCategory>;
     createBoq(dto: CreateBoqDto): Promise<Boq>;
@@ -30,6 +30,14 @@ export declare class BoqService {
     }): Promise<Boq>;
     getBoqWithDetails(id: string): Promise<Boq>;
     getBoqsByClient(clientId: string): Promise<Boq[]>;
+    deleteBoq(id: string): Promise<{
+        message: string;
+    }>;
+    validateBoqExists(id: string): Promise<Boq>;
+    calculateBoqTotal(boqId: string): Promise<{
+        subtotal: number;
+        grand_total: number;
+    }>;
     createSection(dto: CreateBoqSectionDto): Promise<BoqSection>;
     updateSection(id: string, dto: Partial<CreateBoqSectionDto>): Promise<BoqSection>;
     deleteSection(id: string): Promise<{
@@ -42,18 +50,10 @@ export declare class BoqService {
         message: string;
     }>;
     findSubHeadingsBySection(sectionId: string): Promise<BoqSubHeading[]>;
-    private resolveUnitId;
-    createItem(dto: CreateBoqItemDto): Promise<BoqItem | null>;
+    createItem(dto: CreateBoqItemDto): Promise<BoqItem>;
     updateItem(id: string, updateData: Partial<CreateBoqItemDto>): Promise<BoqItem | null>;
     deleteItem(id: string): Promise<{
         message: string;
     }>;
-    deleteBoq(id: string): Promise<{
-        message: string;
-    }>;
-    calculateBoqTotal(boqId: string): Promise<{
-        subtotal: number;
-        grand_total: number;
-    }>;
-    validateBoqExists(id: string): Promise<Boq>;
+    private boqIncludes;
 }

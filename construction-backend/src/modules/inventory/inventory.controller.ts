@@ -6,10 +6,14 @@ import {
   Param,
   Post,
   Put,
-  NotFoundException,
 } from '@nestjs/common';
 
 import { InventoryService } from './inventory.service';
+import { UnitService } from './services/unit.service';
+import { BrandService } from './services/brand.service';
+import { InventoryRequestService } from './services/inventory-request.service';
+import { InventoryDispatchService } from './services/inventory-dispatch.service';
+import { ProjectMaterialService } from './services/project-material.service';
 
 import { CreateInventoryRequestDto } from './dto/create-inventory-request.dto';
 import { UpdateInventoryRequestDto } from './dto/update-inventory-request.dto';
@@ -19,31 +23,41 @@ import { UpdateInventoryDispatchDto } from './dto/update-inventory-dispatch.dto'
 
 import { CreateInventoryMasterDto } from './dto/create-inventory-master.dto';
 import { UpdateInventoryMasterDto } from './dto/update-inventory-master.dto';
+
 import { CreateProjectMaterialDto } from './dto/create-material.dto';
 import { UpdateProjectMaterialDto } from './dto/update-material';
+
 @Controller('inventory')
 export class InventoryController {
-  constructor(private readonly inventoryService: InventoryService) {}
+  constructor(
+    private readonly inventoryService: InventoryService,
+    private readonly unitService: UnitService,
+    private readonly brandService: BrandService,
+    private readonly requestService: InventoryRequestService,
+    private readonly dispatchService: InventoryDispatchService,
+    private readonly projectMaterialService: ProjectMaterialService,
+  ) {}
 
   // ====================== UNITS ======================
+
   @Post('units')
   createUnit(@Body() body: { name: string; short_name: string }) {
-    return this.inventoryService.createUnit(body.name, body.short_name);
+    return this.unitService.createUnit(body.name, body.short_name);
   }
 
   @Get('units')
   findAllUnits() {
-    return this.inventoryService.findAllUnits();
-  }
-
-  @Get('units/:id')
-  findUnit(@Param('id') id: string) {
-    return this.inventoryService.findUnitById(id);
+    return this.unitService.findAllUnits();
   }
 
   @Get('units/short/:shortName')
   findUnitByShortName(@Param('shortName') shortName: string) {
-    return this.inventoryService.findUnitByShortName(shortName);
+    return this.unitService.findUnitByShortName(shortName);
+  }
+
+  @Get('units/:id')
+  findUnit(@Param('id') id: string) {
+    return this.unitService.findUnitById(id);
   }
 
   @Put('units/:id')
@@ -51,31 +65,34 @@ export class InventoryController {
     @Param('id') id: string,
     @Body() body: { name?: string; short_name?: string },
   ) {
-    return this.inventoryService.updateUnit(id, body.name, body.short_name);
+    return this.unitService.updateUnit(id, body.name, body.short_name);
   }
 
   @Delete('units/:id')
   deleteUnit(@Param('id') id: string) {
-    return this.inventoryService.deleteUnit(id);
+    return this.unitService.deleteUnit(id);
   }
 
   // ====================== INVENTORY REQUESTS ======================
+
   @Post('requests')
   createRequest(@Body() dto: CreateInventoryRequestDto) {
-    return this.inventoryService.createRequest(dto);
+    return this.requestService.createRequest(dto);
   }
 
   @Get('requests')
   findAllRequests() {
-    return this.inventoryService.findAllRequests();
+    return this.requestService.findAllRequests();
   }
-  @Get('project/:projectId/requests')
-  getRequestsByProject(@Param('projectId') projectId: string) {
-    return this.inventoryService.getRequestsByProject(projectId);
+
+  @Get('requests/pending')
+  getPendingRequests() {
+    return this.requestService.getPendingRequests();
   }
+
   @Get('requests/:id')
   findRequest(@Param('id') id: string) {
-    return this.inventoryService.findRequestById(id);
+    return this.requestService.findRequestById(id);
   }
 
   @Put('requests/:id')
@@ -83,28 +100,34 @@ export class InventoryController {
     @Param('id') id: string,
     @Body() dto: UpdateInventoryRequestDto,
   ) {
-    return this.inventoryService.updateRequest(id, dto);
+    return this.requestService.updateRequest(id, dto);
   }
 
   @Delete('requests/:id')
   deleteRequest(@Param('id') id: string) {
-    return this.inventoryService.deleteRequest(id);
+    return this.requestService.deleteRequest(id);
+  }
+
+  @Get('project/:projectId/requests')
+  getRequestsByProject(@Param('projectId') projectId: string) {
+    return this.requestService.getRequestsByProject(projectId);
   }
 
   // ====================== INVENTORY DISPATCHES ======================
+
   @Post('dispatches')
   createDispatch(@Body() dto: CreateInventoryDispatchDto) {
-    return this.inventoryService.createDispatch(dto);
+    return this.dispatchService.createDispatch(dto);
   }
 
   @Get('dispatches')
   findAllDispatches() {
-    return this.inventoryService.findAllDispatches();
+    return this.dispatchService.findAllDispatches();
   }
 
   @Get('dispatches/:id')
   findDispatch(@Param('id') id: string) {
-    return this.inventoryService.findDispatchById(id);
+    return this.dispatchService.findDispatchById(id);
   }
 
   @Put('dispatches/:id')
@@ -112,15 +135,16 @@ export class InventoryController {
     @Param('id') id: string,
     @Body() dto: UpdateInventoryDispatchDto,
   ) {
-    return this.inventoryService.updateDispatch(id, dto);
+    return this.dispatchService.updateDispatch(id, dto);
   }
 
   @Delete('dispatches/:id')
   deleteDispatch(@Param('id') id: string) {
-    return this.inventoryService.deleteDispatch(id);
+    return this.dispatchService.deleteDispatch(id);
   }
 
   // ====================== INVENTORY MASTER ======================
+
   @Post('master')
   createMaster(@Body() dto: CreateInventoryMasterDto) {
     return this.inventoryService.createMaster(dto);
@@ -129,6 +153,11 @@ export class InventoryController {
   @Get('master')
   findAllMaster() {
     return this.inventoryService.findAllMaster();
+  }
+
+  @Get('master/search/:query')
+  searchInventory(@Param('query') query: string) {
+    return this.inventoryService.searchInventory(query);
   }
 
   @Get('master/:id')
@@ -148,77 +177,95 @@ export class InventoryController {
 
   // ====================== PROJECT MATERIALS ======================
 
+  @Post('projects/materials')
+  createProjectMaterial(@Body() dto: CreateProjectMaterialDto) {
+    return this.projectMaterialService.createProjectMaterial(dto);
+  }
+
   @Get('materials')
   findAllProjectMaterials() {
-    return this.inventoryService.findAllProjectMaterials();
+    return this.projectMaterialService.findAllProjectMaterials();
+  }
+
+  @Get('materials/pending')
+  getPendingMaterials() {
+    return this.projectMaterialService.getPendingMaterials();
   }
 
   @Get('materials/:id')
   findProjectMaterial(@Param('id') id: string) {
-    return this.inventoryService.findProjectMaterialById(id);
+    return this.projectMaterialService.findProjectMaterialById(id);
   }
-  @Post('projects/materials')
-  createProjectMaterial(@Body() dto: CreateProjectMaterialDto) {
-    return this.inventoryService.createProjectMaterial(dto);
-  }
+
   @Put('projects/materials/:id')
   updateProjectMaterial(
     @Param('id') id: string,
     @Body() dto: UpdateProjectMaterialDto,
   ) {
-    return this.inventoryService.updateProjectMaterial(id, dto);
+    return this.projectMaterialService.updateProjectMaterial(id, dto);
   }
+
   @Delete('projects/materials/:id')
   deleteProjectMaterial(@Param('id') id: string) {
-    return this.inventoryService.deleteProjectMaterial(id);
+    return this.projectMaterialService.deleteProjectMaterial(id);
   }
+
   @Get('projects/:projectId/materials')
   findProjectMaterialsByProject(@Param('projectId') projectId: string) {
-    return this.inventoryService.findProjectMaterialsByProject(projectId);
+    return this.projectMaterialService.findProjectMaterialsByProject(projectId);
   }
 
   @Get('projects/:projectId/materials/summary')
   getProjectMaterialSummary(@Param('projectId') projectId: string) {
-    return this.inventoryService.getProjectMaterialSummary(projectId);
+    return this.projectMaterialService.getProjectMaterialSummary(projectId);
   }
 
   @Get('projects/:projectId/materials/status')
   getProjectMaterialStatus(@Param('projectId') projectId: string) {
-    return this.inventoryService.getProjectMaterialStatus(projectId);
+    return this.projectMaterialService.getProjectMaterialStatus(projectId);
   }
 
   @Get('projects/:projectId/materials/consumption')
   getMaterialConsumption(@Param('projectId') projectId: string) {
-    return this.inventoryService.getMaterialConsumption(projectId);
+    return this.projectMaterialService.getMaterialConsumption(projectId);
   }
 
   @Get('projects/:projectId/materials/value')
   getProjectInventoryValue(@Param('projectId') projectId: string) {
-    return this.inventoryService.getProjectInventoryValue(projectId);
-  }
-
-  @Get('materials/pending')
-  getPendingMaterials() {
-    return this.inventoryService.getPendingMaterials();
+    return this.projectMaterialService.getProjectInventoryValue(projectId);
   }
 
   @Get('projects/:projectId/materials/pending')
   getProjectPendingMaterials(@Param('projectId') projectId: string) {
-    return this.inventoryService.getPendingMaterials(projectId);
+    return this.projectMaterialService.getPendingMaterials(projectId);
   }
+
+  // ====================== DASHBOARD ======================
+
+  @Get('dashboard')
+  getInventoryDashboard() {
+    return this.inventoryService.getInventoryDashboard();
+  }
+
+  @Get('projects/:projectId/dashboard')
+  getProjectInventoryDashboard(@Param('projectId') projectId: string) {
+    return this.inventoryService.getProjectInventoryDashboard(projectId);
+  }
+
   // ====================== BRANDS ======================
-  @Get('brands')
-  findAllBrands() {
-    return this.inventoryService.findAllBrands();
-  }
 
   @Post('brands')
   createBrand(@Body() body: { name: string }) {
-    return this.inventoryService.createBrand(body.name);
+    return this.brandService.createBrand(body.name);
+  }
+
+  @Get('brands')
+  findAllBrands() {
+    return this.brandService.findAllBrands();
   }
 
   @Delete('brands/:id')
   deleteBrand(@Param('id') id: string) {
-    return this.inventoryService.deleteBrand(id);
+    return this.brandService.deleteBrand(id);
   }
 }

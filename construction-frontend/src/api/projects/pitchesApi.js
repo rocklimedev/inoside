@@ -7,15 +7,18 @@ export const pitchesApi = baseApi.injectEndpoints({
     // =================================================
 
     createPitch: builder.mutation({
-      query: ({ projectId, ...body }) => ({
+      query: ({ projectId, body }) => ({
         url: `/projects/${projectId}/pitch`,
         method: "POST",
-        body,
+        body, // FormData
+        // Important: Do NOT set Content-Type header for FormData
+        prepareHeaders: (headers) => {
+          headers.delete("Content-Type"); // Let browser set multipart boundary
+          return headers;
+        },
       }),
-
       invalidatesTags: ["Pitches"],
     }),
-
     getPitch: builder.query({
       query: (projectId) => `/projects/${projectId}/pitch`,
 

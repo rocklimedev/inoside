@@ -3,10 +3,11 @@ import { CreateBoqSubHeadingDto } from '../dto/create-boq-subheading.dto';
 export declare class BoqSubHeadingService {
     private boqSubHeadingModel;
     constructor(boqSubHeadingModel: typeof BoqSubHeading);
-    create(data: CreateBoqSubHeadingDto): Promise<BoqSubHeading>;
-    update(id: string, dto: Partial<CreateBoqSubHeadingDto>): Promise<BoqSubHeading>;
-    delete(id: string): Promise<{
+    createSubHeading(data: CreateBoqSubHeadingDto): Promise<BoqSubHeading>;
+    updateSubHeading(id: string, dto: Partial<CreateBoqSubHeadingDto>): Promise<BoqSubHeading>;
+    deleteSubHeading(id: string): Promise<{
         message: string;
     }>;
-    findBySection(sectionId: string): Promise<BoqSubHeading[]>;
+    findSubHeadingsBySection(sectionId: string): Promise<BoqSubHeading[]>;
+    findById(id: string): Promise<BoqSubHeading | null>;
 }

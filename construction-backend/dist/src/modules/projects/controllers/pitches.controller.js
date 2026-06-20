@@ -14,6 +14,7 @@ var __param = (this && this.__param) || function (paramIndex, decorator) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.PitchesController = void 0;
 const common_1 = require("@nestjs/common");
+const platform_express_1 = require("@nestjs/platform-express");
 const jwt_auth_guard_1 = require("../../../common/guards/jwt-auth.guard");
 const project_pitch_service_1 = require("../services/project-pitch.service");
 const create_project_pitch_dto_1 = require("../dto/create-project-pitch.dto");
@@ -23,11 +24,8 @@ let PitchesController = class PitchesController {
     constructor(pitchService) {
         this.pitchService = pitchService;
     }
-    create(projectId, dto, req) {
-        return this.pitchService.createPitch(projectId, {
-            ...dto,
-            created_by: req.user.id,
-        });
+    async create(projectId, dto, file, req) {
+        return this.pitchService.createPitch(projectId, dto, file, req.user.id);
     }
     get(projectId) {
         return this.pitchService.getPitch(projectId);
@@ -57,12 +55,14 @@ let PitchesController = class PitchesController {
 exports.PitchesController = PitchesController;
 __decorate([
     (0, common_1.Post)(':id/pitch'),
+    (0, common_1.UseInterceptors)((0, platform_express_1.FileInterceptor)('file')),
     __param(0, (0, common_1.Param)('id')),
     __param(1, (0, common_1.Body)()),
-    __param(2, (0, common_1.Req)()),
+    __param(2, (0, common_1.UploadedFile)()),
+    __param(3, (0, common_1.Req)()),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [String, create_project_pitch_dto_1.CreateProjectPitchDto, Object]),
-    __metadata("design:returntype", void 0)
+    __metadata("design:paramtypes", [String, create_project_pitch_dto_1.CreateProjectPitchDto, Object, Object]),
+    __metadata("design:returntype", Promise)
 ], PitchesController.prototype, "create", null);
 __decorate([
     (0, common_1.Get)(':id/pitch'),

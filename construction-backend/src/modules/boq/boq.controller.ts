@@ -60,6 +60,7 @@ export class BoqController {
   ) {
     return this.boqService.findAllBoqs(projectId, clientId);
   }
+
   // =========================================================
   // STATUS
   // =========================================================
@@ -68,6 +69,7 @@ export class BoqController {
   updateStatus(@Param('id') id: string, @Body() dto: UpdateBoqStatusDto) {
     return this.boqService.updateBoqStatus(id, dto);
   }
+
   @Get('client/:clientId')
   getBoqsByClient(@Param('clientId') clientId: string) {
     return this.boqService.getBoqsByClient(clientId);
@@ -138,8 +140,6 @@ export class BoqController {
 
   @Patch('items/:id')
   updateItem(@Param('id') id: string, @Body() dto: Partial<CreateBoqItemDto>) {
-    console.log('PATCH ITEM HIT:', id);
-
     return this.boqService.updateItem(id, dto);
   }
 
@@ -164,5 +164,10 @@ export class BoqController {
   @Get(':id')
   findBoq(@Param('id') id: string) {
     return this.boqService.getBoqWithDetails(id);
+  }
+
+  @Delete(':id')
+  deleteBoq(@Param('id') id: string) {
+    return this.boqService.deleteBoq(id);
   }
 }

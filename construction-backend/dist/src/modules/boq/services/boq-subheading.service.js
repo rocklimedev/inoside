@@ -25,7 +25,7 @@ let BoqSubHeadingService = class BoqSubHeadingService {
     constructor(boqSubHeadingModel) {
         this.boqSubHeadingModel = boqSubHeadingModel;
     }
-    async create(data) {
+    async createSubHeading(data) {
         return this.boqSubHeadingModel.create({
             boq_id: data.boq_id,
             section_id: data.section_id,
@@ -34,7 +34,7 @@ let BoqSubHeadingService = class BoqSubHeadingService {
             sort_order: data.sort_order ?? 0,
         });
     }
-    async update(id, dto) {
+    async updateSubHeading(id, dto) {
         const subheading = await this.boqSubHeadingModel.findByPk(id);
         if (!subheading)
             throw new common_1.NotFoundException('Subheading not found');
@@ -45,14 +45,14 @@ let BoqSubHeadingService = class BoqSubHeadingService {
         });
         return subheading;
     }
-    async delete(id) {
+    async deleteSubHeading(id) {
         const subheading = await this.boqSubHeadingModel.findByPk(id);
         if (!subheading)
             throw new common_1.NotFoundException('Subheading not found');
         await subheading.destroy();
         return { message: 'Subheading deleted successfully' };
     }
-    async findBySection(sectionId) {
+    async findSubHeadingsBySection(sectionId) {
         return this.boqSubHeadingModel.findAll({
             where: { section_id: sectionId },
             include: [
@@ -63,6 +63,9 @@ let BoqSubHeadingService = class BoqSubHeadingService {
             ],
             order: [['sort_order', 'ASC']],
         });
+    }
+    async findById(id) {
+        return this.boqSubHeadingModel.findByPk(id);
     }
 };
 exports.BoqSubHeadingService = BoqSubHeadingService;

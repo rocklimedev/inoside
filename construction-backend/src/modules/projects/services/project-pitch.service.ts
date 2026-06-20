@@ -9,7 +9,8 @@ import {
 } from '@nestjs/common';
 
 import { InjectModel } from '@nestjs/sequelize';
-
+import { CreateProjectPitchDto } from '../dto/create-project-pitch.dto';
+import { CdnService } from '@/modules/cdn/services/cdn.service';
 import { ProjectPitch } from '../models/project_pitch.model';
 import { Project } from '../models/project.model';
 import { Client } from '@/modules/clients/models/client.model';
@@ -31,35 +32,59 @@ export class ProjectPitchService {
 
     @InjectModel(PitchComment)
     private commentModel: typeof PitchComment,
+
+    private readonly cdnService: CdnService, // ← Injected
   ) {}
 
   // ======================================================
   // CREATE PITCH
   // ======================================================
 
-  async createPitch(projectId: string, dto: any) {
+  async createPitch(
+    projectId: string,
+    dto: CreateProjectPitchDto,
+    file: Express.Multer.File | null,
+    createdBy: string,
+  ) {
+    // Check if project exists
     const project = await this.projectModel.findByPk(projectId);
-
     if (!project) {
       throw new NotFoundException('Project not found');
     }
 
+    // Check if pitch already exists for this project
     const existing = await this.pitchModel.findOne({
-      where: {
-        project_id: projectId,
-      },
+      where: { project_id: projectId },
     });
 
     if (existing) {
       throw new BadRequestException('Pitch already exists for this project');
     }
 
-    return this.pitchModel.create({
+    let pitch_pdf_url: string | null = null;
+
+    // Upload file if provided
+    if (file) {
+      try {
+        const uploadResult = await this.cdnService.uploadFile(file);
+        pitch_pdf_url = uploadResult.url;
+      } catch (error) {
+        console.error('CDN Upload Failed:', error);
+        throw new BadRequestException('Failed to upload pitch file');
+      }
+    }
+
+    // Create pitch
+    const pitch = await this.pitchModel.create({
       ...dto,
       project_id: projectId,
+      pitch_pdf_url,
+      created_by: createdBy,
+      status: dto.status || 'Draft',
     });
-  }
 
+    return pitch;
+  }
   // ======================================================
   // GET PITCH BY PROJECT
   // ======================================================

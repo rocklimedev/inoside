@@ -5,7 +5,7 @@ import { UpdateProjectPitchDto } from '../dto/update-project-pitch.dto';
 export declare class PitchesController {
     private readonly pitchService;
     constructor(pitchService: ProjectPitchService);
-    create(projectId: string, dto: CreateProjectPitchDto, req: Request): Promise<import("../models/project_pitch.model").ProjectPitch>;
+    create(projectId: string, dto: CreateProjectPitchDto, file: Express.Multer.File, req: Request): Promise<import("../models/project_pitch.model").ProjectPitch>;
     get(projectId: string): Promise<import("../models/project_pitch.model").ProjectPitch>;
     update(projectId: string, dto: UpdateProjectPitchDto): Promise<import("../models/project_pitch.model").ProjectPitch>;
     remove(projectId: string): Promise<{

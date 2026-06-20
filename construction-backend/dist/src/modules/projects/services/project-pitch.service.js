@@ -15,6 +15,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.ProjectPitchService = void 0;
 const common_1 = require("@nestjs/common");
 const sequelize_1 = require("@nestjs/sequelize");
+const cdn_service_1 = require("../../cdn/services/cdn.service");
 const project_pitch_model_1 = require("../models/project_pitch.model");
 const project_model_1 = require("../models/project.model");
 const client_model_1 = require("../../clients/models/client.model");
@@ -27,29 +28,44 @@ let ProjectPitchService = class ProjectPitchService {
     projectModel;
     userModel;
     commentModel;
-    constructor(pitchModel, projectModel, userModel, commentModel) {
+    cdnService;
+    constructor(pitchModel, projectModel, userModel, commentModel, cdnService) {
         this.pitchModel = pitchModel;
         this.projectModel = projectModel;
         this.userModel = userModel;
         this.commentModel = commentModel;
+        this.cdnService = cdnService;
     }
-    async createPitch(projectId, dto) {
+    async createPitch(projectId, dto, file, createdBy) {
         const project = await this.projectModel.findByPk(projectId);
         if (!project) {
             throw new common_1.NotFoundException('Project not found');
         }
         const existing = await this.pitchModel.findOne({
-            where: {
-                project_id: projectId,
-            },
+            where: { project_id: projectId },
         });
         if (existing) {
             throw new common_1.BadRequestException('Pitch already exists for this project');
         }
-        return this.pitchModel.create({
+        let pitch_pdf_url = null;
+        if (file) {
+            try {
+                const uploadResult = await this.cdnService.uploadFile(file);
+                pitch_pdf_url = uploadResult.url;
+            }
+            catch (error) {
+                console.error('CDN Upload Failed:', error);
+                throw new common_1.BadRequestException('Failed to upload pitch file');
+            }
+        }
+        const pitch = await this.pitchModel.create({
             ...dto,
             project_id: projectId,
+            pitch_pdf_url,
+            created_by: createdBy,
+            status: dto.status || 'Draft',
         });
+        return pitch;
     }
     async getPitch(projectId) {
         const pitch = await this.pitchModel.findOne({
@@ -256,6 +272,6 @@ exports.ProjectPitchService = ProjectPitchService = __decorate([
     __param(1, (0, sequelize_1.InjectModel)(project_model_1.Project)),
     __param(2, (0, sequelize_1.InjectModel)(user_model_1.User)),
     __param(3, (0, sequelize_1.InjectModel)(pitch_comment_model_1.PitchComment)),
-    __metadata("design:paramtypes", [Object, Object, Object, Object])
+    __metadata("design:paramtypes", [Object, Object, Object, Object, cdn_service_1.CdnService])
 ], ProjectPitchService);
 //# sourceMappingURL=project-pitch.service.js.map

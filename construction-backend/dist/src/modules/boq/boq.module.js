@@ -9,8 +9,12 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.BoqModule = void 0;
 const common_1 = require("@nestjs/common");
 const sequelize_1 = require("@nestjs/sequelize");
-const boq_service_1 = require("./boq.service");
 const boq_controller_1 = require("./boq.controller");
+const boq_service_1 = require("./boq.service");
+const boq_category_service_1 = require("./services/boq-category.service");
+const boq_section_service_1 = require("./services/boq-section.service");
+const boq_subheading_service_1 = require("./services/boq-subheading.service");
+const boq_item_service_1 = require("./services/boq-item.service");
 const unit_model_1 = require("./models/unit.model");
 const boq_category_model_1 = require("./models/boq-category.model");
 const boq_model_1 = require("./models/boq.model");
@@ -37,8 +41,20 @@ exports.BoqModule = BoqModule = __decorate([
             ]),
         ],
         controllers: [boq_controller_1.BoqController],
-        providers: [boq_service_1.BoqService],
-        exports: [boq_service_1.BoqService],
+        providers: [
+            boq_service_1.BoqService,
+            boq_category_service_1.BoqCategoryService,
+            boq_section_service_1.BoqSectionService,
+            boq_subheading_service_1.BoqSubHeadingService,
+            boq_item_service_1.BoqItemService,
+        ],
+        exports: [
+            boq_service_1.BoqService,
+            boq_category_service_1.BoqCategoryService,
+            boq_section_service_1.BoqSectionService,
+            boq_subheading_service_1.BoqSubHeadingService,
+            boq_item_service_1.BoqItemService,
+        ],
     })
 ], BoqModule);
 //# sourceMappingURL=boq.module.js.map
