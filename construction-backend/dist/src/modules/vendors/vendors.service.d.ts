@@ -27,7 +27,9 @@ export declare class VendorsService {
         id: string;
         name: string;
     }): Promise<{
+        success: boolean;
         message: string;
+        vendorId: string;
     }>;
     createVendorType(name: string): Promise<VendorType>;
     getVendorTypes(): Promise<VendorType[]>;

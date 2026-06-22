@@ -10,7 +10,9 @@ export declare class VendorsController {
     findOne(id: string): Promise<import("./models/vendor.model").Vendor>;
     update(id: string, updateVendorDto: UpdateVendorDto, req: any): Promise<import("./models/vendor.model").Vendor>;
     remove(id: string, req: any): Promise<{
+        success: boolean;
         message: string;
+        vendorId: string;
     }>;
     createVendorType(name: string): Promise<import("./models/vendor-type.model").VendorType>;
     getVendorTypes(): Promise<import("./models/vendor-type.model").VendorType[]>;

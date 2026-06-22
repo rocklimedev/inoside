@@ -158,22 +158,39 @@ export class VendorsService {
   ) {
     const vendor = await this.findVendorById(id);
 
-    await this.vendorEngagementService.vendorDeleted(actor, {
-      id: vendor.id,
-      name: vendor.name,
-    });
+    try {
+      // ====================== ENGAGEMENT LOG ======================
+      await this.vendorEngagementService.vendorDeleted(actor, {
+        id: vendor.id,
+        name: vendor.name,
+      });
 
-    await this.vendorTypeVendorModel.destroy({
-      where: {
-        vendor_id: id,
-      },
-    });
+      // ====================== CLEANUP RELATIONS ======================
+      const deletedRelations = await this.vendorTypeVendorModel.destroy({
+        where: {
+          vendor_id: id,
+        },
+      });
 
-    await vendor.destroy();
+      // ====================== DELETE VENDOR ======================
+      await vendor.destroy();
 
-    return {
-      message: 'Vendor deleted successfully',
-    };
+      return {
+        success: true,
+        message: 'Vendor deleted successfully',
+        vendorId: id,
+      };
+    } catch (error: unknown) {
+      const err = error instanceof Error ? error : new Error(String(error));
+
+      console.error(`[VENDOR DELETE FAILED]`, {
+        vendorId: id,
+        error: err.message,
+        stack: err.stack,
+      });
+
+      throw error;
+    }
   }
 
   // ====================== Vendor Types ======================

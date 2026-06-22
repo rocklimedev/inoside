@@ -8,6 +8,7 @@ import React, {
   useCallback,
   useMemo,
 } from "react";
+
 import { usePathname } from "next/navigation";
 
 import {
@@ -16,6 +17,9 @@ import {
   useGetProfileQuery,
 } from "@/api/authApi";
 
+// ======================================================
+// CONTEXT
+// ======================================================
 const AuthContext = createContext(null);
 
 // ======================================================
@@ -25,6 +29,7 @@ const normalizeUser = (user) => {
   if (!user) return null;
 
   const rawUser = user?.dataValues || user;
+
   let role = rawUser.role;
 
   if (role && typeof role === "object") {
@@ -37,16 +42,21 @@ const normalizeUser = (user) => {
     name: rawUser.name,
     email: rawUser.email,
     phone: rawUser.phone,
+
     role: typeof role === "string" ? role : null,
+
     is_active: Boolean(rawUser.is_active),
     is_email_verified: Boolean(rawUser.is_email_verified),
+
     isActive: Boolean(rawUser.is_active),
     isEmailVerified: Boolean(rawUser.is_email_verified),
-    last_login: rawUser.last_login,
-    created_at: rawUser.created_at, // Avatar
-    avatar_url: rawUser.avatar_url || null,
 
+    last_login: rawUser.last_login,
+
+    avatar_url: rawUser.avatar_url || null,
     avatar_thumbnail: rawUser.avatar_thumbnail || null,
+
+    created_at: rawUser.created_at,
   };
 };
 
@@ -56,21 +66,19 @@ const normalizeUser = (user) => {
 export const AuthProvider = ({ children }) => {
   const pathname = usePathname();
 
-  // ====================================================
-  // STATE
-  // ====================================================
+  // ================= STATE =================
   const [token, setToken] = useState(null);
   const [user, setUser] = useState(null);
+
   const [authInitialized, setAuthInitialized] = useState(false);
   const [authResolved, setAuthResolved] = useState(false);
 
-  // ====================================================
-  // MUTATIONS
-  // ====================================================
   const [loginMutation] = useLoginMutation();
   const [registerMutation] = useRegisterMutation();
-  // inside AuthProvider (above return)
 
+  // ======================================================
+  // ROLE ROUTES
+  // ======================================================
   const roleRoutes = useMemo(
     () => ({
       architect: "/dashboard/architect",
@@ -88,23 +96,26 @@ export const AuthProvider = ({ children }) => {
     const roleKey = user?.role?.toLowerCase?.();
     return roleRoutes[roleKey] || "/dashboard/architect";
   }, [user, roleRoutes]);
-  // ====================================================
-  // BOOTSTRAP TOKEN FROM LOCALSTORAGE
-  // ====================================================
+
+  // ======================================================
+  // BOOTSTRAP TOKEN (CLIENT ONLY)
+  // ======================================================
   useEffect(() => {
-    try {
-      const storedToken = localStorage.getItem("access_token");
-      if (storedToken) {
-        setToken(storedToken);
-      }
-    } finally {
-      setAuthInitialized(true);
+    const storedToken =
+      typeof window !== "undefined"
+        ? localStorage.getItem("access_token")
+        : null;
+
+    if (storedToken) {
+      setToken(storedToken);
     }
+
+    setAuthInitialized(true);
   }, []);
 
-  // ====================================================
-  // PROFILE QUERY - WITH MANUAL REFETCH CONTROL
-  // ====================================================
+  // ======================================================
+  // PROFILE QUERY
+  // ======================================================
   const {
     data: profileData,
     error: profileError,
@@ -116,9 +127,10 @@ export const AuthProvider = ({ children }) => {
     refetchOnReconnect: true,
     refetchOnMountOrArgChange: false,
   });
-  // ====================================================
-  // SYNC PROFILE TO STATE
-  // ====================================================
+
+  // ======================================================
+  // SYNC PROFILE → STATE
+  // ======================================================
   useEffect(() => {
     if (!authInitialized) return;
 
@@ -129,10 +141,8 @@ export const AuthProvider = ({ children }) => {
       return;
     }
 
-    // Still fetching
-    if (profileFetching) {
-      return;
-    }
+    // Still loading
+    if (profileFetching) return;
 
     // Success
     if (profileData?.user) {
@@ -141,34 +151,38 @@ export const AuthProvider = ({ children }) => {
       return;
     }
 
-    // Error - Invalid token
+    // Invalid token
     if (profileError) {
       localStorage.removeItem("access_token");
       document.cookie =
         "access_token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT";
+
       setToken(null);
       setUser(null);
       setAuthResolved(true);
-      return;
     }
   }, [authInitialized, token, profileData, profileError, profileFetching]);
 
-  // ====================================================
+  // ======================================================
   // LOGIN
-  // ====================================================
+  // ======================================================
   const login = async (credentials) => {
     const res = await loginMutation(credentials).unwrap();
 
     const accessToken = res?.access_token;
+
     if (!accessToken) {
       throw new Error("No access token received");
     }
 
     setAuthResolved(false);
+
     localStorage.setItem("access_token", accessToken);
     document.cookie = `access_token=${accessToken}; path=/; max-age=86400; SameSite=Lax`;
+
     setToken(accessToken);
 
+    // If backend returns user directly
     if (res?.user) {
       const normalized = normalizeUser(res.user);
       setUser(normalized);
@@ -176,8 +190,9 @@ export const AuthProvider = ({ children }) => {
       return { ...res, user: normalized };
     }
 
-    // Fallback: fetch profile
+    // fallback: fetch profile
     const profileRes = await refetchProfile();
+
     if (profileRes?.data?.user) {
       const normalized = normalizeUser(profileRes.data.user);
       setUser(normalized);
@@ -188,48 +203,53 @@ export const AuthProvider = ({ children }) => {
     throw new Error("Failed to fetch authenticated user");
   };
 
-  // ====================================================
+  // ======================================================
   // REGISTER
-  // ====================================================
+  // ======================================================
   const register = async (data) => {
     return await registerMutation(data).unwrap();
   };
 
-  // ====================================================
+  // ======================================================
   // LOGOUT
-  // ====================================================
+  // ======================================================
   const logout = useCallback(() => {
     localStorage.removeItem("access_token");
+
     document.cookie =
       "access_token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT";
+
     setToken(null);
     setUser(null);
     setAuthResolved(true);
   }, []);
 
-  // ====================================================
+  // ======================================================
   // REFRESH USER
-  // ====================================================
+  // ======================================================
   const refreshUser = useCallback(async () => {
     if (!token) return null;
 
     try {
       const res = await refetchProfile();
+
       if (res?.data?.user) {
         const normalized = normalizeUser(res.data.user);
         setUser(normalized);
         return normalized;
       }
+
       return null;
     } catch {
       return null;
     }
   }, [token, refetchProfile]);
 
-  // ====================================================
+  // ======================================================
   // DERIVED STATE
-  // ====================================================
+  // ======================================================
   const isAuthenticated = Boolean(user);
+
   const isLoading = !authInitialized || !authResolved;
 
   const isActive = useMemo(
@@ -242,27 +262,36 @@ export const AuthProvider = ({ children }) => {
     [user],
   );
 
-  // ====================================================
+  const hasRole = useCallback(
+    (roleName) => user?.role?.toLowerCase() === roleName?.toLowerCase(),
+    [user],
+  );
+
+  // ======================================================
   // CONTEXT VALUE
-  // ====================================================
+  // ======================================================
   const value = {
     token,
     user,
+
     login,
     register,
     logout,
     refreshUser,
+
     authInitialized,
     authResolved,
+
     isAuthenticated,
     isLoading,
+
     profileFetching,
+
     isActive,
     isEmailVerified,
-    hasRole: (roleName) =>
-      user?.role?.toLowerCase() === roleName?.toLowerCase(),
 
-    getDefaultRoute, // 👈 add this
+    hasRole,
+    getDefaultRoute,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
@@ -273,8 +302,10 @@ export const AuthProvider = ({ children }) => {
 // ======================================================
 export const useAuth = () => {
   const context = useContext(AuthContext);
+
   if (!context) {
     throw new Error("useAuth must be used within AuthProvider");
   }
+
   return context;
 };

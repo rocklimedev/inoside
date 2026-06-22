@@ -16,7 +16,6 @@ import {
 } from "@/components/ui/select";
 
 import { Dialog, DialogContent } from "@/components/ui/dialog";
-
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Sheet, SheetContent } from "@/components/ui/sheet";
 import { toast } from "sonner";
@@ -28,7 +27,6 @@ import {
   List,
   Star,
   MapPin,
-  ChevronRight,
   Filter,
 } from "lucide-react";
 
@@ -37,7 +35,7 @@ import { useGetVendorsQuery, useDeleteVendorMutation } from "@/api/vendorsApi";
 import AddVendorForm from "@/components/vendors/AddVendorForm";
 import VendorProfile from "@/components/vendors/VendorProfile";
 
-/* ================= RATING (memoized) ================= */
+/* ================= RATING ================= */
 const RatingStars = ({ rating = 0 }) => (
   <div className="flex items-center gap-0.5">
     {[...Array(5)].map((_, i) => (
@@ -59,8 +57,12 @@ export default function VendorsPage() {
   const [search, setSearch] = useState("");
   const [viewMode, setViewMode] = useState("grid");
   const [showAdd, setShowAdd] = useState(false);
+
   const [activeVendor, setActiveVendor] = useState(null);
+  const [editingVendor, setEditingVendor] = useState(null);
+
   const [filterTrade, setFilterTrade] = useState("all");
+  const [openMenuId, setOpenMenuId] = useState(null);
 
   const isClient = user?.role === "Client";
 
@@ -95,7 +97,7 @@ export default function VendorsPage() {
     });
   }, [vendors, search, filterTrade]);
 
-  /* ================= DELETE ================= */
+  /* ================= ACTIONS ================= */
   const handleDelete = async (id) => {
     if (!confirm("Are you sure you want to delete this vendor?")) return;
 
@@ -103,12 +105,17 @@ export default function VendorsPage() {
       await deleteVendor(id).unwrap();
       toast.success("Vendor deleted successfully");
       setActiveVendor(null);
+      setEditingVendor(null);
     } catch {
       toast.error("Failed to delete vendor");
     }
   };
 
-  /* ================= LOADING ================= */
+  const handleEdit = (vendor) => {
+    setEditingVendor(vendor);
+    setActiveVendor(vendor);
+  };
+
   if (isLoading) {
     return (
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 p-6">
@@ -135,13 +142,22 @@ export default function VendorsPage() {
             <div className="flex rounded-lg border overflow-hidden">
               <button
                 onClick={() => setViewMode("grid")}
-                className={`p-2 ${viewMode === "grid" ? "bg-[#ef7f1b] text-white" : "text-gray-500"}`}
+                className={`p-2 ${
+                  viewMode === "grid"
+                    ? "bg-[#ef7f1b] text-white"
+                    : "text-gray-500"
+                }`}
               >
                 <Grid3X3 className="h-4 w-4" />
               </button>
+
               <button
                 onClick={() => setViewMode("list")}
-                className={`p-2 ${viewMode === "list" ? "bg-[#ef7f1b] text-white" : "text-gray-500"}`}
+                className={`p-2 ${
+                  viewMode === "list"
+                    ? "bg-[#ef7f1b] text-white"
+                    : "text-gray-500"
+                }`}
               >
                 <List className="h-4 w-4" />
               </button>
@@ -198,12 +214,11 @@ export default function VendorsPage() {
               No vendors found
             </div>
           ) : viewMode === "grid" ? (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3 2xl:grid-cols-4 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
               {filtered.map((vendor) => (
                 <Card
                   key={vendor.id}
-                  onClick={() => setActiveVendor(vendor)}
-                  className="cursor-pointer rounded-2xl border bg-white p-4 transition hover:-translate-y-1 hover:shadow-lg"
+                  className="rounded-2xl border bg-white p-4 hover:shadow-lg"
                 >
                   <div className="flex items-start justify-between mb-3">
                     <div className="h-10 w-10 rounded-xl bg-orange-50 flex items-center justify-center font-bold text-[#ef7f1b]">
@@ -228,9 +243,67 @@ export default function VendorsPage() {
                     <RatingStars rating={vendor.rating} />
                   </div>
 
-                  <div className="mt-3 flex justify-between text-[10px] text-gray-500 border-t pt-2">
-                    <span>{vendor.type_of_business}</span>
-                    <span>{vendor.mobile_number}</span>
+                  {/* ================= 3 DOT MENU ================= */}
+                  <div className="relative mt-3 flex justify-between border-t pt-2 text-xs">
+                    <span className="text-gray-500">
+                      {vendor.type_of_business}
+                    </span>
+
+                    <div className="relative">
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setOpenMenuId(
+                            openMenuId === vendor.id ? null : vendor.id,
+                          );
+                        }}
+                        className="text-lg px-2 hover:bg-gray-100 rounded"
+                      >
+                        ⋮
+                      </button>
+
+                      {openMenuId === vendor.id && (
+                        <>
+                          <div
+                            className="fixed inset-0 z-10"
+                            onClick={() => setOpenMenuId(null)}
+                          />
+
+                          <div className="absolute right-0 bottom-6 z-20 w-32 rounded-lg border bg-white shadow-lg overflow-hidden">
+                            <button
+                              onClick={() => {
+                                setActiveVendor(vendor);
+                                setEditingVendor(null);
+                                setOpenMenuId(null);
+                              }}
+                              className="w-full px-3 py-2 text-left text-xs hover:bg-gray-100"
+                            >
+                              View
+                            </button>
+
+                            <button
+                              onClick={() => {
+                                handleEdit(vendor);
+                                setOpenMenuId(null);
+                              }}
+                              className="w-full px-3 py-2 text-left text-xs hover:bg-gray-100 text-blue-600"
+                            >
+                              Edit
+                            </button>
+
+                            <button
+                              onClick={() => {
+                                handleDelete(vendor.id);
+                                setOpenMenuId(null);
+                              }}
+                              className="w-full px-3 py-2 text-left text-xs hover:bg-gray-100 text-red-600"
+                            >
+                              Delete
+                            </button>
+                          </div>
+                        </>
+                      )}
+                    </div>
                   </div>
                 </Card>
               ))}
@@ -240,8 +313,7 @@ export default function VendorsPage() {
               {filtered.map((vendor) => (
                 <Card
                   key={vendor.id}
-                  onClick={() => setActiveVendor(vendor)}
-                  className="flex items-center gap-3 p-4 cursor-pointer hover:shadow-md"
+                  className="flex items-center gap-3 p-4 hover:shadow-md"
                 >
                   <div className="h-10 w-10 rounded-xl bg-orange-50 flex items-center justify-center font-bold text-[#ef7f1b]">
                     {vendor.name?.[0] || "V"}
@@ -256,7 +328,62 @@ export default function VendorsPage() {
 
                   <RatingStars rating={vendor.rating} />
 
-                  <ChevronRight className="h-4 w-4 text-gray-300" />
+                  {/* ================= 3 DOT MENU ================= */}
+                  <div className="relative">
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setOpenMenuId(
+                          openMenuId === vendor.id ? null : vendor.id,
+                        );
+                      }}
+                      className="text-lg px-2 hover:bg-gray-100 rounded"
+                    >
+                      ⋮
+                    </button>
+
+                    {openMenuId === vendor.id && (
+                      <>
+                        <div
+                          className="fixed inset-0 z-10"
+                          onClick={() => setOpenMenuId(null)}
+                        />
+
+                        <div className="absolute right-0 top-6 z-20 w-32 rounded-lg border bg-white shadow-lg overflow-hidden">
+                          <button
+                            onClick={() => {
+                              setActiveVendor(vendor);
+                              setEditingVendor(null);
+                              setOpenMenuId(null);
+                            }}
+                            className="w-full px-3 py-2 text-left text-xs hover:bg-gray-100"
+                          >
+                            View
+                          </button>
+
+                          <button
+                            onClick={() => {
+                              handleEdit(vendor);
+                              setOpenMenuId(null);
+                            }}
+                            className="w-full px-3 py-2 text-left text-xs hover:bg-gray-100 text-blue-600"
+                          >
+                            Edit
+                          </button>
+
+                          <button
+                            onClick={() => {
+                              handleDelete(vendor.id);
+                              setOpenMenuId(null);
+                            }}
+                            className="w-full px-3 py-2 text-left text-xs hover:bg-gray-100 text-red-600"
+                          >
+                            Delete
+                          </button>
+                        </div>
+                      </>
+                    )}
+                  </div>
                 </Card>
               ))}
             </div>
@@ -264,22 +391,38 @@ export default function VendorsPage() {
         </div>
       </ScrollArea>
 
-      {/* ================= MODALS ================= */}
+      {/* ================= ADD MODAL ================= */}
       <Dialog open={showAdd} onOpenChange={setShowAdd}>
         <DialogContent className="max-w-2xl">
           <AddVendorForm onSuccess={() => setShowAdd(false)} />
         </DialogContent>
       </Dialog>
 
-      <Sheet open={!!activeVendor} onOpenChange={() => setActiveVendor(null)}>
+      {/* ================= VIEW / EDIT SHEET ================= */}
+      <Sheet
+        open={!!activeVendor}
+        onOpenChange={() => {
+          setActiveVendor(null);
+          setEditingVendor(null);
+        }}
+      >
         <SheetContent className="w-full sm:w-[500px] p-0">
-          {activeVendor && (
-            <VendorProfile
-              vendor={activeVendor}
-              isClient={isClient}
-              onDelete={() => handleDelete(activeVendor.id)}
-            />
-          )}
+          {activeVendor &&
+            (editingVendor ? (
+              <AddVendorForm
+                vendor={editingVendor}
+                onSuccess={() => {
+                  setActiveVendor(null);
+                  setEditingVendor(null);
+                }}
+              />
+            ) : (
+              <VendorProfile
+                vendor={activeVendor}
+                isClient={isClient}
+                onDelete={() => handleDelete(activeVendor.id)}
+              />
+            ))}
         </SheetContent>
       </Sheet>
     </div>

@@ -64,8 +64,6 @@ export class VendorsController {
   }
 
   @Delete(':id')
-  @UseGuards(RolesGuard)
-  @Roles('admin')
   remove(@Param('id') id: string, @Req() req: any) {
     return this.vendorsService.deleteVendor(id, {
       id: req.user.id,

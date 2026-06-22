@@ -2,7 +2,6 @@
 
 import React, { useState, useMemo } from "react";
 import { toast } from "sonner";
-import { useRouter } from "next/navigation";
 
 import {
   useGetInventoryMasterQuery,
@@ -46,9 +45,11 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 
+/* ================= FORMAT ================= */
 const fmt = (n) => {
   const num = Number(n);
-  if (!num && num !== 0) return "—";
+  if (!Number.isFinite(num)) return "—";
+
   return new Intl.NumberFormat("en-IN", {
     style: "currency",
     currency: "INR",
@@ -56,6 +57,7 @@ const fmt = (n) => {
   }).format(num);
 };
 
+/* ================= PAGE ================= */
 export default function InventoryPage() {
   const [search, setSearch] = useState("");
   const [viewMode, setViewMode] = useState("grid");
@@ -66,12 +68,17 @@ export default function InventoryPage() {
   const { data: items = [], isLoading } = useGetInventoryMasterQuery();
   const [deleteInventory] = useDeleteInventoryMasterMutation();
 
+  /* ================= FILTER ================= */
   const filteredItems = useMemo(() => {
     let result = [...items];
 
     if (search.trim()) {
       const term = search.toLowerCase();
-      result = result.filter((i) => i.item_name?.toLowerCase().includes(term));
+      result = result.filter(
+        (i) =>
+          i.item_name?.toLowerCase().includes(term) ||
+          i.item_code?.toLowerCase().includes(term),
+      );
     }
 
     if (filterStatus === "active") {
@@ -83,6 +90,7 @@ export default function InventoryPage() {
     return result;
   }, [items, search, filterStatus]);
 
+  /* ================= ACTIONS ================= */
   const openCreate = () => {
     setEditItem(null);
     setOpen(true);
@@ -95,6 +103,7 @@ export default function InventoryPage() {
 
   const handleDelete = async (id) => {
     if (!confirm("Delete this item?")) return;
+
     try {
       await deleteInventory(id).unwrap();
       toast.success("Item deleted successfully");
@@ -103,6 +112,7 @@ export default function InventoryPage() {
     }
   };
 
+  /* ================= UI ================= */
   return (
     <div className="flex h-full flex-col bg-[#fafafa]">
       {/* HEADER */}
@@ -116,16 +126,25 @@ export default function InventoryPage() {
           </div>
 
           <div className="flex items-center gap-2">
-            <div className="flex rounded-lg border overflow-hidden">
+            <div className="flex overflow-hidden rounded-lg border">
               <button
                 onClick={() => setViewMode("grid")}
-                className={`p-2 ${viewMode === "grid" ? "bg-[#ef7f1b] text-white" : "text-gray-500"}`}
+                className={`p-2 ${
+                  viewMode === "grid"
+                    ? "bg-[#ef7f1b] text-white"
+                    : "text-gray-500"
+                }`}
               >
                 <Grid3X3 className="h-4 w-4" />
               </button>
+
               <button
                 onClick={() => setViewMode("list")}
-                className={`p-2 ${viewMode === "list" ? "bg-[#ef7f1b] text-white" : "text-gray-500"}`}
+                className={`p-2 ${
+                  viewMode === "list"
+                    ? "bg-[#ef7f1b] text-white"
+                    : "text-gray-500"
+                }`}
               >
                 <List className="h-4 w-4" />
               </button>
@@ -136,13 +155,13 @@ export default function InventoryPage() {
               className="bg-[#ef7f1b] hover:bg-[#d96f18]"
               size="sm"
             >
-              <Plus className="h-4 w-4 mr-1" />
+              <Plus className="mr-1 h-4 w-4" />
               Add Item
             </Button>
           </div>
         </div>
 
-        {/* Search + Filter */}
+        {/* SEARCH + FILTER */}
         <div className="mt-4 flex flex-col gap-3 md:flex-row">
           <div className="relative flex-1">
             <Search className="absolute left-3 top-2.5 h-4 w-4 text-gray-400" />
@@ -158,6 +177,7 @@ export default function InventoryPage() {
             <SelectTrigger className="w-full md:w-44">
               <SelectValue placeholder="All Status" />
             </SelectTrigger>
+
             <SelectContent>
               <SelectItem value="all">All Items</SelectItem>
               <SelectItem value="active">Active</SelectItem>
@@ -171,7 +191,7 @@ export default function InventoryPage() {
       <ScrollArea className="flex-1">
         <div className="p-4 md:p-6">
           {isLoading ? (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
               {[...Array(6)].map((_, i) => (
                 <div
                   key={i}
@@ -180,19 +200,19 @@ export default function InventoryPage() {
               ))}
             </div>
           ) : filteredItems.length === 0 ? (
-            <div className="text-center py-20 text-gray-500">
-              <Package className="w-12 h-12 mx-auto mb-4 opacity-40" />
+            <div className="py-20 text-center text-gray-500">
+              <Package className="mx-auto mb-4 h-12 w-12 opacity-40" />
               No items found
             </div>
           ) : viewMode === "grid" ? (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
               {filteredItems.map((item) => (
                 <Card
                   key={item.id}
-                  className="rounded-2xl border bg-white p-5 transition hover:-translate-y-1 hover:shadow-lg group"
+                  className="group rounded-2xl border bg-white p-5 transition hover:-translate-y-1 hover:shadow-lg"
                 >
-                  <div className="flex justify-between items-start mb-4">
-                    <div className="h-12 w-12 rounded-2xl bg-orange-50 flex items-center justify-center text-2xl text-[#ef7f1b] font-bold">
+                  <div className="mb-4 flex items-start justify-between">
+                    <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-orange-50 text-2xl font-bold text-[#ef7f1b]">
                       {item.item_code?.[0] || "I"}
                     </div>
 
@@ -207,32 +227,35 @@ export default function InventoryPage() {
                     </Badge>
                   </div>
 
-                  <h3 className="font-bold text-lg truncate">
+                  <h3 className="truncate text-lg font-bold">
                     {item.item_name}
                   </h3>
-                  <p className="text-sm text-gray-500 mt-1">
+
+                  <p className="mt-1 text-sm text-gray-500">
                     {item.brand?.name || "No Brand"}
                   </p>
 
                   <div className="mt-6">
                     <p className="text-xs text-gray-400">Rate</p>
-                    <p className="text-2xl font-semibold text-gray-900">
+                    <p className="text-2xl font-semibold">
                       {fmt(item.default_rate)}
                     </p>
                   </div>
 
-                  <div className="mt-6 flex justify-end opacity-0 group-hover:opacity-100 transition-all">
+                  <div className="mt-6 flex justify-end opacity-0 transition group-hover:opacity-100">
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
                         <Button variant="ghost" size="icon">
                           <MoreVertical className="h-4 w-4" />
                         </Button>
                       </DropdownMenuTrigger>
+
                       <DropdownMenuContent align="end">
                         <DropdownMenuItem onClick={() => openEdit(item)}>
                           <Pencil className="mr-2 h-4 w-4" />
                           Edit
                         </DropdownMenuItem>
+
                         <DropdownMenuItem
                           className="text-red-600"
                           onClick={() => handleDelete(item.id)}
@@ -252,15 +275,15 @@ export default function InventoryPage() {
               {filteredItems.map((item) => (
                 <Card
                   key={item.id}
-                  className="flex items-center gap-4 p-4 hover:shadow-md transition cursor-pointer"
+                  className="flex cursor-pointer items-center gap-4 p-4 transition hover:shadow-md"
                   onClick={() => openEdit(item)}
                 >
-                  <div className="h-12 w-12 rounded-2xl bg-orange-50 flex items-center justify-center text-2xl text-[#ef7f1b] font-bold">
+                  <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-orange-50 text-2xl font-bold text-[#ef7f1b]">
                     {item.item_code?.[0] || "I"}
                   </div>
 
-                  <div className="flex-1 min-w-0">
-                    <p className="font-bold truncate">{item.item_name}</p>
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate font-bold">{item.item_name}</p>
                     <p className="text-sm text-gray-500">
                       {item.brand?.name || "No Brand"} • {item.item_code || "—"}
                     </p>
@@ -268,6 +291,7 @@ export default function InventoryPage() {
 
                   <div className="text-right">
                     <p className="font-semibold">{fmt(item.default_rate)}</p>
+
                     <Badge
                       className={
                         item.is_active
@@ -289,10 +313,13 @@ export default function InventoryPage() {
                         <MoreVertical className="h-4 w-4" />
                       </Button>
                     </DropdownMenuTrigger>
+
                     <DropdownMenuContent align="end">
                       <DropdownMenuItem onClick={() => openEdit(item)}>
-                        <Pencil className="mr-2 h-4 w-4" /> Edit
+                        <Pencil className="mr-2 h-4 w-4" />
+                        Edit
                       </DropdownMenuItem>
+
                       <DropdownMenuItem
                         className="text-red-600"
                         onClick={(e) => {
@@ -300,7 +327,8 @@ export default function InventoryPage() {
                           handleDelete(item.id);
                         }}
                       >
-                        <Trash2 className="mr-2 h-4 w-4" /> Delete
+                        <Trash2 className="mr-2 h-4 w-4" />
+                        Delete
                       </DropdownMenuItem>
                     </DropdownMenuContent>
                   </DropdownMenu>
@@ -323,7 +351,7 @@ export default function InventoryPage() {
   );
 }
 
-/* ================= INVENTORY FORM ================= */
+/* ================= FORM ================= */
 function InventoryForm({ editItem, onClose }) {
   const isEdit = !!editItem;
 
@@ -337,8 +365,10 @@ function InventoryForm({ editItem, onClose }) {
   });
 
   const { data: brands = [] } = useGetBrandsQuery();
+
   const [createInventory, { isLoading: creating }] =
     useCreateInventoryMasterMutation();
+
   const [updateInventory, { isLoading: updating }] =
     useUpdateInventoryMasterMutation();
 
@@ -352,20 +382,30 @@ function InventoryForm({ editItem, onClose }) {
       return;
     }
 
-    try {
-      const payload = {
-        ...form,
-        default_rate: Number(form.default_rate || 0),
-        brand_id: form.brand_id || null,
-      };
+    const payload = {
+      item_code: form.item_code || null,
+      item_name: form.item_name,
+      description: form.description || null,
+      specification: form.specification || null,
+      default_rate: Number(form.default_rate || 0),
 
+      // ✅ FIXED BRAND HANDLING
+      brand_id: form.brand_id || null,
+    };
+
+    try {
       if (isEdit) {
-        await updateInventory({ id: editItem.id, ...payload }).unwrap();
+        await updateInventory({
+          id: editItem.id,
+          ...payload,
+        }).unwrap();
+
         toast.success("Item updated successfully");
       } else {
         await createInventory(payload).unwrap();
         toast.success("Item created successfully");
       }
+
       onClose();
     } catch {
       toast.error("Operation failed");
@@ -395,7 +435,7 @@ function InventoryForm({ editItem, onClose }) {
         </SelectTrigger>
 
         <SelectContent>
-          <SelectItem value="none">No Brand</SelectItem>
+          <SelectItem value="__none__">No Brand</SelectItem>
 
           {brands.map((b) => (
             <SelectItem key={b.id} value={b.id}>
