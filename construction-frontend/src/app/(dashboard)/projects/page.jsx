@@ -93,14 +93,25 @@ export default function ProjectsPage() {
       type: p.project_type || p.service_type || "—",
       stage: p.current_stage || "Brief",
       progress: parseFloat(p.progress_percentage || "0"),
-      location: p.site?.address || "—",
+
+      location: p.site?.address
+        ? [
+            p.site.address.line1,
+            p.site.address.line2,
+            p.site.address.city,
+            p.site.address.state,
+          ]
+            .filter(Boolean)
+            .join(", ")
+        : "—",
+
       start_date: p.created_at
         ? new Date(p.created_at).toLocaleDateString()
         : "—",
+
       status: p.status || "Active",
     }));
   }, [projects]);
-
   const filteredProjects = useMemo(() => {
     let result = [...mappedProjects];
 

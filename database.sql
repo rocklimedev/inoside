@@ -19,7 +19,7 @@ CREATE TABLE IF NOT EXISTS `activity_logs` (
   `activityLogId` char(36) COLLATE utf8mb4_unicode_ci NOT NULL,
   `userId` char(36) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   `userName` varchar(100) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
-  `contextTag` enum('AUTH','USER','PROJECT','INVENTORY','BOQ','VENDOR','CLIENT','SITE','TASK','DRAWING','COST_ESTIMATE') COLLATE utf8mb4_unicode_ci NOT NULL,
+  `contextTag` enum('AUTH','USER','PROJECT','INVENTORY','BOQ','VENDOR','CLIENT','SITE','TASK','DRAWING','COST_ESTIMATE','CDN','RBAC') COLLATE utf8mb4_unicode_ci NOT NULL,
   `subContext` varchar(100) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   `action` enum('CREATE','UPDATE','DELETE','VIEW','LOGIN','LOGOUT','ASSIGN','APPROVE','REJECT','DOWNLOAD','UPLOAD') COLLATE utf8mb4_unicode_ci NOT NULL,
   `title` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
@@ -508,6 +508,17 @@ CREATE TABLE IF NOT EXISTS `issue_logs` (
   CONSTRAINT `issue_logs_ibfk_1` FOREIGN KEY (`project_id`) REFERENCES `projects` (`id`) ON DELETE CASCADE,
   CONSTRAINT `issue_logs_ibfk_2` FOREIGN KEY (`reported_by`) REFERENCES `users` (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- Data exporting was unselected.
+
+-- Dumping structure for table spsyn8lm_construction_db.materials
+CREATE TABLE IF NOT EXISTS `materials` (
+  `id` char(36) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `name` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `category` varchar(100) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `created_at` datetime NOT NULL,
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- Data exporting was unselected.
 
