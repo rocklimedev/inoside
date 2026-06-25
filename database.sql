@@ -2,7 +2,7 @@
 -- Host:                         116.206.104.225
 -- Server version:               5.7.23-23 - Percona Server (GPL), Release 23, Revision 500fcf5
 -- Server OS:                    Linux
--- HeidiSQL Version:             12.17.0.7270
+-- HeidiSQL Version:             12.11.0.7065
 -- --------------------------------------------------------
 
 /*!40101 SET @OLD_CHARACTER_SET_CLIENT=@@CHARACTER_SET_CLIENT */;
@@ -13,6 +13,11 @@
 /*!40014 SET @OLD_FOREIGN_KEY_CHECKS=@@FOREIGN_KEY_CHECKS, FOREIGN_KEY_CHECKS=0 */;
 /*!40101 SET @OLD_SQL_MODE=@@SQL_MODE, SQL_MODE='NO_AUTO_VALUE_ON_ZERO' */;
 /*!40111 SET @OLD_SQL_NOTES=@@SQL_NOTES, SQL_NOTES=0 */;
+
+
+-- Dumping database structure for spsyn8lm_construction_db
+CREATE DATABASE IF NOT EXISTS `spsyn8lm_construction_db` /*!40100 DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci */;
+USE `spsyn8lm_construction_db`;
 
 -- Dumping structure for table spsyn8lm_construction_db.activity_logs
 CREATE TABLE IF NOT EXISTS `activity_logs` (
@@ -64,6 +69,39 @@ CREATE TABLE IF NOT EXISTS `addresses` (
   `created_at` datetime DEFAULT CURRENT_TIMESTAMP,
   `updated_at` datetime DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`) USING BTREE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- Data exporting was unselected.
+
+-- Dumping structure for table spsyn8lm_construction_db.boqs
+CREATE TABLE IF NOT EXISTS `boqs` (
+  `id` char(36) NOT NULL,
+  `project_id` char(36) DEFAULT NULL,
+  `client_id` char(36) DEFAULT NULL,
+  `boq_category_id` char(36) NOT NULL,
+  `title` varchar(255) NOT NULL,
+  `code` varchar(100) DEFAULT NULL,
+  `revision_no` varchar(50) DEFAULT 'Rev-01',
+  `status` enum('draft','submitted','approved','rejected','revised') DEFAULT 'draft',
+  `notes` text,
+  `subtotal` decimal(16,2) DEFAULT '0.00',
+  `tax_amount` decimal(16,2) DEFAULT '0.00',
+  `grand_total` decimal(16,2) DEFAULT '0.00',
+  `prepared_by` char(36) DEFAULT NULL,
+  `approved_by` char(36) DEFAULT NULL,
+  `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `idx_boqs_project` (`project_id`),
+  KEY `fk_boq_category` (`boq_category_id`),
+  KEY `fk_boq_prepared_by` (`prepared_by`),
+  KEY `fk_boq_approved_by` (`approved_by`),
+  KEY `fk_boq_client` (`client_id`) USING BTREE,
+  CONSTRAINT `fk_boq_approved_by` FOREIGN KEY (`approved_by`) REFERENCES `users` (`id`),
+  CONSTRAINT `fk_boq_category` FOREIGN KEY (`boq_category_id`) REFERENCES `boq_categories` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `fk_boq_client` FOREIGN KEY (`client_id`) REFERENCES `clients` (`id`) ON DELETE SET NULL,
+  CONSTRAINT `fk_boq_prepared_by` FOREIGN KEY (`prepared_by`) REFERENCES `users` (`id`),
+  CONSTRAINT `fk_boq_project` FOREIGN KEY (`project_id`) REFERENCES `projects` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 -- Data exporting was unselected.
@@ -161,39 +199,6 @@ CREATE TABLE IF NOT EXISTS `boq_subheadings` (
 
 -- Data exporting was unselected.
 
--- Dumping structure for table spsyn8lm_construction_db.boqs
-CREATE TABLE IF NOT EXISTS `boqs` (
-  `id` char(36) NOT NULL,
-  `project_id` char(36) DEFAULT NULL,
-  `client_id` char(36) DEFAULT NULL,
-  `boq_category_id` char(36) NOT NULL,
-  `title` varchar(255) NOT NULL,
-  `code` varchar(100) DEFAULT NULL,
-  `revision_no` varchar(50) DEFAULT 'Rev-01',
-  `status` enum('draft','submitted','approved','rejected','revised') DEFAULT 'draft',
-  `notes` text,
-  `subtotal` decimal(16,2) DEFAULT '0.00',
-  `tax_amount` decimal(16,2) DEFAULT '0.00',
-  `grand_total` decimal(16,2) DEFAULT '0.00',
-  `prepared_by` char(36) DEFAULT NULL,
-  `approved_by` char(36) DEFAULT NULL,
-  `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  `updated_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-  PRIMARY KEY (`id`),
-  KEY `idx_boqs_project` (`project_id`),
-  KEY `fk_boq_category` (`boq_category_id`),
-  KEY `fk_boq_prepared_by` (`prepared_by`),
-  KEY `fk_boq_approved_by` (`approved_by`),
-  KEY `fk_boq_client` (`client_id`) USING BTREE,
-  CONSTRAINT `fk_boq_approved_by` FOREIGN KEY (`approved_by`) REFERENCES `users` (`id`),
-  CONSTRAINT `fk_boq_category` FOREIGN KEY (`boq_category_id`) REFERENCES `boq_categories` (`id`) ON DELETE CASCADE,
-  CONSTRAINT `fk_boq_client` FOREIGN KEY (`client_id`) REFERENCES `clients` (`id`) ON DELETE SET NULL,
-  CONSTRAINT `fk_boq_prepared_by` FOREIGN KEY (`prepared_by`) REFERENCES `users` (`id`),
-  CONSTRAINT `fk_boq_project` FOREIGN KEY (`project_id`) REFERENCES `projects` (`id`) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
-
--- Data exporting was unselected.
-
 -- Dumping structure for table spsyn8lm_construction_db.brands
 CREATE TABLE IF NOT EXISTS `brands` (
   `id` char(36) NOT NULL,
@@ -266,6 +271,7 @@ CREATE TABLE IF NOT EXISTS `daily_progress_reports` (
   `report_date` date NOT NULL,
   `supervisor_id` char(36) DEFAULT NULL,
   `current_stage` varchar(100) DEFAULT NULL,
+  `execution_stage_id` char(36) DEFAULT NULL,
   `work_executed` text,
   `manpower_count` int(11) DEFAULT NULL,
   `materials_used` text,
@@ -275,8 +281,10 @@ CREATE TABLE IF NOT EXISTS `daily_progress_reports` (
   PRIMARY KEY (`id`),
   KEY `project_id` (`project_id`),
   KEY `supervisor_id` (`supervisor_id`),
+  KEY `idx_dpr_execution_stage` (`execution_stage_id`),
   CONSTRAINT `daily_progress_reports_ibfk_1` FOREIGN KEY (`project_id`) REFERENCES `projects` (`id`) ON DELETE CASCADE,
-  CONSTRAINT `daily_progress_reports_ibfk_2` FOREIGN KEY (`supervisor_id`) REFERENCES `users` (`id`)
+  CONSTRAINT `daily_progress_reports_ibfk_2` FOREIGN KEY (`supervisor_id`) REFERENCES `users` (`id`),
+  CONSTRAINT `fk_dpr_execution_stage` FOREIGN KEY (`execution_stage_id`) REFERENCES `execution_stages` (`id`) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 -- Data exporting was unselected.
@@ -336,6 +344,26 @@ CREATE TABLE IF NOT EXISTS `execution_activities` (
   CONSTRAINT `fk_execution_activity_project` FOREIGN KEY (`project_id`) REFERENCES `projects` (`id`) ON DELETE CASCADE,
   CONSTRAINT `fk_execution_activity_stage` FOREIGN KEY (`stage_id`) REFERENCES `execution_stages` (`id`) ON DELETE SET NULL,
   CONSTRAINT `fk_execution_activity_user` FOREIGN KEY (`created_by`) REFERENCES `users` (`id`) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- Data exporting was unselected.
+
+-- Dumping structure for table spsyn8lm_construction_db.execution_drawing_sets
+CREATE TABLE IF NOT EXISTS `execution_drawing_sets` (
+  `id` char(36) NOT NULL,
+  `project_id` char(36) NOT NULL,
+  `drawing_category` enum('Technical','Construction','Working') NOT NULL,
+  `drawing_discipline` enum('Electrical','Plumbing','Structural','Working','Other') NOT NULL,
+  `area_floor_reference` varchar(100) DEFAULT NULL,
+  `stage_id` char(36) DEFAULT NULL COMMENT 'optional link to execution_stages.id',
+  `created_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_execution_set_discipline_area` (`project_id`,`drawing_discipline`,`area_floor_reference`),
+  KEY `idx_execution_drawing_sets_project` (`project_id`),
+  KEY `idx_execution_drawing_sets_stage` (`stage_id`),
+  CONSTRAINT `fk_execution_set_project` FOREIGN KEY (`project_id`) REFERENCES `projects` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `fk_execution_set_stage` FOREIGN KEY (`stage_id`) REFERENCES `execution_stages` (`id`) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 -- Data exporting was unselected.
@@ -568,6 +596,56 @@ CREATE TABLE IF NOT EXISTS `pitch_references` (
 
 -- Data exporting was unselected.
 
+-- Dumping structure for table spsyn8lm_construction_db.projects
+CREATE TABLE IF NOT EXISTS `projects` (
+  `id` char(36) NOT NULL,
+  `client_id` char(36) NOT NULL,
+  `site_id` char(36) DEFAULT NULL,
+  `name` varchar(255) NOT NULL,
+  `description` text,
+  `project_type` enum('New Construction','Renovation','Interior Fit-out') NOT NULL,
+  `service_type` enum('Construction','Interior','Renovation') DEFAULT NULL,
+  `purpose` enum('Residential','Commercial','Mixed') DEFAULT NULL,
+  `number_of_floors` int(11) DEFAULT NULL,
+  `approximate_area_sqft` decimal(12,2) DEFAULT NULL,
+  `budget_range` varchar(100) DEFAULT NULL,
+  `timeline_expectation` enum('Immediate','Flexible','Fixed Date') DEFAULT NULL,
+  `design_preference` varchar(50) DEFAULT NULL,
+  `status` enum('brief','pitch','reki_pending','reki_done','scope_done','boq_done','design','execution','vendor_selection','inventory','quality','handover','completed','cancelled','on_hold') DEFAULT 'brief',
+  `current_stage_id` char(36) DEFAULT NULL,
+  `current_stage` varchar(50) DEFAULT NULL COMMENT 'DEPRECATED: superseded by current_stage_id. Kept for backward compatibility; safe to drop after app cutover.',
+  `progress_percentage` decimal(5,2) DEFAULT '0.00',
+  `token_received` tinyint(1) DEFAULT '0',
+  `is_archived` tinyint(1) NOT NULL DEFAULT '0',
+  `is_completed` tinyint(1) NOT NULL DEFAULT '0',
+  `estimated_start_date` date DEFAULT NULL,
+  `estimated_end_date` date DEFAULT NULL,
+  `actual_start_date` date DEFAULT NULL,
+  `actual_end_date` date DEFAULT NULL,
+  `estimated_budget` decimal(15,2) DEFAULT NULL,
+  `final_budget` decimal(15,2) DEFAULT NULL,
+  `created_by` char(36) DEFAULT NULL,
+  `assigned_to` char(36) DEFAULT NULL,
+  `created_at` datetime DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` datetime DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `site_id` (`site_id`),
+  KEY `idx_projects_client` (`client_id`),
+  KEY `idx_projects_status` (`status`),
+  KEY `idx_projects_created_by` (`created_by`),
+  KEY `idx_projects_assigned_to` (`assigned_to`) USING BTREE,
+  KEY `idx_projects_archived` (`is_archived`) USING BTREE,
+  KEY `idx_projects_completed` (`is_completed`) USING BTREE,
+  KEY `idx_projects_current_stage` (`current_stage_id`),
+  CONSTRAINT `fk_projects_current_stage` FOREIGN KEY (`current_stage_id`) REFERENCES `project_stages` (`id`),
+  CONSTRAINT `projects_ibfk_1` FOREIGN KEY (`client_id`) REFERENCES `clients` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `projects_ibfk_2` FOREIGN KEY (`site_id`) REFERENCES `sites` (`id`) ON DELETE SET NULL,
+  CONSTRAINT `projects_ibfk_3` FOREIGN KEY (`created_by`) REFERENCES `users` (`id`),
+  CONSTRAINT `projects_ibfk_assigned_to` FOREIGN KEY (`assigned_to`) REFERENCES `users` (`id`) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- Data exporting was unselected.
+
 -- Dumping structure for table spsyn8lm_construction_db.project_brief
 CREATE TABLE IF NOT EXISTS `project_brief` (
   `id` char(36) NOT NULL,
@@ -726,6 +804,48 @@ CREATE TABLE IF NOT EXISTS `project_pitch` (
 
 -- Data exporting was unselected.
 
+-- Dumping structure for table spsyn8lm_construction_db.project_stages
+CREATE TABLE IF NOT EXISTS `project_stages` (
+  `id` char(36) NOT NULL,
+  `code` varchar(50) NOT NULL COMMENT 'matches projects.status enum value exactly',
+  `name` varchar(100) NOT NULL,
+  `module_group` varchar(50) DEFAULT NULL COMMENT 'Pre-Construction / Execution / Closure / Exception',
+  `description` text,
+  `sort_order` int(11) NOT NULL DEFAULT '0',
+  `is_terminal` tinyint(1) NOT NULL DEFAULT '0' COMMENT '1 = project lifecycle ends here',
+  `is_active` tinyint(1) NOT NULL DEFAULT '1',
+  `created_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_project_stages_code` (`code`),
+  KEY `idx_project_stages_sort` (`sort_order`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- Data exporting was unselected.
+
+-- Dumping structure for table spsyn8lm_construction_db.project_stage_history
+CREATE TABLE IF NOT EXISTS `project_stage_history` (
+  `id` char(36) NOT NULL,
+  `project_id` char(36) NOT NULL,
+  `stage_id` char(36) NOT NULL,
+  `status` enum('in_progress','completed','skipped') NOT NULL DEFAULT 'in_progress',
+  `started_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `completed_at` datetime DEFAULT NULL,
+  `changed_by` char(36) DEFAULT NULL,
+  `remarks` text,
+  `created_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `idx_project_stage_history_project` (`project_id`,`started_at`),
+  KEY `idx_project_stage_history_stage` (`stage_id`),
+  KEY `idx_project_stage_history_status` (`project_id`,`status`),
+  KEY `fk_psh_user` (`changed_by`),
+  CONSTRAINT `fk_psh_project` FOREIGN KEY (`project_id`) REFERENCES `projects` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `fk_psh_stage` FOREIGN KEY (`stage_id`) REFERENCES `project_stages` (`id`),
+  CONSTRAINT `fk_psh_user` FOREIGN KEY (`changed_by`) REFERENCES `users` (`id`) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- Data exporting was unselected.
+
 -- Dumping structure for table spsyn8lm_construction_db.project_vendors
 CREATE TABLE IF NOT EXISTS `project_vendors` (
   `id` char(36) NOT NULL,
@@ -746,58 +866,12 @@ CREATE TABLE IF NOT EXISTS `project_vendors` (
 
 -- Data exporting was unselected.
 
--- Dumping structure for table spsyn8lm_construction_db.projects
-CREATE TABLE IF NOT EXISTS `projects` (
-  `id` char(36) NOT NULL,
-  `client_id` char(36) NOT NULL,
-  `site_id` char(36) DEFAULT NULL,
-  `name` varchar(255) NOT NULL,
-  `description` text,
-  `project_type` enum('New Construction','Renovation','Interior Fit-out') NOT NULL,
-  `service_type` enum('Construction','Interior','Renovation') DEFAULT NULL,
-  `purpose` enum('Residential','Commercial','Mixed') DEFAULT NULL,
-  `number_of_floors` int(11) DEFAULT NULL,
-  `approximate_area_sqft` decimal(12,2) DEFAULT NULL,
-  `budget_range` varchar(100) DEFAULT NULL,
-  `timeline_expectation` enum('Immediate','Flexible','Fixed Date') DEFAULT NULL,
-  `design_preference` varchar(50) DEFAULT NULL,
-  `status` enum('brief','pitch','reki_pending','reki_done','scope_done','boq_done','design','execution','vendor_selection','inventory','quality','handover','completed','cancelled','on_hold') DEFAULT 'brief',
-  `current_stage` varchar(50) DEFAULT NULL,
-  `progress_percentage` decimal(5,2) DEFAULT '0.00',
-  `token_received` tinyint(1) DEFAULT '0',
-  `is_archived` tinyint(1) NOT NULL DEFAULT '0',
-  `is_completed` tinyint(1) NOT NULL DEFAULT '0',
-  `estimated_start_date` date DEFAULT NULL,
-  `estimated_end_date` date DEFAULT NULL,
-  `actual_start_date` date DEFAULT NULL,
-  `actual_end_date` date DEFAULT NULL,
-  `estimated_budget` decimal(15,2) DEFAULT NULL,
-  `final_budget` decimal(15,2) DEFAULT NULL,
-  `created_by` char(36) DEFAULT NULL,
-  `assigned_to` char(36) DEFAULT NULL,
-  `created_at` datetime DEFAULT CURRENT_TIMESTAMP,
-  `updated_at` datetime DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-  PRIMARY KEY (`id`),
-  KEY `site_id` (`site_id`),
-  KEY `idx_projects_client` (`client_id`),
-  KEY `idx_projects_status` (`status`),
-  KEY `idx_projects_created_by` (`created_by`),
-  KEY `idx_projects_assigned_to` (`assigned_to`) USING BTREE,
-  KEY `idx_projects_archived` (`is_archived`) USING BTREE,
-  KEY `idx_projects_completed` (`is_completed`) USING BTREE,
-  CONSTRAINT `projects_ibfk_1` FOREIGN KEY (`client_id`) REFERENCES `clients` (`id`) ON DELETE CASCADE,
-  CONSTRAINT `projects_ibfk_2` FOREIGN KEY (`site_id`) REFERENCES `sites` (`id`) ON DELETE SET NULL,
-  CONSTRAINT `projects_ibfk_3` FOREIGN KEY (`created_by`) REFERENCES `users` (`id`),
-  CONSTRAINT `projects_ibfk_assigned_to` FOREIGN KEY (`assigned_to`) REFERENCES `users` (`id`) ON DELETE SET NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
-
--- Data exporting was unselected.
-
 -- Dumping structure for table spsyn8lm_construction_db.quality_checks
 CREATE TABLE IF NOT EXISTS `quality_checks` (
   `id` char(36) NOT NULL,
   `project_id` char(36) NOT NULL,
   `stage_name` varchar(100) DEFAULT NULL,
+  `execution_stage_id` char(36) DEFAULT NULL,
   `quality_met` tinyint(1) DEFAULT NULL,
   `deviations` tinyint(1) DEFAULT NULL,
   `corrective_action_required` tinyint(1) DEFAULT NULL,
@@ -807,6 +881,8 @@ CREATE TABLE IF NOT EXISTS `quality_checks` (
   PRIMARY KEY (`id`),
   KEY `project_id` (`project_id`),
   KEY `checked_by` (`checked_by`),
+  KEY `idx_quality_checks_execution_stage` (`execution_stage_id`),
+  CONSTRAINT `fk_quality_checks_execution_stage` FOREIGN KEY (`execution_stage_id`) REFERENCES `execution_stages` (`id`) ON DELETE SET NULL,
   CONSTRAINT `quality_checks_ibfk_1` FOREIGN KEY (`project_id`) REFERENCES `projects` (`id`) ON DELETE CASCADE,
   CONSTRAINT `quality_checks_ibfk_2` FOREIGN KEY (`checked_by`) REFERENCES `users` (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
@@ -885,6 +961,20 @@ CREATE TABLE IF NOT EXISTS `reki_reports` (
 
 -- Data exporting was unselected.
 
+-- Dumping structure for table spsyn8lm_construction_db.roles
+CREATE TABLE IF NOT EXISTS `roles` (
+  `id` char(36) NOT NULL,
+  `name` varchar(50) NOT NULL,
+  `display_name` varchar(100) NOT NULL,
+  `description` text,
+  `created_at` datetime DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` datetime DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `name` (`name`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- Data exporting was unselected.
+
 -- Dumping structure for table spsyn8lm_construction_db.role_permissions
 CREATE TABLE IF NOT EXISTS `role_permissions` (
   `id` char(36) NOT NULL,
@@ -896,20 +986,6 @@ CREATE TABLE IF NOT EXISTS `role_permissions` (
   KEY `permission_id` (`permission_id`),
   CONSTRAINT `role_permissions_ibfk_1` FOREIGN KEY (`role_id`) REFERENCES `roles` (`id`) ON DELETE CASCADE,
   CONSTRAINT `role_permissions_ibfk_2` FOREIGN KEY (`permission_id`) REFERENCES `permissions` (`id`) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
-
--- Data exporting was unselected.
-
--- Dumping structure for table spsyn8lm_construction_db.roles
-CREATE TABLE IF NOT EXISTS `roles` (
-  `id` char(36) NOT NULL,
-  `name` varchar(50) NOT NULL,
-  `display_name` varchar(100) NOT NULL,
-  `description` text,
-  `created_at` datetime DEFAULT CURRENT_TIMESTAMP,
-  `updated_at` datetime DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-  PRIMARY KEY (`id`),
-  UNIQUE KEY `name` (`name`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 -- Data exporting was unselected.
@@ -961,9 +1037,14 @@ CREATE TABLE IF NOT EXISTS `team_tasks` (
   `assigned_to_user_id` char(36) DEFAULT NULL,
   `title` varchar(255) NOT NULL,
   `module` varchar(255) DEFAULT NULL,
+  `execution_stage_id` char(36) DEFAULT NULL,
+  `execution_activity_id` char(36) DEFAULT NULL,
+  `execution_drawing_set_id` char(36) DEFAULT NULL,
+  `execution_drawing_version_id` char(36) DEFAULT NULL,
+  `project_stage_id` char(36) DEFAULT NULL,
   `due_date` date DEFAULT NULL,
   `priority` enum('low','medium','high','urgent') NOT NULL DEFAULT 'medium',
-  `task_type` enum('General','Design upload','Revision response','Site visit','Vendor follow-up','Inventory dispatch','Quality check','Client response','Internal documentation') NOT NULL DEFAULT 'General',
+  `task_type` enum('General','Design upload','Revision response','Site visit','Vendor follow-up','Inventory dispatch','Quality check','Client response','Internal documentation','Execution Drawing Upload','Execution Drawing Revision') NOT NULL DEFAULT 'General',
   `status` enum('todo','in_progress','review','completed','blocked') NOT NULL DEFAULT 'todo',
   `description` text,
   `created_at` datetime DEFAULT CURRENT_TIMESTAMP,
@@ -972,9 +1053,15 @@ CREATE TABLE IF NOT EXISTS `team_tasks` (
   KEY `idx_team_tasks_project_id` (`project_id`),
   KEY `idx_team_tasks_created_by_user_id` (`created_by_user_id`),
   KEY `idx_team_tasks_assigned_to_user_id` (`assigned_to_user_id`),
+  KEY `idx_team_tasks_execution_stage` (`execution_stage_id`),
+  KEY `idx_team_tasks_execution_activity` (`execution_activity_id`),
+  KEY `idx_team_tasks_execution_drawing_set` (`execution_drawing_set_id`),
+  KEY `idx_team_tasks_execution_drawing_version` (`execution_drawing_version_id`),
+  KEY `idx_team_tasks_project_stage` (`project_stage_id`),
   CONSTRAINT `fk_team_tasks_assigned_user` FOREIGN KEY (`assigned_to_user_id`) REFERENCES `users` (`id`) ON DELETE SET NULL ON UPDATE CASCADE,
   CONSTRAINT `fk_team_tasks_created_by_user` FOREIGN KEY (`created_by_user_id`) REFERENCES `users` (`id`) ON UPDATE CASCADE,
-  CONSTRAINT `fk_team_tasks_project` FOREIGN KEY (`project_id`) REFERENCES `projects` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
+  CONSTRAINT `fk_team_tasks_project` FOREIGN KEY (`project_id`) REFERENCES `projects` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
+  CONSTRAINT `fk_team_tasks_project_stage` FOREIGN KEY (`project_stage_id`) REFERENCES `project_stages` (`id`) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 -- Data exporting was unselected.
@@ -1015,28 +1102,6 @@ CREATE TABLE IF NOT EXISTS `users` (
 
 -- Data exporting was unselected.
 
--- Dumping structure for table spsyn8lm_construction_db.vendor_type_vendor
-CREATE TABLE IF NOT EXISTS `vendor_type_vendor` (
-  `vendor_id` char(36) NOT NULL,
-  `type_id` char(36) NOT NULL,
-  PRIMARY KEY (`vendor_id`,`type_id`),
-  KEY `fk_vendor_type_vendor_type` (`type_id`),
-  CONSTRAINT `fk_vendor_type_vendor_type` FOREIGN KEY (`type_id`) REFERENCES `vendor_types` (`id`) ON DELETE CASCADE,
-  CONSTRAINT `fk_vendor_type_vendor_vendor` FOREIGN KEY (`vendor_id`) REFERENCES `vendors` (`id`) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
-
--- Data exporting was unselected.
-
--- Dumping structure for table spsyn8lm_construction_db.vendor_types
-CREATE TABLE IF NOT EXISTS `vendor_types` (
-  `id` char(36) NOT NULL,
-  `name` varchar(50) NOT NULL,
-  PRIMARY KEY (`id`),
-  UNIQUE KEY `uk_vendor_type_name` (`name`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
-
--- Data exporting was unselected.
-
 -- Dumping structure for table spsyn8lm_construction_db.vendors
 CREATE TABLE IF NOT EXISTS `vendors` (
   `id` char(36) NOT NULL,
@@ -1065,6 +1130,28 @@ CREATE TABLE IF NOT EXISTS `vendors` (
   `created_at` datetime DEFAULT CURRENT_TIMESTAMP,
   `updated_at` datetime DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- Data exporting was unselected.
+
+-- Dumping structure for table spsyn8lm_construction_db.vendor_types
+CREATE TABLE IF NOT EXISTS `vendor_types` (
+  `id` char(36) NOT NULL,
+  `name` varchar(50) NOT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_vendor_type_name` (`name`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- Data exporting was unselected.
+
+-- Dumping structure for table spsyn8lm_construction_db.vendor_type_vendor
+CREATE TABLE IF NOT EXISTS `vendor_type_vendor` (
+  `vendor_id` char(36) NOT NULL,
+  `type_id` char(36) NOT NULL,
+  PRIMARY KEY (`vendor_id`,`type_id`),
+  KEY `fk_vendor_type_vendor_type` (`type_id`),
+  CONSTRAINT `fk_vendor_type_vendor_type` FOREIGN KEY (`type_id`) REFERENCES `vendor_types` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `fk_vendor_type_vendor_vendor` FOREIGN KEY (`vendor_id`) REFERENCES `vendors` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 -- Data exporting was unselected.

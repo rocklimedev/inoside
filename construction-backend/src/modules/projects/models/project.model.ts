@@ -26,11 +26,14 @@ import { ProjectBrief } from './project_brief.model';
 import { PitchReference } from './pitch_references.model';
 import { ProjectPitch } from './project_pitch.model';
 import { RekiReport } from './reki_reports.model';
-import { RekiPhoto } from './reki_photos.model';
 import { ScopeOfWork } from './scope_of_work.model';
 import { ProjectCostEstimate } from './project_cost_estimates.model';
 import { ProjectDrawing } from './project-drawings.model';
-import { DrawingApprovalLog } from './drawing_approval_logs.model';
+
+// New Stage Models
+import { ProjectStage } from './project_stage.model';
+import { ProjectStageHistory } from './project_stage_history.model';
+import { ExecutionDrawingSet } from './execution_drawing_set.model';
 
 @Table({
   tableName: 'projects',
@@ -54,7 +57,7 @@ export class Project extends Model<
   declare id: CreationOptional<string>;
 
   // ======================================================
-  // RELATIONS (Foreign Keys)
+  // FOREIGN KEYS
   // ======================================================
 
   @ForeignKey(() => Client)
@@ -85,8 +88,15 @@ export class Project extends Model<
   })
   declare assigned_to: CreationOptional<string | null>;
 
+  @ForeignKey(() => ProjectStage)
+  @Column({
+    type: DataType.UUID,
+    allowNull: true,
+  })
+  declare current_stage_id: CreationOptional<string | null>;
+
   // ======================================================
-  // BASIC DETAILS
+  // PROJECT DETAILS
   // ======================================================
 
   @Column({
@@ -123,13 +133,13 @@ export class Project extends Model<
     type: DataType.INTEGER,
     allowNull: true,
   })
-  declare number_of_floors: CreationOptional<number> | null;
+  declare number_of_floors: CreationOptional<number | null>;
 
   @Column({
     type: DataType.DECIMAL(12, 2),
     allowNull: true,
   })
-  declare approximate_area_sqft: CreationOptional<number> | null;
+  declare approximate_area_sqft: CreationOptional<number | null>;
 
   @Column({
     type: DataType.STRING(100),
@@ -150,7 +160,7 @@ export class Project extends Model<
   declare design_preference: CreationOptional<string | null>;
 
   // ======================================================
-  // PROJECT STATUS
+  // STATUS
   // ======================================================
 
   @Default('brief')
@@ -174,27 +184,13 @@ export class Project extends Model<
     ),
     allowNull: false,
   })
-  declare status: CreationOptional<
-    | 'brief'
-    | 'pitch'
-    | 'reki_pending'
-    | 'reki_done'
-    | 'scope_done'
-    | 'boq_done'
-    | 'design'
-    | 'execution'
-    | 'vendor_selection'
-    | 'inventory'
-    | 'quality'
-    | 'handover'
-    | 'completed'
-    | 'cancelled'
-    | 'on_hold'
-  >;
+  declare status: CreationOptional<string>;
 
   @Column({
-    type: DataType.STRING(100),
+    type: DataType.STRING(50),
     allowNull: true,
+    comment:
+      'DEPRECATED: superseded by current_stage_id. Kept for backward compatibility; safe to drop after app cutover.',
   })
   declare current_stage: CreationOptional<string | null>;
 
@@ -206,7 +202,7 @@ export class Project extends Model<
   declare progress_percentage: CreationOptional<number>;
 
   // ======================================================
-  // BUSINESS FLAGS
+  // FLAGS
   // ======================================================
 
   @Default(false)
@@ -235,44 +231,44 @@ export class Project extends Model<
   // ======================================================
 
   @Column({
-    type: DataType.DATE,
+    type: DataType.DATEONLY,
     allowNull: true,
   })
-  declare estimated_start_date: CreationOptional<Date> | null;
+  declare estimated_start_date: CreationOptional<Date | null>;
 
   @Column({
-    type: DataType.DATE,
+    type: DataType.DATEONLY,
     allowNull: true,
   })
-  declare estimated_end_date: CreationOptional<Date> | null;
+  declare estimated_end_date: CreationOptional<Date | null>;
 
   @Column({
-    type: DataType.DATE,
+    type: DataType.DATEONLY,
     allowNull: true,
   })
-  declare actual_start_date: CreationOptional<Date> | null;
+  declare actual_start_date: CreationOptional<Date | null>;
 
   @Column({
-    type: DataType.DATE,
+    type: DataType.DATEONLY,
     allowNull: true,
   })
-  declare actual_end_date: CreationOptional<Date> | null;
+  declare actual_end_date: CreationOptional<Date | null>;
 
   // ======================================================
-  // FINANCIALS
+  // BUDGETS
   // ======================================================
 
   @Column({
     type: DataType.DECIMAL(15, 2),
     allowNull: true,
   })
-  declare estimated_budget: CreationOptional<number> | null;
+  declare estimated_budget: CreationOptional<number | null>;
 
   @Column({
     type: DataType.DECIMAL(15, 2),
     allowNull: true,
   })
-  declare final_budget: CreationOptional<number> | null;
+  declare final_budget: CreationOptional<number | null>;
 
   // ======================================================
   // RELATIONS
@@ -290,8 +286,17 @@ export class Project extends Model<
   @BelongsTo(() => User, 'assigned_to')
   declare assignedUser?: NonAttribute<User>;
 
+  @BelongsTo(() => ProjectStage, 'current_stage_id')
+  declare currentStage?: NonAttribute<ProjectStage>;
+
+  @HasMany(() => ProjectStageHistory)
+  declare stageHistory?: NonAttribute<ProjectStageHistory[]>;
+
+  @HasMany(() => ExecutionDrawingSet)
+  declare executionDrawingSets?: NonAttribute<ExecutionDrawingSet[]>;
+
   // ======================================================
-  // STAGE RELATIONS
+  // LEGACY STAGE RELATIONS
   // ======================================================
 
   @HasOne(() => ProjectBrief)

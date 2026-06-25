@@ -5,8 +5,6 @@ import {
   Column,
   Model,
   DataType,
-  ForeignKey,
-  BelongsTo,
   Default,
   HasMany,
 } from 'sequelize-typescript';
@@ -18,9 +16,7 @@ import type {
   NonAttribute,
 } from 'sequelize';
 
-import { Project } from './project.model';
-import { User } from '@/modules/users/models/user.model';
-import { ProjectStageLog } from './project_stage_logs.model';
+import { ProjectStageHistory } from './project_stage_history.model';
 
 @Table({
   tableName: 'project_stages',
@@ -32,140 +28,61 @@ export class ProjectStage extends Model<
   InferAttributes<ProjectStage>,
   InferCreationAttributes<ProjectStage>
 > {
-  // ======================================================
-  // PRIMARY KEY
-  // ======================================================
   @Default(DataType.UUIDV4)
-  @Column({ type: DataType.UUID, primaryKey: true })
+  @Column({
+    type: DataType.UUID,
+    primaryKey: true,
+  })
   declare id: CreationOptional<string>;
 
-  // ======================================================
-  // PROJECT RELATION
-  // ======================================================
-  @ForeignKey(() => Project)
-  @Column({ type: DataType.UUID, allowNull: false })
-  declare project_id: string;
-
-  @BelongsTo(() => Project)
-  declare project?: NonAttribute<Project>;
-
-  // ======================================================
-  // STAGE DEFINITION (SYSTEM KEY)
-  // ======================================================
   @Column({
-    type: DataType.ENUM(
-      'brief',
-      'pitch',
-      'reki',
-      'scope',
-      'cost_estimate',
-      'drawings',
-      'execution',
-      'handover',
-    ),
+    type: DataType.STRING(50),
+    allowNull: false,
+    unique: true,
+  })
+  declare code: string;
+
+  @Column({
+    type: DataType.STRING(100),
     allowNull: false,
   })
-  declare stage_key:
-    | 'brief'
-    | 'pitch'
-    | 'reki'
-    | 'scope'
-    | 'cost_estimate'
-    | 'drawings'
-    | 'execution'
-    | 'handover';
+  declare name: string;
 
-  // Human readable label (optional override)
   @Column({
-    type: DataType.STRING(150),
+    type: DataType.STRING(50),
     allowNull: true,
+    comment: 'Pre-Construction / Execution / Closure / Exception',
   })
-  declare stage_name: CreationOptional<string | null>;
+  declare module_group: CreationOptional<string | null>;
 
-  // ======================================================
-  // ORDER IN WORKFLOW
-  // ======================================================
+  @Column({ type: DataType.TEXT })
+  declare description: CreationOptional<string | null>;
+
+  @Default(0)
   @Column({
     type: DataType.INTEGER,
     allowNull: false,
   })
-  declare sequence: number;
+  declare sort_order: number;
 
-  // ======================================================
-  // STATUS
-  // ======================================================
-  @Default('pending')
+  @Default(false)
   @Column({
-    type: DataType.ENUM(
-      'pending',
-      'in_progress',
-      'completed',
-      'blocked',
-      'skipped',
-    ),
+    type: DataType.BOOLEAN,
     allowNull: false,
   })
-  declare status:
-    | 'pending'
-    | 'in_progress'
-    | 'completed'
-    | 'blocked'
-    | 'skipped';
+  declare is_terminal: boolean;
 
-  // ======================================================
-  // LINK TO ACTUAL DOMAIN MODEL (IMPORTANT PART)
-  // ======================================================
-
+  @Default(true)
   @Column({
-    type: DataType.STRING(100),
-    allowNull: true,
+    type: DataType.BOOLEAN,
+    allowNull: false,
   })
-  declare entity_type:
-    | 'ProjectBrief'
-    | 'ProjectPitch'
-    | 'RekiReport'
-    | 'ScopeOfWork'
-    | 'ProjectCostEstimate'
-    | 'ProjectDrawing'
-    | null;
-
-  @Column({
-    type: DataType.UUID,
-    allowNull: true,
-  })
-  declare entity_id: CreationOptional<string | null>;
+  declare is_active: boolean;
 
   // ======================================================
-  // TIMELINE
+  // RELATIONS
   // ======================================================
-  @Column({
-    type: DataType.DATE,
-    allowNull: true,
-  })
-  declare started_at: CreationOptional<Date | null>;
 
-  @Column({
-    type: DataType.DATE,
-    allowNull: true,
-  })
-  declare completed_at: CreationOptional<Date | null>;
-
-  // ======================================================
-  // ASSIGNEE
-  // ======================================================
-  @ForeignKey(() => User)
-  @Column({
-    type: DataType.UUID,
-    allowNull: true,
-  })
-  declare assigned_to: CreationOptional<string | null>;
-
-  @BelongsTo(() => User)
-  declare assignee?: NonAttribute<User>;
-
-  // ======================================================
-  // LOGS
-  // ======================================================
-  @HasMany(() => ProjectStageLog)
-  declare logs?: NonAttribute<ProjectStageLog[]>;
+  @HasMany(() => ProjectStageHistory)
+  declare histories?: NonAttribute<ProjectStageHistory[]>;
 }

@@ -1,11 +1,13 @@
+// team_tasks.model.ts
+
 import {
   Table,
   Column,
   Model,
   DataType,
-  Default,
   ForeignKey,
   BelongsTo,
+  Default,
 } from 'sequelize-typescript';
 
 import type {
@@ -14,26 +16,24 @@ import type {
   CreationOptional,
   NonAttribute,
 } from 'sequelize';
-
 import { Project } from '@/modules/projects/models/project.model';
 import { User } from '@/modules/users/models/user.model';
+import { ExecutionStage } from '@/modules/projects/models/execution-stage.model';
+import { ExecutionActivity } from '@/modules/projects/models/execution-activity.model';
+import { ExecutionDrawingSet } from '@/modules/projects/models/execution_drawing_set.model';
+import { ExecutionDrawingVersion } from '@/modules/projects/models/execution_drawing_version.model';
+import { ProjectStage } from '@/modules/projects/models/project_stage.model';
 
 @Table({
   tableName: 'team_tasks',
-
   timestamps: true,
-
   createdAt: 'created_at',
   updatedAt: 'updated_at',
 })
-export class Task extends Model<
-  InferAttributes<Task>,
-  InferCreationAttributes<Task>
+export class TeamTask extends Model<
+  InferAttributes<TeamTask>,
+  InferCreationAttributes<TeamTask>
 > {
-  // ======================================================
-  // PRIMARY KEY
-  // ======================================================
-
   @Default(DataType.UUIDV4)
   @Column({
     type: DataType.UUID,
@@ -41,81 +41,54 @@ export class Task extends Model<
   })
   declare id: CreationOptional<string>;
 
-  // ======================================================
-  // PROJECT
-  // ======================================================
-
   @ForeignKey(() => Project)
-  @Column({
-    type: DataType.UUID,
-    allowNull: false,
-  })
+  @Column({ type: DataType.UUID, allowNull: false })
   declare project_id: string;
 
-  @BelongsTo(() => Project)
-  declare project?: NonAttribute<Project>;
-
-  // ======================================================
-  // CREATED BY
-  // ======================================================
-
   @ForeignKey(() => User)
-  @Column({
-    type: DataType.UUID,
-    allowNull: false,
-  })
+  @Column({ type: DataType.UUID, allowNull: false })
   declare created_by_user_id: string;
 
-  @BelongsTo(() => User, {
-    foreignKey: 'created_by_user_id',
-    as: 'createdBy',
-  })
-  declare createdBy?: NonAttribute<User>;
-
-  // ======================================================
-  // ASSIGNED USER
-  // ======================================================
-
   @ForeignKey(() => User)
-  @Column({
-    type: DataType.UUID,
-    allowNull: true,
-  })
+  @Column({ type: DataType.UUID, allowNull: true })
   declare assigned_to_user_id: CreationOptional<string | null>;
 
-  @BelongsTo(() => User, {
-    foreignKey: 'assigned_to_user_id',
-    as: 'assignedUser',
-  })
-  declare assignedUser?: NonAttribute<User>;
-
-  // ======================================================
-  // TASK DETAILS
-  // ======================================================
-
-  @Column({
-    type: DataType.STRING,
-    allowNull: false,
-  })
+  @Column({ type: DataType.STRING(255), allowNull: false })
   declare title: string;
 
-  @Column({
-    type: DataType.STRING,
-    allowNull: true,
-  })
+  @Column({ type: DataType.STRING(255) })
   declare module: CreationOptional<string | null>;
 
-  @Column({
-    type: DataType.DATEONLY,
-    allowNull: true,
-  })
-  declare due_date: CreationOptional<string | null>;
+  // === Execution Related Fields ===
+  @ForeignKey(() => ExecutionStage)
+  @Column({ type: DataType.UUID, allowNull: true })
+  declare execution_stage_id: CreationOptional<string | null>;
+
+  @ForeignKey(() => ExecutionActivity)
+  @Column({ type: DataType.UUID, allowNull: true })
+  declare execution_activity_id: CreationOptional<string | null>;
+
+  @ForeignKey(() => ExecutionDrawingSet)
+  @Column({ type: DataType.UUID, allowNull: true })
+  declare execution_drawing_set_id: CreationOptional<string | null>;
+
+  @ForeignKey(() => ExecutionDrawingVersion)
+  @Column({ type: DataType.UUID, allowNull: true })
+  declare execution_drawing_version_id: CreationOptional<string | null>;
+
+  @ForeignKey(() => ProjectStage)
+  @Column({ type: DataType.UUID, allowNull: true })
+  declare project_stage_id: CreationOptional<string | null>;
+
+  @Column({ type: DataType.DATEONLY })
+  declare due_date: CreationOptional<Date | null>;
 
   @Default('medium')
   @Column({
     type: DataType.ENUM('low', 'medium', 'high', 'urgent'),
+    allowNull: false,
   })
-  declare priority: CreationOptional<'low' | 'medium' | 'high' | 'urgent'>;
+  declare priority: 'low' | 'medium' | 'high' | 'urgent';
 
   @Default('General')
   @Column({
@@ -129,9 +102,12 @@ export class Task extends Model<
       'Quality check',
       'Client response',
       'Internal documentation',
+      'Execution Drawing Upload',
+      'Execution Drawing Revision',
     ),
+    allowNull: false,
   })
-  declare task_type: CreationOptional<
+  declare task_type:
     | 'General'
     | 'Design upload'
     | 'Revision response'
@@ -141,7 +117,8 @@ export class Task extends Model<
     | 'Quality check'
     | 'Client response'
     | 'Internal documentation'
-  >;
+    | 'Execution Drawing Upload'
+    | 'Execution Drawing Revision';
 
   @Default('todo')
   @Column({
@@ -152,24 +129,38 @@ export class Task extends Model<
       'completed',
       'blocked',
     ),
+    allowNull: false,
   })
-  declare status: CreationOptional<
-    'todo' | 'in_progress' | 'review' | 'completed' | 'blocked'
-  >;
+  declare status: 'todo' | 'in_progress' | 'review' | 'completed' | 'blocked';
 
-  @Column({
-    type: DataType.TEXT,
-    allowNull: true,
-  })
+  @Column({ type: DataType.TEXT })
   declare description: CreationOptional<string | null>;
 
   // ======================================================
-  // TIMESTAMPS
+  // RELATIONS
   // ======================================================
 
-  @Column(DataType.DATE)
-  declare created_at: CreationOptional<Date>;
+  @BelongsTo(() => Project)
+  declare project?: NonAttribute<Project>;
 
-  @Column(DataType.DATE)
-  declare updated_at: CreationOptional<Date>;
+  @BelongsTo(() => User, 'created_by_user_id')
+  declare createdBy?: NonAttribute<User>;
+
+  @BelongsTo(() => User, 'assigned_to_user_id')
+  declare assignedTo?: NonAttribute<User>;
+
+  @BelongsTo(() => ExecutionStage)
+  declare executionStage?: NonAttribute<ExecutionStage>;
+
+  @BelongsTo(() => ExecutionActivity)
+  declare executionActivity?: NonAttribute<ExecutionActivity>;
+
+  @BelongsTo(() => ExecutionDrawingSet)
+  declare executionDrawingSet?: NonAttribute<ExecutionDrawingSet>;
+
+  @BelongsTo(() => ExecutionDrawingVersion)
+  declare executionDrawingVersion?: NonAttribute<ExecutionDrawingVersion>;
+
+  @BelongsTo(() => ProjectStage)
+  declare projectStage?: NonAttribute<ProjectStage>;
 }
